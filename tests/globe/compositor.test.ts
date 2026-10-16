@@ -321,4 +321,69 @@ describe('LayerCompositor', () => {
     expect(summary.labelsCount).toBe(0);
     compositor.destroy();
   });
+
+  it('handles MultiLineString paths in rivers layer', async () => {
+    const mockMultiRivers: GeoFeatureCollection = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          id: 'river-multi',
+          properties: {
+            id: 'rm1',
+            kind: 'river',
+            layerId: 'rivers',
+            name_pl: 'Amazonka',
+            name_en: 'Amazon',
+            rank: { order: 1 },
+          },
+          geometry: {
+            type: 'MultiLineString',
+            coordinates: [
+              [
+                [-70, -3],
+                [-60, -2],
+              ],
+              [
+                [-60, -2],
+                [-50, 0],
+              ],
+            ],
+          },
+        },
+      ],
+    };
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => mockMultiRivers,
+        }),
+      ),
+    );
+
+    const store = createStore<AppState>({
+      ...createInitialState(),
+      layers: {
+        ...defaultLayersState(),
+        rivers: { enabled: true, topN: 5 },
+        countriesTopN: { enabled: false },
+        borders: { enabled: false },
+        lakes: { enabled: false },
+        mountains: { enabled: false },
+        deserts: { enabled: false },
+        peaks: { enabled: false },
+        capitals: { enabled: false },
+        megacities: { enabled: false },
+      },
+    });
+
+    const compositor = new LayerCompositor(mockGlobe, store);
+    const summary = await compositor.compose();
+
+    expect(summary.pathsCount).toBe(2);
+    compositor.destroy();
+  });
 });

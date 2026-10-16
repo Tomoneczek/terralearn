@@ -6,6 +6,9 @@ export interface GeoFeatureProperties {
   layerId: string;
   name_pl: string;
   name_en: string;
+  name?: string;
+  elevation?: number;
+  population?: number;
   aliases?: string[];
   rank?: {
     area?: number;
