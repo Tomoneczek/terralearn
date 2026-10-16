@@ -10,10 +10,13 @@ describe('smoke test', () => {
     expect(true).toBe(true);
   });
 
-  it('bootstraps the root element properly', () => {
+  it('bootstraps the root element properly and mounts layout', () => {
     bootstrap();
     const app = document.getElementById('app');
     expect(app).not.toBeNull();
     expect(app?.getAttribute('data-ready')).toBe('true');
+    expect(app?.querySelector('.rail')).not.toBeNull();
+    expect(app?.querySelector('.panel')).not.toBeNull();
+    expect(app?.querySelector('.stage')).not.toBeNull();
   });
 });

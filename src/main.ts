@@ -1,12 +1,11 @@
-/**
- * Application entry point for TerraLearn.
- */
+import './styles/index.css';
+import { initLayout } from './ui/layout';
 
 export function bootstrap(): void {
   const root = document.getElementById('app');
   if (root) {
-    // Initial placeholder container until UI layout mounts
     root.setAttribute('data-ready', 'true');
+    initLayout(root);
   }
 }
 
