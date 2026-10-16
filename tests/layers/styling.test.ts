@@ -276,10 +276,10 @@ describe('Layer Styling and Altitude Layering', () => {
     });
 
     it('returns typography scale and dot sizes based on feature kind', () => {
-      expect(getLabelSize(mockCountry)).toBe(1.35);
-      expect(getLabelSize(mockWarsaw)).toBe(1.15);
+      expect(getLabelSize(mockCountry)).toBe(0.45);
+      expect(getLabelSize(mockWarsaw)).toBe(0.38);
       expect(getLabelDotRadius(mockCountry)).toBe(0); // No dot for country polygons
-      expect(getLabelDotRadius(mockWarsaw)).toBe(0.25); // Dot for cities
+      expect(getLabelDotRadius(mockWarsaw)).toBe(0.12); // Dot for cities
       expect(getLabelAltitude(mockPeak)).toBe(0.03);
     });
 
@@ -339,6 +339,43 @@ describe('Layer Styling and Altitude Layering', () => {
       });
 
       expect(visible.some(f => f.properties.id === 'country-55')).toBe(true);
+    });
+
+    it('avoids colliding labels that are geographically adjacent', () => {
+      // Two cities located very close to each other (e.g. 1 degree apart)
+      const cityA: GeoFeature = {
+        type: 'Feature',
+        properties: {
+          id: 'city-a',
+          layerId: 'capitals',
+          kind: 'capital',
+          name_pl: 'Miasto A',
+          name_en: 'City A',
+          rank: { order: 1 },
+        },
+        geometry: { type: 'Point', coordinates: [21.0, 52.0] },
+      };
+      const cityB: GeoFeature = {
+        type: 'Feature',
+        properties: {
+          id: 'city-b',
+          layerId: 'capitals',
+          kind: 'capital',
+          name_pl: 'Miasto B',
+          name_en: 'City B',
+          rank: { order: 2 },
+        },
+        geometry: { type: 'Point', coordinates: [21.5, 52.3] }, // Only ~0.6 deg apart
+      };
+
+      const result = selectVisibleLabels([cityA, cityB], {
+        hiddenLabels: false,
+        maxLabels: 10,
+      });
+
+      // City A (higher rank) is accepted, City B is suppressed to avoid text overlap
+      expect(result).toHaveLength(1);
+      expect(result[0]?.properties.id).toBe('city-a');
     });
   });
 });
