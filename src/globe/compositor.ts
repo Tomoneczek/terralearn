@@ -24,6 +24,7 @@ import {
 } from './labels';
 
 export interface PathItem {
+  id: string;
   feature: GeoFeature;
   points: [number, number][];
 }
@@ -49,6 +50,7 @@ export interface GlobeCompositorTarget {
   pathDashLength?(len: number): this;
   pathDashGap?(gap: number): this;
   pathDashAnimateTime?(ms: number): this;
+  pathTransitionDuration?(ms: number): this;
   pathsTransitionDuration?(ms: number): this;
 
   pointLat(fn: (d: GeoFeature) => number): this;
@@ -56,6 +58,7 @@ export interface GlobeCompositorTarget {
   pointColor(fn: (d: GeoFeature) => string): this;
   pointRadius(fn: (d: GeoFeature) => number): this;
   pointAltitude(fn: (d: GeoFeature) => number): this;
+  pointsTransitionDuration?(ms: number): this;
 
   labelLat(fn: (d: GeoFeature) => number): this;
   labelLng(fn: (d: GeoFeature) => number): this;
@@ -75,6 +78,13 @@ export class LayerCompositor {
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private isDestroyed = false;
   private lastLabelCandidates: GeoFeature[] = [];
+
+  // Path item instance cache by key, ensuring stable identity and preserving __threeObjPath
+  private readonly pathItemCache = new Map<string, PathItem>();
+  private lastPolygons: GeoFeature[] = [];
+  private lastPaths: PathItem[] = [];
+  private lastPoints: GeoFeature[] = [];
+  private lastLabels: GeoFeature[] = [];
 
   // Stable accessor references so they can be re-applied on hover without recreating data
   private readonly polygonCapColorAccessor = (feat: GeoFeature): string => {
@@ -150,6 +160,8 @@ export class LayerCompositor {
     this.globe.polygonsTransitionDuration?.(0);
     this.globe.labelsTransitionDuration?.(0);
     this.globe.pathsTransitionDuration?.(0);
+    this.globe.pathTransitionDuration?.(0);
+    this.globe.pointsTransitionDuration?.(0);
 
     // Polygons
     this.globe.polygonCapColor(this.polygonCapColorAccessor);
@@ -282,9 +294,22 @@ export class LayerCompositor {
     pathsCount: number;
     pointsCount: number;
     labelsCount: number;
+    polygonsUpdated: boolean;
+    pathsUpdated: boolean;
+    pointsUpdated: boolean;
+    labelsUpdated: boolean;
   }> {
     if (this.isDestroyed) {
-      return { polygonsCount: 0, pathsCount: 0, pointsCount: 0, labelsCount: 0 };
+      return {
+        polygonsCount: 0,
+        pathsCount: 0,
+        pointsCount: 0,
+        labelsCount: 0,
+        polygonsUpdated: false,
+        pathsUpdated: false,
+        pointsUpdated: false,
+        labelsUpdated: false,
+      };
     }
 
     const state = this.store.get();
@@ -344,18 +369,38 @@ export class LayerCompositor {
       } else if (def.kind === 'path') {
         for (const feat of filtered) {
           if (feat.geometry.type === 'LineString') {
-            mergedPaths.push({
-              feature: feat,
-              points: feat.geometry.coordinates as [number, number][],
-            });
+            const pathKey = `${feat.properties.id}-seg-0`;
+            let item = this.pathItemCache.get(pathKey);
+            if (!item) {
+              item = {
+                id: pathKey,
+                feature: feat,
+                points: feat.geometry.coordinates as [number, number][],
+              };
+              this.pathItemCache.set(pathKey, item);
+            } else {
+              item.feature = feat;
+              item.points = feat.geometry.coordinates as [number, number][];
+            }
+            mergedPaths.push(item);
           } else if (feat.geometry.type === 'MultiLineString') {
             const multi = feat.geometry.coordinates as [number, number][][];
-            for (const line of multi) {
-              mergedPaths.push({
-                feature: feat,
-                points: line,
-              });
-            }
+            multi.forEach((line, idx) => {
+              const pathKey = `${feat.properties.id}-seg-${idx}`;
+              let item = this.pathItemCache.get(pathKey);
+              if (!item) {
+                item = {
+                  id: pathKey,
+                  feature: feat,
+                  points: line,
+                };
+                this.pathItemCache.set(pathKey, item);
+              } else {
+                item.feature = feat;
+                item.points = line;
+              }
+              mergedPaths.push(item);
+            });
           }
         }
       }
@@ -373,17 +418,61 @@ export class LayerCompositor {
       maxLabels: 25,
     });
 
-    this.globe.polygonsData(mergedPolygons);
-    this.globe.pathsData(mergedPaths);
-    this.globe.pointsData(mergedPoints);
-    this.globe.labelsData(mergedLabels);
+    let polygonsUpdated = false;
+    let pathsUpdated = false;
+    let pointsUpdated = false;
+    let labelsUpdated = false;
+
+    if (!this.areFeaturesIdentical(this.lastPolygons, mergedPolygons)) {
+      this.globe.polygonsData(mergedPolygons);
+      this.lastPolygons = mergedPolygons;
+      polygonsUpdated = true;
+    }
+
+    if (!this.arePathsIdentical(this.lastPaths, mergedPaths)) {
+      this.globe.pathsData(mergedPaths);
+      this.lastPaths = mergedPaths;
+      pathsUpdated = true;
+    }
+
+    if (!this.areFeaturesIdentical(this.lastPoints, mergedPoints)) {
+      this.globe.pointsData(mergedPoints);
+      this.lastPoints = mergedPoints;
+      pointsUpdated = true;
+    }
+
+    if (!this.areFeaturesIdentical(this.lastLabels, mergedLabels)) {
+      this.globe.labelsData(mergedLabels);
+      this.lastLabels = mergedLabels;
+      labelsUpdated = true;
+    }
 
     return {
       polygonsCount: mergedPolygons.length,
       pathsCount: mergedPaths.length,
       pointsCount: mergedPoints.length,
       labelsCount: mergedLabels.length,
+      polygonsUpdated,
+      pathsUpdated,
+      pointsUpdated,
+      labelsUpdated,
     };
+  }
+
+  private areFeaturesIdentical(a: GeoFeature[], b: GeoFeature[]): boolean {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i]?.id !== b[i]?.id) return false;
+    }
+    return true;
+  }
+
+  private arePathsIdentical(a: PathItem[], b: PathItem[]): boolean {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i] && a[i]?.id !== b[i]?.id) return false;
+    }
+    return true;
   }
 
   public destroy(): void {
@@ -396,5 +485,10 @@ export class LayerCompositor {
       unsub();
     }
     this.unsubs.length = 0;
+    this.pathItemCache.clear();
+    this.lastPolygons = [];
+    this.lastPaths = [];
+    this.lastPoints = [];
+    this.lastLabels = [];
   }
 }

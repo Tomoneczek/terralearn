@@ -25,6 +25,8 @@ describe('LayerCompositor', () => {
       polygonsTransitionDuration: vi.fn().mockReturnThis(),
       labelsTransitionDuration: vi.fn().mockReturnThis(),
       pathsTransitionDuration: vi.fn().mockReturnThis(),
+      pathTransitionDuration: vi.fn().mockReturnThis(),
+      pointsTransitionDuration: vi.fn().mockReturnThis(),
 
       polygonCapColor: vi.fn((fn: (d: GeoFeature) => string) => {
         polygonCapColorFn = fn;
@@ -398,6 +400,8 @@ describe('LayerCompositor', () => {
     expect(mockGlobe.polygonsTransitionDuration).toHaveBeenCalledWith(0);
     expect(mockGlobe.labelsTransitionDuration).toHaveBeenCalledWith(0);
     expect(mockGlobe.pathsTransitionDuration).toHaveBeenCalledWith(0);
+    expect(mockGlobe.pathTransitionDuration).toHaveBeenCalledWith(0);
+    expect(mockGlobe.pointsTransitionDuration).toHaveBeenCalledWith(0);
 
     compositor.destroy();
   });
