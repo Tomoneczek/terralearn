@@ -77,8 +77,18 @@ export interface Dictionary {
     next: string;
     summary: string;
     score: string;
+    avgError: string;
     playAgain: string;
     reviewErrors: string;
+    backToMap: string;
+    badgeMasterTitle: string;
+    badgeMasterDesc: string;
+    badgeExpertTitle: string;
+    badgeExpertDesc: string;
+    badgeApprenticeTitle: string;
+    badgeApprenticeDesc: string;
+    badgeNoviceTitle: string;
+    badgeNoviceDesc: string;
   };
 }
 

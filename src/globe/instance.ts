@@ -8,6 +8,8 @@ import { DayNightController } from './day-night';
 import { BloomController } from './bloom';
 import { FPSMonitor } from './performance';
 
+import type { ArcItem } from '@/geo/spherical';
+
 export interface GlobeContext {
   globe: GlobeInstance;
   camera: CameraController;
@@ -15,6 +17,7 @@ export interface GlobeContext {
   dayNight: DayNightController;
   bloom: BloomController;
   fpsMonitor: FPSMonitor;
+  setArcs: (arcs: ArcItem[]) => void;
   destroy: () => void;
 }
 
@@ -56,6 +59,23 @@ export function createGlobe(
     globe.globeMaterial(dayNight.getMaterial());
   } catch {
     // Non-WebGL mock fallback
+  }
+
+  // Arc accessors for quiz/routing spherical feedback
+  try {
+    globe
+      .arcStartLat((d: object) => (d as ArcItem).startLat)
+      .arcStartLng((d: object) => (d as ArcItem).startLng)
+      .arcEndLat((d: object) => (d as ArcItem).endLat)
+      .arcEndLng((d: object) => (d as ArcItem).endLng)
+      .arcColor((d: object) => (d as ArcItem).color)
+      .arcAltitude(0.2)
+      .arcStroke(2.0)
+      .arcDashLength(0.5)
+      .arcDashGap(0.1)
+      .arcDashAnimateTime(1000);
+  } catch {
+    // In test environment without arc methods
   }
 
   // Initial sizing
@@ -106,6 +126,13 @@ export function createGlobe(
     dayNight,
     bloom,
     fpsMonitor,
+    setArcs: (arcs: ArcItem[]) => {
+      try {
+        globe.arcsData(arcs);
+      } catch {
+        // Fallback in mock environment
+      }
+    },
     destroy: () => {
       resizeObserver.disconnect();
       detachEvents();

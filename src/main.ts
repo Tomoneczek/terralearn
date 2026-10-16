@@ -10,6 +10,11 @@ import { LegendOverlay } from './ui/legend';
 import { InfoCard } from './ui/info-card';
 import { HoverTooltip } from './ui/hover-tooltip';
 
+import { QuizEngine } from './quiz/engine';
+import { QuizHud } from './ui/quiz/quiz-hud';
+import { QuizSummaryModal } from './ui/quiz/quiz-summary';
+import { getDistanceColor } from './geo/spherical';
+
 export let globeContext: GlobeContext | null = null;
 export let sidebar: SidebarController | null = null;
 export let searchOverlay: SearchOverlay | null = null;
@@ -17,6 +22,9 @@ export let toolbar: Toolbar | null = null;
 export let legendOverlay: LegendOverlay | null = null;
 export let infoCard: InfoCard | null = null;
 export let hoverTooltip: HoverTooltip | null = null;
+export let quizEngine: QuizEngine | null = null;
+export let quizHud: QuizHud | null = null;
+export let quizSummary: QuizSummaryModal | null = null;
 
 export function bootstrap(): void {
   const root = document.getElementById('app');
@@ -24,10 +32,53 @@ export function bootstrap(): void {
     root.setAttribute('data-ready', 'true');
     const slots = initLayout(root);
 
+    // Initialize Quiz Engine & UI
+    quizEngine = new QuizEngine(store, {
+      onQuestion: (q, index, total, score) => {
+        globeContext?.setArcs([]);
+        quizHud?.showQuestion(q, index, total, score);
+      },
+      onFeedback: answer => {
+        quizHud?.showFeedback(answer);
+        globeContext?.setArcs([
+          {
+            startLat: answer.clickLat,
+            startLng: answer.clickLng,
+            endLat: answer.question.targetLat,
+            endLng: answer.question.targetLng,
+            color: getDistanceColor(answer.distanceKm),
+          },
+        ]);
+      },
+      onFinish: summary => {
+        globeContext?.setArcs([]);
+        quizHud?.hide();
+        quizSummary?.show(summary);
+      },
+      onStop: () => {
+        globeContext?.setArcs([]);
+        quizHud?.hide();
+        quizSummary?.hide();
+      },
+    });
+
+    quizHud = new QuizHud({
+      container: root,
+      engine: quizEngine,
+    });
+
+    quizSummary = new QuizSummaryModal({
+      container: root,
+      engine: quizEngine,
+    });
+
     if (slots.sidebarContainer) {
       sidebar = new SidebarController({
         container: slots.sidebarContainer,
         store,
+        onStartQuiz: () => {
+          quizEngine?.start();
+        },
       });
     }
 
