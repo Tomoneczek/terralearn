@@ -74,6 +74,8 @@ describe('Globe Events & Picking', () => {
       layerId: 'borders',
       kind: 'country',
       name: 'Polska',
+      name_pl: 'Polska',
+      name_en: 'Poland',
       lat: 52.0,
       lng: 20.0,
     });

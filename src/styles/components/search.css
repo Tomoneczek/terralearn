@@ -1,0 +1,121 @@
+/* Search overlay styles */
+.tl-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-color: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  padding: var(--space-2) var(--space-4);
+  width: 320px;
+  box-shadow: var(--shadow-md);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    width 0.2s;
+}
+
+.tl-search-box:focus-within {
+  border-color: var(--border-focus);
+  box-shadow:
+    var(--shadow-lg),
+    0 0 0 1px var(--border-focus);
+  width: 360px;
+}
+
+.tl-search-icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-3);
+  margin-right: var(--space-2);
+  flex-shrink: 0;
+}
+
+.tl-search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--text-1);
+  width: 100%;
+}
+
+.tl-search-input::placeholder {
+  color: var(--text-3);
+}
+
+.tl-search-kbd {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  background-color: var(--bg-3);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.tl-search-dropdown {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  right: 0;
+  background-color: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  max-height: 320px;
+  overflow-y: auto;
+  display: none;
+  flex-direction: column;
+  padding: var(--space-1);
+  z-index: 100;
+}
+
+.tl-search-dropdown.open {
+  display: flex;
+}
+
+.tl-search-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.tl-search-item:hover,
+.tl-search-item.highlighted {
+  background-color: var(--bg-hover);
+}
+
+.tl-search-item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-1);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tl-search-item-kind {
+  font-size: 11px;
+  color: var(--text-3);
+  text-transform: capitalize;
+}
+
+.tl-search-empty {
+  padding: var(--space-4);
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-3);
+}

@@ -5,6 +5,8 @@ export interface FeatureRef {
   layerId: LayerId;
   kind: string;
   name?: string;
+  name_pl?: string;
+  name_en?: string;
   lat?: number;
   lng?: number;
 }

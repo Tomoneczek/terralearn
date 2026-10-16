@@ -51,9 +51,21 @@ export const en: Dictionary = {
     showOnGlobe: 'Show on globe',
     close: 'Close',
   },
+  search: {
+    noResults: 'No results found',
+  },
+  toolbar: {
+    ariaLabel: 'Globe camera tools',
+    zoomIn: 'Zoom in (+)',
+    zoomOut: 'Zoom out (-)',
+    resetView: 'Reset view',
+    autoRotate: 'Auto-rotation',
+    fullscreen: 'Fullscreen',
+  },
   legend: {
     title: 'Legend',
     shortcuts: 'Keyboard shortcuts',
+    toggle: 'Toggle legend',
   },
   quiz: {
     title: 'Blind map',

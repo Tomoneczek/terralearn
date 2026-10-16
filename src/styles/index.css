@@ -4,3 +4,8 @@
 @import './components/toggle.css';
 @import './components/slider.css';
 @import './components/sidebar.css';
+@import './components/search.css';
+@import './components/info-card.css';
+@import './components/legend.css';
+@import './components/toolbar.css';
+@import './components/hover-tooltip.css';

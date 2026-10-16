@@ -51,9 +51,21 @@ export const pl: Dictionary = {
     showOnGlobe: 'Pokaż na globusie',
     close: 'Zamknij',
   },
+  search: {
+    noResults: 'Brak wyników',
+  },
+  toolbar: {
+    ariaLabel: 'Narzędzia kamery globusa',
+    zoomIn: 'Przybliż (+)',
+    zoomOut: 'Oddal (-)',
+    resetView: 'Zresetuj widok',
+    autoRotate: 'Automatyczny obrót',
+    fullscreen: 'Pełny ekran',
+  },
   legend: {
     title: 'Legenda',
-    shortcuts: 'Skrótami klawiszowy',
+    shortcuts: 'Skróty klawiszowe',
+    toggle: 'Zwiń / rozwiń legendę',
   },
   quiz: {
     title: 'Ślepa mapa',

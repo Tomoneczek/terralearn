@@ -53,9 +53,21 @@ export interface Dictionary {
     showOnGlobe: string;
     close: string;
   };
+  search: {
+    noResults: string;
+  };
+  toolbar: {
+    ariaLabel: string;
+    zoomIn: string;
+    zoomOut: string;
+    resetView: string;
+    autoRotate: string;
+    fullscreen: string;
+  };
   legend: {
     title: string;
     shortcuts: string;
+    toggle: string;
   };
   quiz: {
     title: string;

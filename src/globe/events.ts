@@ -36,6 +36,8 @@ export function toFeatureRef(feat: GeoFeature): FeatureRef {
     layerId: feat.properties.layerId as LayerId,
     kind: feat.properties.kind,
     name: feat.properties.name_pl,
+    name_pl: feat.properties.name_pl,
+    name_en: feat.properties.name_en,
     lat: feat.properties.labelLat,
     lng: feat.properties.labelLng,
   };

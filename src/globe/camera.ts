@@ -66,6 +66,12 @@ export class CameraController {
     }
   }
 
+  public toggleAutoRotate(speed = 0.6): boolean {
+    const next = !this.isAutoRotating();
+    this.setAutoRotate(next, speed);
+    return next;
+  }
+
   public isAutoRotating(): boolean {
     return Boolean(this.globe.controls?.()?.autoRotate);
   }
