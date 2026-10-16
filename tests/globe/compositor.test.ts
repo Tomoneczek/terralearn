@@ -22,6 +22,10 @@ describe('LayerCompositor', () => {
       pointsData: vi.fn().mockReturnThis(),
       labelsData: vi.fn().mockReturnThis(),
 
+      polygonsTransitionDuration: vi.fn().mockReturnThis(),
+      labelsTransitionDuration: vi.fn().mockReturnThis(),
+      pathsTransitionDuration: vi.fn().mockReturnThis(),
+
       polygonCapColor: vi.fn((fn: (d: GeoFeature) => string) => {
         polygonCapColorFn = fn;
         return mockGlobe;
@@ -384,6 +388,57 @@ describe('LayerCompositor', () => {
     const summary = await compositor.compose();
 
     expect(summary.pathsCount).toBe(2);
+    compositor.destroy();
+  });
+
+  it('configures transition durations to 0 to prevent looping fade animations', () => {
+    const store = createStore<AppState>(createInitialState());
+    const compositor = new LayerCompositor(mockGlobe, store);
+
+    expect(mockGlobe.polygonsTransitionDuration).toHaveBeenCalledWith(0);
+    expect(mockGlobe.labelsTransitionDuration).toHaveBeenCalledWith(0);
+    expect(mockGlobe.pathsTransitionDuration).toHaveBeenCalledWith(0);
+
+    compositor.destroy();
+  });
+
+  it('updates dynamic styles without re-dispatching polygonsData on hover change', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => mockCountries,
+        }),
+      ),
+    );
+
+    const store = createStore<AppState>({
+      ...createInitialState(),
+      layers: {
+        ...defaultLayersState(),
+        countriesTopN: { enabled: true, topN: 10 },
+      },
+    });
+
+    const compositor = new LayerCompositor(mockGlobe, store);
+    await compositor.compose();
+
+    expect(mockGlobe.polygonsData).toHaveBeenCalledTimes(1);
+
+    // Simulate mouse hover event
+    store.set({
+      ...store.get(),
+      hovered: { id: 'c1', layerId: 'countriesTopN' as LayerId, kind: 'country' },
+    });
+
+    // Wait a brief moment for any scheduled timers
+    await new Promise(r => setTimeout(r, 80));
+
+    // polygonsData should NOT be re-called on hover - dynamic styles refresh instead!
+    expect(mockGlobe.polygonsData).toHaveBeenCalledTimes(1);
+    expect(mockGlobe.polygonCapColor).toHaveBeenCalledTimes(2);
+
     compositor.destroy();
   });
 });

@@ -38,6 +38,7 @@ export interface GlobeCompositorTarget {
   polygonSideColor(fn: (d: GeoFeature) => string): this;
   polygonStrokeColor(fn: (d: GeoFeature) => string): this;
   polygonAltitude(fn: (d: GeoFeature) => number): this;
+  polygonsTransitionDuration?(ms: number): this;
 
   pathPoints(fn: (d: PathItem) => [number, number][]): this;
   pathPointLat(fn: (pt: [number, number]) => number): this;
@@ -48,6 +49,7 @@ export interface GlobeCompositorTarget {
   pathDashLength?(len: number): this;
   pathDashGap?(gap: number): this;
   pathDashAnimateTime?(ms: number): this;
+  pathsTransitionDuration?(ms: number): this;
 
   pointLat(fn: (d: GeoFeature) => number): this;
   pointLng(fn: (d: GeoFeature) => number): this;
@@ -62,15 +64,77 @@ export interface GlobeCompositorTarget {
   labelDotRadius(fn: (d: GeoFeature) => number): this;
   labelAltitude(fn: (d: GeoFeature) => number): this;
   labelColor(fn: (d: GeoFeature) => string): this;
+  labelsTransitionDuration?(ms: number): this;
 }
 
 export class LayerCompositor {
   private readonly globe: GlobeCompositorTarget;
   private readonly store: Store<AppState>;
   private readonly layerDefsMap: Map<LayerId, LayerDef>;
-  private unsubscribe: (() => void) | null = null;
+  private readonly unsubs: (() => void)[] = [];
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private isDestroyed = false;
+  private lastLabelCandidates: GeoFeature[] = [];
+
+  // Stable accessor references so they can be re-applied on hover without recreating data
+  private readonly polygonCapColorAccessor = (feat: GeoFeature): string => {
+    const state = this.store.get();
+    const isSelected = state.selection?.id === feat.properties.id;
+    const isHovered = state.hovered?.id === feat.properties.id;
+    const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
+    return getPolygonCapColor(feat, isSelected, isHovered, def);
+  };
+
+  private readonly polygonSideColorAccessor = (feat: GeoFeature): string => {
+    const state = this.store.get();
+    const isSelected = state.selection?.id === feat.properties.id;
+    const isHovered = state.hovered?.id === feat.properties.id;
+    const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
+    return getPolygonSideColor(feat, isSelected, isHovered, def);
+  };
+
+  private readonly polygonStrokeColorAccessor = (feat: GeoFeature): string => {
+    const state = this.store.get();
+    const isSelected = state.selection?.id === feat.properties.id;
+    const isHovered = state.hovered?.id === feat.properties.id;
+    const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
+    return getPolygonStrokeColor(feat, isSelected, isHovered, def);
+  };
+
+  private readonly polygonAltitudeAccessor = (feat: GeoFeature): number => {
+    const state = this.store.get();
+    const isSelected = state.selection?.id === feat.properties.id;
+    const isHovered = state.hovered?.id === feat.properties.id;
+    const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
+    return getPolygonAltitude(feat, isSelected, isHovered, def);
+  };
+
+  private readonly pathColorAccessor = (item: PathItem): string => {
+    const state = this.store.get();
+    const isSelected = state.selection?.id === item.feature.properties.id;
+    const isHovered = state.hovered?.id === item.feature.properties.id;
+    const def = this.layerDefsMap.get(item.feature.properties.layerId as LayerId);
+    return getPathColor(item.feature, isSelected, isHovered, def);
+  };
+
+  private readonly pointColorAccessor = (feat: GeoFeature): string => {
+    const state = this.store.get();
+    const isSelected = state.selection?.id === feat.properties.id;
+    const isHovered = state.hovered?.id === feat.properties.id;
+    const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
+    return getPointColor(feat, isSelected, isHovered, def);
+  };
+
+  private readonly labelColorAccessor = (feat: GeoFeature): string => {
+    const state = this.store.get();
+    if (state.selection?.id === feat.properties.id) {
+      return 'rgba(255, 220, 100, 1)';
+    }
+    if (state.hovered?.id === feat.properties.id) {
+      return 'rgba(180, 240, 255, 1)';
+    }
+    return 'rgba(255, 255, 255, 0.95)';
+  };
 
   constructor(globe: GlobeCompositorTarget, store: Store<AppState>) {
     this.globe = globe;
@@ -82,51 +146,23 @@ export class LayerCompositor {
   }
 
   private configureAccessors(): void {
+    // Disable slow entry transition pulses on style updates
+    this.globe.polygonsTransitionDuration?.(0);
+    this.globe.labelsTransitionDuration?.(0);
+    this.globe.pathsTransitionDuration?.(0);
+
     // Polygons
-    this.globe.polygonCapColor(feat => {
-      const state = this.store.get();
-      const isSelected = state.selection?.id === feat.properties.id;
-      const isHovered = state.hovered?.id === feat.properties.id;
-      const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
-      return getPolygonCapColor(feat, isSelected, isHovered, def);
-    });
-
-    this.globe.polygonSideColor(feat => {
-      const state = this.store.get();
-      const isSelected = state.selection?.id === feat.properties.id;
-      const isHovered = state.hovered?.id === feat.properties.id;
-      const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
-      return getPolygonSideColor(feat, isSelected, isHovered, def);
-    });
-
-    this.globe.polygonStrokeColor(feat => {
-      const state = this.store.get();
-      const isSelected = state.selection?.id === feat.properties.id;
-      const isHovered = state.hovered?.id === feat.properties.id;
-      const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
-      return getPolygonStrokeColor(feat, isSelected, isHovered, def);
-    });
-
-    this.globe.polygonAltitude(feat => {
-      const state = this.store.get();
-      const isSelected = state.selection?.id === feat.properties.id;
-      const isHovered = state.hovered?.id === feat.properties.id;
-      const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
-      return getPolygonAltitude(feat, isSelected, isHovered, def);
-    });
+    this.globe.polygonCapColor(this.polygonCapColorAccessor);
+    this.globe.polygonSideColor(this.polygonSideColorAccessor);
+    this.globe.polygonStrokeColor(this.polygonStrokeColorAccessor);
+    this.globe.polygonAltitude(this.polygonAltitudeAccessor);
 
     // Paths
     this.globe.pathPoints(item => item.points);
     this.globe.pathPointLat(pt => pt[1]);
     this.globe.pathPointLng(pt => pt[0]);
     this.globe.pathPointAlt(() => getPathAltitude());
-    this.globe.pathColor(item => {
-      const state = this.store.get();
-      const isSelected = state.selection?.id === item.feature.properties.id;
-      const isHovered = state.hovered?.id === item.feature.properties.id;
-      const def = this.layerDefsMap.get(item.feature.properties.layerId as LayerId);
-      return getPathColor(item.feature, isSelected, isHovered, def);
-    });
+    this.globe.pathColor(this.pathColorAccessor);
     this.globe.pathStroke(item => {
       const def = this.layerDefsMap.get(item.feature.properties.layerId as LayerId);
       return getPathStroke(item.feature, def);
@@ -144,13 +180,7 @@ export class LayerCompositor {
       const coords = feat.geometry.coordinates as number[];
       return Number(coords[0] ?? 0);
     });
-    this.globe.pointColor(feat => {
-      const state = this.store.get();
-      const isSelected = state.selection?.id === feat.properties.id;
-      const isHovered = state.hovered?.id === feat.properties.id;
-      const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
-      return getPointColor(feat, isSelected, isHovered, def);
-    });
+    this.globe.pointColor(this.pointColorAccessor);
     this.globe.pointRadius(feat => {
       const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
       return getPointRadius(feat, def);
@@ -172,30 +202,69 @@ export class LayerCompositor {
     this.globe.labelSize(feat => getLabelSize(feat));
     this.globe.labelDotRadius(feat => getLabelDotRadius(feat));
     this.globe.labelAltitude(feat => getLabelAltitude(feat));
-    this.globe.labelColor(feat => {
-      const state = this.store.get();
-      if (state.selection?.id === feat.properties.id) {
-        return 'rgba(255, 220, 100, 1)';
-      }
-      if (state.hovered?.id === feat.properties.id) {
-        return 'rgba(180, 240, 255, 1)';
-      }
-      return 'rgba(255, 255, 255, 0.95)';
-    });
+    this.globe.labelColor(this.labelColorAccessor);
   }
 
   private bindStore(): void {
-    this.unsubscribe = this.store.subscribe(
+    // 1. Data re-composition ONLY when layer activation or topN changes
+    const unsubLayers = this.store.subscribe(
       s => ({
         layers: s.layers,
         hiddenLabels: s.hiddenLabels,
-        selection: s.selection?.id,
-        hovered: s.hovered?.id,
       }),
       () => {
         this.scheduleCompose();
       },
+      (a, b) => {
+        if (a.hiddenLabels !== b.hiddenLabels) return false;
+        const keysA = Object.keys(a.layers) as LayerId[];
+        const keysB = Object.keys(b.layers) as LayerId[];
+        if (keysA.length !== keysB.length) return false;
+        for (const k of keysA) {
+          if (a.layers[k]?.enabled !== b.layers[k]?.enabled) return false;
+          if (a.layers[k]?.topN !== b.layers[k]?.topN) return false;
+        }
+        return true;
+      },
     );
+    this.unsubs.push(unsubLayers);
+
+    // 2. Dynamic style refresh (hover/select) without re-loading data or looping animations
+    const unsubInteractions = this.store.subscribe(
+      s => ({
+        sel: s.selection?.id,
+        hov: s.hovered?.id,
+      }),
+      () => {
+        this.refreshDynamicStyles();
+      },
+      (a, b) => a.sel === b.sel && a.hov === b.hov,
+    );
+    this.unsubs.push(unsubInteractions);
+  }
+
+  public refreshDynamicStyles(): void {
+    if (this.isDestroyed) return;
+
+    // Fast material & altitude refresh without recreating meshes
+    this.globe.polygonCapColor(this.polygonCapColorAccessor);
+    this.globe.polygonSideColor(this.polygonSideColorAccessor);
+    this.globe.polygonStrokeColor(this.polygonStrokeColorAccessor);
+    this.globe.polygonAltitude(this.polygonAltitudeAccessor);
+    this.globe.pathColor(this.pathColorAccessor);
+    this.globe.pointColor(this.pointColorAccessor);
+    this.globe.labelColor(this.labelColorAccessor);
+
+    // If quiz mode (hiddenLabels) is on, reveal label only for hovered/selected
+    const state = this.store.get();
+    if (state.hiddenLabels && this.lastLabelCandidates.length > 0) {
+      const mergedLabels = selectVisibleLabels(this.lastLabelCandidates, {
+        hiddenLabels: true,
+        selectedId: state.selection?.id,
+        hoveredId: state.hovered?.id,
+      });
+      this.globe.labelsData(mergedLabels);
+    }
   }
 
   public scheduleCompose(debounceMs = 60): void {
@@ -258,9 +327,10 @@ export class LayerCompositor {
         return order <= maxRank;
       });
 
-      // Tag features with current layerId
+      // Tag features with current layerId and ensure stable id for ThreeDigest
       filtered = filtered.map(f => ({
         ...f,
+        id: f.properties.id,
         properties: {
           ...f.properties,
           layerId: def.id,
@@ -294,11 +364,13 @@ export class LayerCompositor {
       labelCandidates.push(...filtered);
     }
 
+    this.lastLabelCandidates = labelCandidates;
+
     const mergedLabels = selectVisibleLabels(labelCandidates, {
       hiddenLabels: state.hiddenLabels,
       selectedId: state.selection?.id,
       hoveredId: state.hovered?.id,
-      maxLabels: 50,
+      maxLabels: 25,
     });
 
     this.globe.polygonsData(mergedPolygons);
@@ -320,9 +392,9 @@ export class LayerCompositor {
       clearTimeout(this.debounceTimer);
       this.debounceTimer = null;
     }
-    if (this.unsubscribe) {
-      this.unsubscribe();
-      this.unsubscribe = null;
+    for (const unsub of this.unsubs) {
+      unsub();
     }
+    this.unsubs.length = 0;
   }
 }
