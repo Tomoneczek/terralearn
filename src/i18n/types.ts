@@ -15,6 +15,7 @@ export interface Dictionary {
     tools: string;
   };
   modes: {
+    all: string;
     physical: string;
     political: string;
     dayNight: string;

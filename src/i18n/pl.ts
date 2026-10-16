@@ -13,6 +13,7 @@ export const pl: Dictionary = {
     tools: 'NARZĘDZIA & GRY',
   },
   modes: {
+    all: 'Wszystkie',
     physical: 'Fizyczna',
     political: 'Polityczna',
     dayNight: 'Nocny podgląd (Dzień/Noc)',

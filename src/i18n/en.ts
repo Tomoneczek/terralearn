@@ -13,6 +13,7 @@ export const en: Dictionary = {
     tools: 'TOOLS & QUIZ',
   },
   modes: {
+    all: 'All',
     physical: 'Physical',
     political: 'Political',
     dayNight: 'Night view (Day/Night)',
