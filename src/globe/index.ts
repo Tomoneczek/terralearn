@@ -4,3 +4,6 @@ export * from './compositor';
 export * from './events';
 export * from './instance';
 export * from './labels';
+export * from './day-night';
+export * from './bloom';
+export * from './performance';

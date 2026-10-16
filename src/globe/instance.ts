@@ -4,19 +4,27 @@ import { resolveAssetUrl } from '@/utils/assets';
 import { CameraController } from './camera';
 import { LayerCompositor, type GlobeCompositorTarget } from './compositor';
 import { attachGlobeEvents, type GlobeEventsDelegate } from './events';
+import { DayNightController } from './day-night';
+import { BloomController } from './bloom';
+import { FPSMonitor } from './performance';
 
 export interface GlobeContext {
   globe: GlobeInstance;
   camera: CameraController;
   compositor: LayerCompositor;
+  dayNight: DayNightController;
+  bloom: BloomController;
+  fpsMonitor: FPSMonitor;
   destroy: () => void;
 }
 
 export interface GlobeInitOptions {
   earthTexture?: string;
+  nightTexture?: string;
   backgroundTexture?: string;
   atmosphereColor?: string;
   atmosphereAltitude?: number;
+  enableBloom?: boolean;
 }
 
 export function createGlobe(
@@ -38,6 +46,18 @@ export function createGlobe(
     .atmosphereAltitude(atmosphereAltitude)
     .showAtmosphere(true);
 
+  // Day/Night Terminator Controller & Material
+  const dayNight = new DayNightController(store, {
+    dayTextureUrl: options.earthTexture,
+    nightTextureUrl: options.nightTexture,
+  });
+
+  try {
+    globe.globeMaterial(dayNight.getMaterial());
+  } catch {
+    // Non-WebGL mock fallback
+  }
+
   // Initial sizing
   const rect = container.getBoundingClientRect();
   if (rect.width > 0 && rect.height > 0) {
@@ -52,6 +72,17 @@ export function createGlobe(
   // Layer Compositor
   const compositor = new LayerCompositor(globe as unknown as GlobeCompositorTarget, store);
   void compositor.compose();
+
+  // Performance Monitor & Bloom Post-Processing
+  const fpsMonitor = new FPSMonitor({
+    minFps: 35,
+    onDegrade: () => {
+      bloom.setEnabled(false);
+    },
+  });
+  fpsMonitor.start();
+
+  const bloom = new BloomController(globe, { enabled: options.enableBloom ?? true }, fpsMonitor);
 
   // Events
   const detachEvents = attachGlobeEvents(globe as unknown as GlobeEventsDelegate, store, container);
@@ -72,10 +103,15 @@ export function createGlobe(
     globe,
     camera,
     compositor,
+    dayNight,
+    bloom,
+    fpsMonitor,
     destroy: () => {
       resizeObserver.disconnect();
       detachEvents();
       compositor.destroy();
+      dayNight.destroy();
+      fpsMonitor.stop();
       // Remove globe canvas
       const canvas = container.querySelector('canvas');
       if (canvas) {

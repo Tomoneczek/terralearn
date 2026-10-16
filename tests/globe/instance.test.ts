@@ -46,6 +46,8 @@ const mockGlobeInstance: any = {
   onPointClick: vi.fn().mockReturnThis(),
   onPointHover: vi.fn().mockReturnThis(),
   onGlobeClick: vi.fn().mockReturnThis(),
+  globeMaterial: vi.fn().mockReturnThis(),
+  postProcessingComposer: vi.fn().mockReturnValue(null),
 };
 
 vi.mock('globe.gl', () => {
@@ -82,6 +84,9 @@ describe('Globe Instance Factory', () => {
 
     expect(context.camera).toBeDefined();
     expect(context.compositor).toBeDefined();
+    expect(context.dayNight).toBeDefined();
+    expect(context.bloom).toBeDefined();
+    expect(context.fpsMonitor).toBeDefined();
     expect(typeof context.destroy).toBe('function');
 
     // Canvas removal on destroy
