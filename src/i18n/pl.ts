@@ -1,0 +1,68 @@
+import type { Dictionary } from './types';
+
+export const pl: Dictionary = {
+  app: {
+    title: 'TerraLearn',
+    tagline: 'Interaktywna kula ziemska 3D',
+    searchPlaceholder: 'Szukaj obiektów, państw...',
+  },
+  sections: {
+    modes: 'TRYBY MAPY',
+    physical: 'GEOGRAFIA FIZYCZNA',
+    political: 'GEOGRAFIA POLITYCZNA',
+    tools: 'NARZĘDZIA & GRY',
+  },
+  modes: {
+    physical: 'Fizyczna',
+    political: 'Polityczna',
+    dayNight: 'Nocny podgląd (Dzień/Noc)',
+    learn: 'Tryb nauki (ukryj nazwy)',
+  },
+  layers: {
+    borders: 'Granice państw',
+    countriesTopN: 'Państwa (Top 10 / 50 / 100)',
+    capitals: 'Stolice',
+    megacities: 'Metropolie (>10 mln)',
+    lakes: 'Największe jeziora',
+    rivers: 'Główne rzeki',
+    mountains: 'Pasma górskie',
+    deserts: 'Pustynie',
+    peaks: 'Najwyższe szczyty',
+  },
+  sliders: {
+    topPrefix: 'Top',
+    rankByHeight: 'wysokości',
+    rankBySize: 'rozmiaru',
+  },
+  tools: {
+    sizeComparison: 'Porównywarka rozmiarów',
+    quizMode: 'Tryb quizu (Ślepa mapa)',
+    greatCircle: 'Prawdziwa najkrótsza droga',
+    antipodes: 'Symulator Antypodów',
+  },
+  card: {
+    title: 'Karta obiektu',
+    population: 'Populacja',
+    area: 'Powierzchnia',
+    length: 'Długość',
+    elevation: 'Wysokość',
+    scaleComparison: 'Porównanie wielkości',
+    showOnGlobe: 'Pokaż na globusie',
+    close: 'Zamknij',
+  },
+  legend: {
+    title: 'Legenda',
+    shortcuts: 'Skrótami klawiszowy',
+  },
+  quiz: {
+    title: 'Ślepa mapa',
+    questionPrefix: 'Wskaż:',
+    errorDistance: 'Pomyłka',
+    points: 'pkt',
+    next: 'Dalej',
+    summary: 'Wynik końcowy',
+    score: 'Zdobyte punkty',
+    playAgain: 'Zagraj ponownie',
+    reviewErrors: 'Powtórz błędy',
+  },
+};
