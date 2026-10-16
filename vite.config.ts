@@ -1,7 +1,10 @@
 import { defineConfig } from 'vitest/config';
 import { fileURLToPath, URL } from 'node:url';
 
+const base = process.env.BASE_URL ?? (process.env.GITHUB_ACTIONS ? '/terralearn/' : '/');
+
 export default defineConfig({
+  base,
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

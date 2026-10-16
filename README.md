@@ -1,8 +1,10 @@
 # TerraLearn 🌍
 
 [![Quality & CI](https://github.com/Tomoneczek/terralearn/actions/workflows/ci.yml/badge.svg)](https://github.com/Tomoneczek/terralearn/actions/workflows/ci.yml)
+[![Deploy to GitHub Pages](https://github.com/Tomoneczek/terralearn/actions/workflows/deploy.yml/badge.svg)](https://github.com/Tomoneczek/terralearn/actions/workflows/deploy.yml)
 
-> Interactive 3D Earth globe web application for geography exploration and learning.
+> Interactive 3D Earth globe web application for geography exploration and learning.  
+> 🔗 **Live Demo:** [https://tomoneczek.github.io/terralearn/](https://tomoneczek.github.io/terralearn/)
 
 ## Overview
 
