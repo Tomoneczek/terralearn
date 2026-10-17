@@ -96,6 +96,22 @@ export interface Dictionary {
     badgeNoviceTitle: string;
     badgeNoviceDesc: string;
   };
+  route: {
+    title: string;
+    orthodrome: string;
+    rhumbLine: string;
+    distance: string;
+    difference: string;
+    explanation: string;
+    pickStart: string;
+    pickEnd: string;
+    clear: string;
+    close: string;
+    presets: string;
+    presetWarsawTokyo: string;
+    presetLondonSf: string;
+    presetNySingapore: string;
+  };
 }
 
 // Flat key path type e.g. "layers.lakes" | "sections.physical"

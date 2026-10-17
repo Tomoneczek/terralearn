@@ -141,4 +141,22 @@ describe('SidebarController', () => {
 
     sidebar.destroy();
   });
+
+  it('toggles route comparison in store when clicking route comparison button', () => {
+    const store = createStore<AppState>(createInitialState());
+    const sidebar = new SidebarController({ container, store });
+
+    const routeBtn = container.querySelector<HTMLButtonElement>('#btn-route-compare');
+    expect(routeBtn).not.toBeNull();
+
+    // Activate route comparison
+    routeBtn?.click();
+    expect(store.get().routeComparison?.active).toBe(true);
+
+    // Deactivate route comparison
+    routeBtn?.click();
+    expect(store.get().routeComparison).toBeNull();
+
+    sidebar.destroy();
+  });
 });

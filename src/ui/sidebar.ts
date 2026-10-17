@@ -2,6 +2,7 @@ import type { Store, AppState, QualityPreset } from '@/state/types';
 import type { LayerDef, LayerId } from '@/layers/types';
 import { LAYER_DEFINITIONS } from '@/layers/registry';
 import { t } from '@/i18n';
+import { parseSvg } from './dom';
 import { ToggleSwitch } from './components/toggle';
 import { TopNSlider } from './components/slider';
 import { PRESETS, applyPreset, detectActivePreset, type PresetId } from './presets';
@@ -172,6 +173,41 @@ export class SidebarController {
     toolsTitle.textContent = t('sections.tools');
     toolsSection.appendChild(toolsTitle);
 
+    // Route Comparison button (Orthodrome vs Loxodrome)
+    const routeBtn = document.createElement('button');
+    routeBtn.type = 'button';
+    routeBtn.className = 'tl-tool-btn';
+    routeBtn.id = 'btn-route-compare';
+
+    const routeIconSpan = document.createElement('span');
+    routeIconSpan.className = 'tl-tool-icon';
+    routeIconSpan.appendChild(
+      parseSvg(
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>',
+      ),
+    );
+
+    const routeLabelSpan = document.createElement('span');
+    routeLabelSpan.textContent = t('tools.greatCircle');
+
+    routeBtn.appendChild(routeIconSpan);
+    routeBtn.appendChild(routeLabelSpan);
+    routeBtn.addEventListener('click', () => {
+      const current = this.store.get().routeComparison;
+      if (current?.active) {
+        this.store.set({ routeComparison: null });
+      } else {
+        this.store.set({
+          routeComparison: {
+            active: true,
+            from: null,
+            to: null,
+          },
+        });
+      }
+    });
+    toolsSection.appendChild(routeBtn);
+
     const quizBtn = document.createElement('button');
     quizBtn.type = 'button';
     quizBtn.className = 'tl-tool-btn';
@@ -179,8 +215,11 @@ export class SidebarController {
 
     const iconSpan = document.createElement('span');
     iconSpan.className = 'tl-tool-icon';
-    iconSpan.innerHTML =
-      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>';
+    iconSpan.appendChild(
+      parseSvg(
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>',
+      ),
+    );
 
     const labelSpan = document.createElement('span');
     labelSpan.textContent = t('tools.quizMode');

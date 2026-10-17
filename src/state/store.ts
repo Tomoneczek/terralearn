@@ -14,6 +14,7 @@ export function createInitialState(): AppState {
     selection: null,
     hovered: null,
     globeClick: null,
+    routeComparison: null,
   };
 }
 

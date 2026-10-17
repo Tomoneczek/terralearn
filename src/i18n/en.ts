@@ -94,4 +94,21 @@ export const en: Dictionary = {
     badgeNoviceTitle: 'Novice Explorer',
     badgeNoviceDesc: 'The world still holds many mysteries – keep practicing!',
   },
+  route: {
+    title: 'Spherical Route Comparison',
+    orthodrome: 'Orthodrome (Great Circle - Shortest path)',
+    rhumbLine: 'Loxodrome (Rhumb Line - Constant bearing)',
+    distance: 'Distance',
+    difference: 'Difference',
+    explanation:
+      'A rhumb line (straight line on a Mercator map) forms a spiral on the sphere. Long-haul aircraft fly along the orthodrome (great circle arc), saving hundreds of kilometers in fuel and flight time.',
+    pickStart: 'Pick start point (click anywhere on the globe)...',
+    pickEnd: 'Pick destination point (click on the globe)...',
+    clear: 'Clear route',
+    close: 'Close',
+    presets: 'Popular routes:',
+    presetWarsawTokyo: 'Warsaw → Tokyo',
+    presetLondonSf: 'London → San Francisco',
+    presetNySingapore: 'New York → Singapore',
+  },
 };

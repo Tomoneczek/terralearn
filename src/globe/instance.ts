@@ -12,6 +12,8 @@ import { FPSMonitor, QualityController } from './performance';
 
 import type { ArcItem } from '@/geo/spherical';
 
+import { RouteLayerController, type GlobeRouteDelegate } from './route-layer';
+
 export interface GlobeContext {
   globe: GlobeInstance;
   camera: CameraController;
@@ -21,6 +23,7 @@ export interface GlobeContext {
   bloom: BloomController;
   clouds: CloudsController;
   quality: QualityController;
+  routes: RouteLayerController;
   fpsMonitor: FPSMonitor;
   setArcs: (arcs: ArcItem[]) => void;
   destroy: () => void;
@@ -154,6 +157,9 @@ export function createGlobe(
   // Events
   const detachEvents = attachGlobeEvents(globe as unknown as GlobeEventsDelegate, store, container);
 
+  // Spherical Route Layer Controller (Orthodrome vs Loxodrome)
+  const routes = new RouteLayerController(globe as unknown as GlobeRouteDelegate, store);
+
   // ResizeObserver with DPR protection
   const resizeObserver = new ResizeObserver(entries => {
     for (const entry of entries) {
@@ -175,6 +181,7 @@ export function createGlobe(
     bloom,
     clouds,
     quality,
+    routes,
     fpsMonitor,
     setArcs: (arcs: ArcItem[]) => {
       try {
@@ -191,6 +198,7 @@ export function createGlobe(
       atmosphere.destroy();
       clouds.destroy();
       quality.destroy();
+      routes.destroy();
       fpsMonitor.stop();
       // Remove globe canvas
       const canvas = container.querySelector('canvas');

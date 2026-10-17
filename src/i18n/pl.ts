@@ -94,4 +94,21 @@ export const pl: Dictionary = {
     badgeNoviceTitle: 'Początkujący Odkrywca',
     badgeNoviceDesc: 'Świat kryje jeszcze przed Tobą wiele tajemnic – ćwicz dalej!',
   },
+  route: {
+    title: 'Porównanie tras sferycznych',
+    orthodrome: 'Ortodroma (najkrótsza droga po kuli)',
+    rhumbLine: 'Loksodroma (stały kurs / mapa Merkatora)',
+    distance: 'Dystans',
+    difference: 'Różnica',
+    explanation:
+      'Loksodroma (linia prosta na mapie Merkatora) na kuli tworzy dłuższą spiralę. Samoloty transkontynentalne latają ortodromą (łukiem koła wielkiego), oszczędzając setki kilometrów paliwa i czasu.',
+    pickStart: 'Wskaż punkt początkowy (kliknij na globusie)...',
+    pickEnd: 'Wskaż punkt docelowy (kliknij na globusie)...',
+    clear: 'Wyczyść trasę',
+    close: 'Zamknij',
+    presets: 'Popularne trasy:',
+    presetWarsawTokyo: 'Warszawa → Tokio',
+    presetLondonSf: 'Londyn → San Francisco',
+    presetNySingapore: 'Nowy Jork → Singapur',
+  },
 };

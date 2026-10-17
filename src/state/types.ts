@@ -21,6 +21,18 @@ export interface LayerState {
   topN?: number;
 }
 
+export interface RoutePoint {
+  lat: number;
+  lng: number;
+  label?: string;
+}
+
+export interface RouteComparisonState {
+  active: boolean;
+  from: RoutePoint | null;
+  to: RoutePoint | null;
+}
+
 export interface AppState {
   layers: Record<LayerId, LayerState>;
   mode: AppMode;
@@ -33,6 +45,7 @@ export interface AppState {
   selection: FeatureRef | null;
   hovered: FeatureRef | null;
   globeClick: { lat: number; lng: number } | null;
+  routeComparison: RouteComparisonState | null;
 }
 
 export type Selector<T, V> = (state: T) => V;
