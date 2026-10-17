@@ -10,10 +10,19 @@ import { loadGeoData } from '@/globe/data-loader';
 import { antipode } from '@/geo/spherical';
 
 import type { QuizMode, QuizConfig } from '@/quiz/types';
+import {
+  downloadExportFile,
+  parseAndValidateImport,
+  applyImportedData,
+  type ProgressExportPayload,
+} from '@/quiz/srs/transfer';
+import { showToast } from './toast';
+import { ImportConfirmModal } from './import-confirm-modal';
 
 export interface SidebarOptions {
   container: HTMLElement;
   store: Store<AppState>;
+  modalContainer?: HTMLElement;
   onStartQuiz?: (mode?: QuizMode, configOverride?: Partial<QuizConfig>) => void;
 }
 
@@ -64,11 +73,17 @@ export class SidebarController {
   private knowledgeMapToggle!: ToggleSwitch;
   private unsubscribe: (() => void) | null = null;
 
+  private confirmModal!: ImportConfirmModal;
+  private pendingImportPayload: ProgressExportPayload | null = null;
+  private readonly modalContainer: HTMLElement;
+
   constructor(options: SidebarOptions) {
     this.container = options.container;
     this.store = options.store;
     this.onStartQuiz = options.onStartQuiz;
+    this.modalContainer = options.modalContainer ?? document.body;
 
+    this.initConfirmModal();
     this.render();
     this.bindStore();
   }
@@ -410,10 +425,119 @@ export class SidebarController {
     toolsSection.appendChild(quizBtn);
     toolsSection.appendChild(quizReverseBtn);
     toolsSection.appendChild(srsBtn);
+
+    // Progress Export & Import buttons
+    const exportBtn = document.createElement('button');
+    exportBtn.type = 'button';
+    exportBtn.className = 'tl-tool-btn';
+    exportBtn.id = 'btn-export-progress';
+
+    const exportIconSpan = document.createElement('span');
+    exportIconSpan.className = 'tl-tool-icon';
+    exportIconSpan.appendChild(
+      parseSvg(
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+      ),
+    );
+
+    const exportLabelSpan = document.createElement('span');
+    exportLabelSpan.textContent = t('transfer.exportBtn');
+
+    exportBtn.appendChild(exportIconSpan);
+    exportBtn.appendChild(exportLabelSpan);
+    exportBtn.addEventListener('click', () => {
+      downloadExportFile();
+      showToast(t('transfer.exportSuccess'), 'success');
+    });
+
+    const importBtn = document.createElement('button');
+    importBtn.type = 'button';
+    importBtn.className = 'tl-tool-btn';
+    importBtn.id = 'btn-import-progress';
+
+    const importIconSpan = document.createElement('span');
+    importIconSpan.className = 'tl-tool-icon';
+    importIconSpan.appendChild(
+      parseSvg(
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+      ),
+    );
+
+    const importLabelSpan = document.createElement('span');
+    importLabelSpan.textContent = t('transfer.importBtn');
+
+    importBtn.appendChild(importIconSpan);
+    importBtn.appendChild(importLabelSpan);
+
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json,application/json';
+    fileInput.style.display = 'none';
+    fileInput.id = 'input-import-progress';
+
+    importBtn.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = typeof reader.result === 'string' ? reader.result : '';
+        const validation = parseAndValidateImport(text);
+        if (!validation.success || !validation.data) {
+          let errorMsg = t('transfer.errorSchemaViolation');
+          if (validation.error === 'invalid_json') {
+            errorMsg = t('transfer.errorInvalidJson');
+          } else if (validation.error === 'invalid_version') {
+            errorMsg = t('transfer.errorInvalidVersion');
+          }
+          showToast(errorMsg, 'error', 4500);
+          fileInput.value = '';
+          return;
+        }
+
+        this.pendingImportPayload = validation.data;
+        this.confirmModal.show({
+          itemCount: validation.itemCount ?? 0,
+          exportedAt: validation.data.exportedAt,
+        });
+        fileInput.value = '';
+      };
+      reader.onerror = () => {
+        showToast(t('transfer.errorReadFailed'), 'error', 4000);
+        fileInput.value = '';
+      };
+      reader.readAsText(file);
+    });
+
+    toolsSection.appendChild(exportBtn);
+    toolsSection.appendChild(importBtn);
+    toolsSection.appendChild(fileInput);
+
     root.appendChild(toolsSection);
 
     this.container.appendChild(root);
     this.syncActivePreset();
+  }
+
+  private initConfirmModal(): void {
+    this.confirmModal = new ImportConfirmModal({
+      container: this.modalContainer,
+      onConfirm: () => {
+        if (this.pendingImportPayload) {
+          const count = Object.keys(this.pendingImportPayload.srs).length;
+          applyImportedData(this.pendingImportPayload);
+          this.pendingImportPayload = null;
+          showToast(t('transfer.importSuccess', { count }), 'success');
+        }
+      },
+      onCancel: () => {
+        this.pendingImportPayload = null;
+      },
+    });
   }
 
   private createModeRow(
@@ -810,6 +934,12 @@ export class SidebarController {
     }
     for (const slider of this.layerSliders.values()) {
       slider.destroy();
+    }
+    if (this.confirmModal) {
+      this.confirmModal.hide();
+      if (this.confirmModal.element.parentElement) {
+        this.confirmModal.element.parentElement.removeChild(this.confirmModal.element);
+      }
     }
     this.container.innerHTML = '';
   }

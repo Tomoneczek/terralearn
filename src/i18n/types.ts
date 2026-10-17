@@ -249,6 +249,22 @@ export interface Dictionary {
     statsMastered: string;
     statsTotal: string;
   };
+  transfer: {
+    exportBtn: string;
+    importBtn: string;
+    exportSuccess: string;
+    importSuccess: string;
+    confirmTitle: string;
+    confirmMessage: string;
+    confirmItemsCount: string;
+    confirmButton: string;
+    cancelButton: string;
+    errorTitle: string;
+    errorInvalidJson: string;
+    errorInvalidVersion: string;
+    errorSchemaViolation: string;
+    errorReadFailed: string;
+  };
 }
 
 // Flat key path type e.g. "layers.lakes" | "sections.physical"

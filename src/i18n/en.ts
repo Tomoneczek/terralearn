@@ -250,4 +250,21 @@ export const en: Dictionary = {
     statsMastered: 'Mastered: {count}',
     statsTotal: 'Total in SRS: {count}',
   },
+  transfer: {
+    exportBtn: 'Export Progress (JSON)',
+    importBtn: 'Import Progress',
+    exportSuccess: 'Progress exported to JSON file',
+    importSuccess: 'Successfully imported progress ({count} SRS items)',
+    confirmTitle: 'Confirm Progress Import',
+    confirmMessage:
+      'Importing data will overwrite your current SRS review history and settings in this browser.',
+    confirmItemsCount: 'SRS items in file: {count}',
+    confirmButton: 'Import and Overwrite',
+    cancelButton: 'Cancel',
+    errorTitle: 'Import Error',
+    errorInvalidJson: 'The selected file is not a valid JSON document.',
+    errorInvalidVersion: 'Unsupported export file version (expected: v1).',
+    errorSchemaViolation: 'The file does not match the TerraLearn progress schema.',
+    errorReadFailed: 'Failed to read the file.',
+  },
 };

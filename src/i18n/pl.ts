@@ -250,4 +250,21 @@ export const pl: Dictionary = {
     statsMastered: 'Opanowane: {count}',
     statsTotal: 'Wszystkie w SRS: {count}',
   },
+  transfer: {
+    exportBtn: 'Eksportuj postępy (JSON)',
+    importBtn: 'Importuj postępy',
+    exportSuccess: 'Wyeksportowano postępy do pliku JSON',
+    importSuccess: 'Pomyślnie zaimportowano postępy ({count} obiektów SRS)',
+    confirmTitle: 'Potwierdź import postępów',
+    confirmMessage:
+      'Zaimportowanie danych nadpisze obecny stan powtórek SRS i ustawień w tej przeglądarce.',
+    confirmItemsCount: 'Liczba obiektów SRS w pliku: {count}',
+    confirmButton: 'Importuj i nadpisz',
+    cancelButton: 'Anuluj',
+    errorTitle: 'Błąd importu',
+    errorInvalidJson: 'Wybrany plik nie jest poprawnym dokumentem JSON.',
+    errorInvalidVersion: 'Nieobsługiwana wersja pliku eksportu (wymagana: v1).',
+    errorSchemaViolation: 'Plik nie spełnia schematu danych postępów TerraLearn.',
+    errorReadFailed: 'Nie udało się odczytać pliku.',
+  },
 };

@@ -4,12 +4,12 @@ import type { LayerId } from '@/layers';
 
 export const STORAGE_KEY = 'terralearn_state_v1';
 
-const LayerStateSchema = z.object({
+export const LayerStateSchema = z.object({
   enabled: z.boolean(),
   topN: z.number().int().positive().optional(),
 });
 
-const PersistedStateSchema = z.object({
+export const PersistedStateSchema = z.object({
   layers: z.record(z.string(), LayerStateSchema).optional(),
   theme: z.enum(['dark', 'classic']).optional(),
   dayNight: z.boolean().optional(),
