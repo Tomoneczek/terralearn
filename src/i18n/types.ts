@@ -265,6 +265,12 @@ export interface Dictionary {
     errorSchemaViolation: string;
     errorReadFailed: string;
   };
+  layout: {
+    dragHandleAria: string;
+    expandPanel: string;
+    minimizePanel: string;
+    mobileNavToggle: string;
+  };
 }
 
 // Flat key path type e.g. "layers.lakes" | "sections.physical"

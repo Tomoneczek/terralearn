@@ -146,6 +146,89 @@
   gap: var(--space-3);
 }
 
+/* Drag handle for mobile bottom sheet (hidden on desktop) */
+.panel-drag-handle {
+  display: none;
+  width: 100%;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  padding: 8px 0 4px;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.panel-drag-pill {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background-color: var(--border-default);
+  transition: background-color 0.15s ease;
+}
+
+.panel-drag-handle:hover .panel-drag-pill,
+.panel-drag-handle:focus-visible .panel-drag-pill {
+  background-color: var(--border-focus);
+}
+
+.panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.panel-header-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.panel-header-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-1);
+}
+
+/* Floating Action Button for mobile */
+.mobile-panel-fab {
+  display: none;
+  position: absolute;
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  left: var(--space-4);
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background-color: var(--c-accent-blue);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  z-index: 35;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.15s ease;
+}
+
+.mobile-panel-fab:hover {
+  transform: scale(1.06);
+}
+
+.mobile-panel-fab:active {
+  transform: scale(0.94);
+}
+
 /* Responsive Drawer for mobile/tablet */
 @media (max-width: 900px) {
   .app-root {
@@ -156,20 +239,104 @@
     display: none;
   }
 
+  .panel-drag-handle {
+    display: flex;
+  }
+
+  .panel-header-btn {
+    display: flex;
+  }
+
   .panel {
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 60vh;
+    margin-left: 0 !important;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     border-right: none;
-    border-top: 1px solid var(--border-subtle);
-    box-shadow: var(--shadow-lg);
+    border-top: 1px solid var(--border-default);
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
+    background-color: var(--bg-1);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    transition:
+      height 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    overscroll-behavior-y: contain;
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  .panel[data-snap='peek'] {
+    height: 56px;
+    overflow: hidden;
+  }
+
+  .panel[data-snap='peek'] .panel-content {
+    display: none;
+  }
+
+  .panel[data-snap='half'] {
+    height: 45vh;
+    overflow-y: auto;
+  }
+
+  .panel[data-snap='full'] {
+    height: 85vh;
+    overflow-y: auto;
   }
 
   .panel-collapsed .panel {
     margin-left: 0;
     transform: translateY(100%);
+  }
+
+  /* Show FAB when bottom sheet is in peek or collapsed */
+  .panel[data-snap='peek'] ~ .mobile-panel-fab,
+  .panel-collapsed ~ .mobile-panel-fab {
+    display: flex;
+  }
+
+  /* Responsive Search and Toolbar Overlay */
+  .overlay-top-left {
+    top: var(--space-3);
+    left: var(--space-3);
+  }
+
+  .overlay-top-right {
+    top: var(--space-3);
+    right: var(--space-3);
+  }
+
+  .tl-search-box {
+    width: 200px;
+    max-width: calc(100vw - 84px);
+  }
+
+  .tl-search-box:focus-within {
+    width: calc(100vw - 84px);
+  }
+
+  .tl-search-kbd {
+    display: none;
+  }
+
+  /* Touch targets minimum 44px for WCAG 2.5.5 */
+  .tl-tool-btn {
+    min-height: 44px;
+  }
+
+  .tl-layer-card {
+    min-height: 44px;
+  }
+
+  .tl-preset-btn {
+    min-height: 44px;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .tl-toolbar-btn {
+    width: 44px;
+    height: 44px;
   }
 }

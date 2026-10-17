@@ -267,4 +267,10 @@ export const en: Dictionary = {
     errorSchemaViolation: 'The file does not match the TerraLearn progress schema.',
     errorReadFailed: 'Failed to read the file.',
   },
+  layout: {
+    dragHandleAria: 'Bottom sheet handle (drag or click to resize)',
+    expandPanel: 'Expand panel',
+    minimizePanel: 'Minimize panel',
+    mobileNavToggle: 'Toggle bottom sheet',
+  },
 };

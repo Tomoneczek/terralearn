@@ -267,4 +267,10 @@ export const pl: Dictionary = {
     errorSchemaViolation: 'Plik nie spełnia schematu danych postępów TerraLearn.',
     errorReadFailed: 'Nie udało się odczytać pliku.',
   },
+  layout: {
+    dragHandleAria: 'Uchwyt panelu bocznego (przeciągnij lub kliknij, aby zmienić rozmiar)',
+    expandPanel: 'Rozwiń panel',
+    minimizePanel: 'Zminimalizuj panel',
+    mobileNavToggle: 'Przełącz panel dolny',
+  },
 };
