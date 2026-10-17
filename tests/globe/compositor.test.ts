@@ -393,15 +393,15 @@ describe('LayerCompositor', () => {
     compositor.destroy();
   });
 
-  it('configures transition durations to 0 to prevent looping fade animations', () => {
+  it('configures safe entry transition durations for newly added items', () => {
     const store = createStore<AppState>(createInitialState());
     const compositor = new LayerCompositor(mockGlobe, store);
 
-    expect(mockGlobe.polygonsTransitionDuration).toHaveBeenCalledWith(0);
+    expect(mockGlobe.polygonsTransitionDuration).toHaveBeenCalledWith(400);
     expect(mockGlobe.labelsTransitionDuration).toHaveBeenCalledWith(0);
     expect(mockGlobe.pathsTransitionDuration).toHaveBeenCalledWith(0);
-    expect(mockGlobe.pathTransitionDuration).toHaveBeenCalledWith(0);
-    expect(mockGlobe.pointsTransitionDuration).toHaveBeenCalledWith(0);
+    expect(mockGlobe.pathTransitionDuration).toHaveBeenCalledWith(400);
+    expect(mockGlobe.pointsTransitionDuration).toHaveBeenCalledWith(400);
 
     compositor.destroy();
   });

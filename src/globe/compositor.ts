@@ -29,11 +29,22 @@ export interface PathItem {
   points: [number, number][];
 }
 
+export interface RingItem {
+  lat: number;
+  lng: number;
+  maxRadius?: number;
+  propagationSpeed?: number;
+  repeatPeriod?: number;
+  altitude?: number;
+  color?: string | ((t: number) => string);
+}
+
 export interface GlobeCompositorTarget {
   polygonsData(data: GeoFeature[]): this;
   pathsData(data: PathItem[]): this;
   pointsData(data: GeoFeature[]): this;
   labelsData(data: GeoFeature[]): this;
+  ringsData?(data: RingItem[]): this;
 
   polygonCapColor(fn: (d: GeoFeature) => string): this;
   polygonSideColor(fn: (d: GeoFeature) => string): this;
@@ -68,6 +79,14 @@ export interface GlobeCompositorTarget {
   labelAltitude(fn: (d: GeoFeature) => number): this;
   labelColor(fn: (d: GeoFeature) => string): this;
   labelsTransitionDuration?(ms: number): this;
+
+  ringLat?(fn: (d: RingItem) => number): this;
+  ringLng?(fn: (d: RingItem) => number): this;
+  ringAltitude?(fn: (d: RingItem) => number): this;
+  ringColor?(fn: (d: RingItem) => string | ((t: number) => string)): this;
+  ringMaxRadius?(fn: (d: RingItem) => number): this;
+  ringPropagationSpeed?(fn: (d: RingItem) => number): this;
+  ringRepeatPeriod?(fn: (d: RingItem) => number): this;
 }
 
 export class LayerCompositor {
@@ -156,12 +175,21 @@ export class LayerCompositor {
   }
 
   private configureAccessors(): void {
-    // Disable slow entry transition pulses on style updates
-    this.globe.polygonsTransitionDuration?.(0);
+    // Smooth entry transitions for newly added items (cached items do not re-animate)
+    this.globe.polygonsTransitionDuration?.(400);
     this.globe.labelsTransitionDuration?.(0);
     this.globe.pathsTransitionDuration?.(0);
-    this.globe.pathTransitionDuration?.(0);
-    this.globe.pointsTransitionDuration?.(0);
+    this.globe.pathTransitionDuration?.(400);
+    this.globe.pointsTransitionDuration?.(400);
+
+    // Rings (Selection Pulsing Halo)
+    this.globe.ringLat?.(d => d.lat);
+    this.globe.ringLng?.(d => d.lng);
+    this.globe.ringAltitude?.(d => d.altitude ?? 0.015);
+    this.globe.ringColor?.(d => d.color ?? 'rgba(255, 215, 60, 0.8)');
+    this.globe.ringMaxRadius?.(d => d.maxRadius ?? 3.5);
+    this.globe.ringPropagationSpeed?.(d => d.propagationSpeed ?? 2.5);
+    this.globe.ringRepeatPeriod?.(d => d.repeatPeriod ?? 1000);
 
     // Polygons
     this.globe.polygonCapColor(this.polygonCapColorAccessor);
@@ -241,18 +269,43 @@ export class LayerCompositor {
     );
     this.unsubs.push(unsubLayers);
 
-    // 2. Dynamic style refresh (hover/select) without re-loading data or looping animations
+    // 2. Dynamic style refresh (hover/select) and selection halo without re-loading data
     const unsubInteractions = this.store.subscribe(
       s => ({
-        sel: s.selection?.id,
+        sel: s.selection,
         hov: s.hovered?.id,
       }),
       () => {
         this.refreshDynamicStyles();
+        this.updateSelectionHalo();
       },
-      (a, b) => a.sel === b.sel && a.hov === b.hov,
+      (a, b) =>
+        a.sel?.id === b.sel?.id &&
+        a.sel?.lat === b.sel?.lat &&
+        a.sel?.lng === b.sel?.lng &&
+        a.hov === b.hov,
     );
     this.unsubs.push(unsubInteractions);
+  }
+
+  public updateSelectionHalo(): void {
+    if (this.isDestroyed || !this.globe.ringsData) return;
+    const sel = this.store.get().selection;
+    if (!sel || typeof sel.lat !== 'number' || typeof sel.lng !== 'number') {
+      this.globe.ringsData([]);
+      return;
+    }
+
+    const ring: RingItem = {
+      lat: sel.lat,
+      lng: sel.lng,
+      maxRadius: 3.5,
+      propagationSpeed: 2.5,
+      repeatPeriod: 1000,
+      altitude: 0.015,
+      color: (t: number) => `rgba(255, 215, 60, ${Math.max(0, 1 - t)})`,
+    };
+    this.globe.ringsData([ring]);
   }
 
   public refreshDynamicStyles(): void {
@@ -490,5 +543,6 @@ export class LayerCompositor {
     this.lastPaths = [];
     this.lastPoints = [];
     this.lastLabels = [];
+    this.globe.ringsData?.([]);
   }
 }

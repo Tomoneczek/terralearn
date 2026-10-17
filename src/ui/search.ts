@@ -215,6 +215,11 @@ export class SearchOverlay {
         id: item.id,
         layerId: item.layerId,
         kind: item.kind,
+        name: item.name_pl,
+        name_pl: item.name_pl,
+        name_en: item.name_en,
+        lat: item.lat,
+        lng: item.lng,
       },
     });
 

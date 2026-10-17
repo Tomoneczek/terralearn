@@ -231,6 +231,52 @@ describe('Layer Styling and Altitude Layering', () => {
       expect(getPathStroke(mockRiver, getLayer('rivers'))).toBe(1.5);
       expect(getPathAltitude()).toBe(0.008);
     });
+
+    it('scales river stroke width and color brightness by length rank', () => {
+      const longRiver: GeoFeature = {
+        type: 'Feature',
+        properties: {
+          id: 'r-long',
+          layerId: 'rivers',
+          kind: 'river',
+          name_pl: 'Amazonka',
+          name_en: 'Amazon',
+          rank: { length: 6400, order: 1 },
+        },
+        geometry: { type: 'LineString', coordinates: [] },
+      };
+
+      const shortRiver: GeoFeature = {
+        type: 'Feature',
+        properties: {
+          id: 'r-short',
+          layerId: 'rivers',
+          kind: 'river',
+          name_pl: 'Krótka Rzeka',
+          name_en: 'Short River',
+          rank: { length: 900, order: 48 },
+        },
+        geometry: { type: 'LineString', coordinates: [] },
+      };
+
+      const longStroke = getPathStroke(longRiver, getLayer('rivers'));
+      const shortStroke = getPathStroke(shortRiver, getLayer('rivers'));
+      expect(longStroke).toBeGreaterThan(shortStroke);
+      expect(longStroke).toBeGreaterThanOrEqual(2.2);
+      expect(shortStroke).toBeLessThanOrEqual(1.2);
+
+      const longColor = getPathColor(longRiver, false, false, getLayer('rivers'));
+      const shortColor = getPathColor(shortRiver, false, false, getLayer('rivers'));
+      // Extract lightness percentages
+      const matchLong = longColor.match(/(\d+)%\)/);
+      const matchShort = shortColor.match(/(\d+)%\)/);
+      const longL = Number(matchLong?.[1]);
+      const shortL = Number(matchShort?.[1]);
+
+      expect(longL).toBeGreaterThan(shortL);
+      expect(longL).toBeGreaterThanOrEqual(75);
+      expect(shortL).toBeLessThanOrEqual(60);
+    });
   });
 
   describe('Point and Settlement Styling', () => {

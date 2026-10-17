@@ -30,7 +30,24 @@ export interface GlobeEventsDelegate {
   onGlobeClick?(fn: (coords: { lat: number; lng: number }, event: MouseEvent) => void): this;
 }
 
-export function toFeatureRef(feat: GeoFeature): FeatureRef {
+export function toFeatureRef(
+  feat: GeoFeature,
+  fallbackCoords?: { lat: number; lng: number },
+): FeatureRef {
+  let lat = feat.properties.labelLat;
+  let lng = feat.properties.labelLng;
+
+  if (typeof lat !== 'number' || typeof lng !== 'number') {
+    if (feat.geometry.type === 'Point') {
+      const coords = feat.geometry.coordinates as [number, number];
+      lng = coords[0];
+      lat = coords[1];
+    } else if (fallbackCoords) {
+      lat = fallbackCoords.lat;
+      lng = fallbackCoords.lng;
+    }
+  }
+
   return {
     id: feat.properties.id,
     layerId: feat.properties.layerId as LayerId,
@@ -38,8 +55,8 @@ export function toFeatureRef(feat: GeoFeature): FeatureRef {
     name: feat.properties.name_pl,
     name_pl: feat.properties.name_pl,
     name_en: feat.properties.name_en,
-    lat: feat.properties.labelLat,
-    lng: feat.properties.labelLng,
+    lat,
+    lng,
   };
 }
 
@@ -48,10 +65,10 @@ export function attachGlobeEvents(
   store: Store<AppState>,
   container?: HTMLElement,
 ): () => void {
-  const handleFeatureClick = (obj: object) => {
+  const handleFeatureClick = (obj: object, coords?: { lat: number; lng: number }) => {
     const feat = obj as GeoFeature;
     if (feat?.properties?.id) {
-      store.set({ selection: toFeatureRef(feat) });
+      store.set({ selection: toFeatureRef(feat, coords) });
     }
   };
 
@@ -69,13 +86,13 @@ export function attachGlobeEvents(
     store.set({ hovered: null });
   };
 
-  globe.onPolygonClick?.(obj => handleFeatureClick(obj));
+  globe.onPolygonClick?.((obj, _event, coords) => handleFeatureClick(obj, coords));
   globe.onPolygonHover?.(obj => handleFeatureHover(obj));
 
-  globe.onPathClick?.(obj => handleFeatureClick(obj));
+  globe.onPathClick?.((obj, _event, coords) => handleFeatureClick(obj, coords));
   globe.onPathHover?.(obj => handleFeatureHover(obj));
 
-  globe.onPointClick?.(obj => handleFeatureClick(obj));
+  globe.onPointClick?.((obj, _event, coords) => handleFeatureClick(obj, coords));
   globe.onPointHover?.(obj => handleFeatureHover(obj));
 
   globe.onGlobeClick?.(coords => {

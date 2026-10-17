@@ -99,10 +99,10 @@ export function getPolygonStrokeColor(
 }
 
 /**
- * Calculates river/path color with glowing effects on hover/select.
+ * Calculates river/path color with glowing effects on hover/select and brightness scaled by rank.
  */
 export function getPathColor(
-  _feat: GeoFeature,
+  feat: GeoFeature,
   isSelected: boolean,
   isHovered: boolean,
   def?: LayerDef,
@@ -113,14 +113,48 @@ export function getPathColor(
   if (isHovered) {
     return 'hsl(180, 100%, 85%)';
   }
-  return def?.style?.color || 'hsl(190, 100%, 65%)';
+
+  const baseColor = def?.style?.color;
+  const len = feat.properties?.rank?.length;
+  const order = feat.properties?.rank?.order;
+
+  let lightness = 65;
+  if (typeof len === 'number' && len > 0) {
+    const factor = Math.max(0, Math.min(1, (len - 800) / (5500 - 800)));
+    lightness = Math.round(55 + factor * 22); // 55% to 77%
+  } else if (typeof order === 'number' && order > 0) {
+    const factor = Math.max(0, Math.min(1, (50 - order) / 49));
+    lightness = Math.round(55 + factor * 22);
+  }
+
+  if (baseColor && baseColor.startsWith('hsl(')) {
+    return baseColor.replace(/,\s*\d+%\)/, `, ${lightness}%)`);
+  }
+
+  return `hsl(190, 100%, ${lightness}%)`;
 }
 
 /**
- * Calculates river stroke width.
+ * Calculates river stroke width scaled by length rank.
+ * Major world rivers (Amazon, Nile, Parana > 4000 km) receive stroke up to ~2.3px.
+ * Shorter tributaries receive finer stroke (~1.1px).
  */
-export function getPathStroke(_feat: GeoFeature, def?: LayerDef): number {
-  return def?.style?.strokeWidth ?? 1.5;
+export function getPathStroke(feat: GeoFeature, def?: LayerDef): number {
+  const baseStroke = def?.style?.strokeWidth ?? 1.5;
+  const len = feat.properties?.rank?.length;
+  const order = feat.properties?.rank?.order;
+
+  if (typeof len === 'number' && len > 0) {
+    const factor = Math.max(0, Math.min(1, (len - 800) / (5500 - 800)));
+    return Math.round((1.1 + factor * 1.2) * 10) / 10;
+  }
+
+  if (typeof order === 'number' && order > 0) {
+    const factor = Math.max(0, Math.min(1, (50 - order) / 49));
+    return Math.round((1.1 + factor * 1.2) * 10) / 10;
+  }
+
+  return baseStroke;
 }
 
 /**
