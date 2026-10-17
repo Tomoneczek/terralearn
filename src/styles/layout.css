@@ -37,13 +37,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-2);
+  color: var(--text-1);
+  background: transparent;
+  border: none;
+  cursor: pointer;
   transition: all var(--dur-fast) var(--ease-out);
 }
 
 .rail-btn:hover {
   background-color: var(--bg-hover);
-  color: var(--text-1);
+  color: var(--c-accent-blue);
 }
 
 .rail-btn.active {

@@ -185,12 +185,27 @@ export class AtmosphereController {
   }
 
   private bindStore(): void {
-    this.unsubscribe = this.store.subscribe(
+    if (this.mesh && this.store.get().theme === 'classic') {
+      this.mesh.visible = false;
+    }
+
+    const un1 = this.store.subscribe(
       s => s.dayNight,
       dayNight => {
         this.setDayNight(dayNight);
       },
     );
+    const un2 = this.store.subscribe(
+      s => s.theme,
+      theme => {
+        this.setVisible(theme !== 'classic');
+      },
+    );
+
+    this.unsubscribe = () => {
+      un1();
+      un2();
+    };
   }
 
   public destroy(): void {

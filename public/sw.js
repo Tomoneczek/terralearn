@@ -14,6 +14,9 @@ const PRECACHE_ASSETS = [
   'icons/icon-maskable.svg',
   'textures/water-mask.png',
   'textures/earth-dark.jpg',
+  'textures/earth-day.jpg',
+  'textures/earth-atlas.jpg',
+  'textures/clouds.png',
   'data/search-index.json',
 ];
 

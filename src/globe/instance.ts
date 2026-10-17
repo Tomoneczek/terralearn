@@ -61,20 +61,44 @@ export function createGlobe(
   const atmosphereColor = options.atmosphereColor ?? 'hsl(215, 80%, 65%)';
   const atmosphereAltitude = options.atmosphereAltitude ?? 0.18;
 
+  const initialTheme = store.get().theme;
   globe
     .globeImageUrl(earthTexture)
-    .backgroundImageUrl(backgroundTexture)
+    .backgroundImageUrl(initialTheme === 'classic' ? '' : backgroundTexture)
     .atmosphereColor(atmosphereColor)
     .atmosphereAltitude(atmosphereAltitude)
     .showAtmosphere(false);
 
+  try {
+    (globe as unknown as { backgroundColor?(color: string): void }).backgroundColor?.(
+      'rgba(0,0,0,0)',
+    );
+  } catch {
+    // Fallback
+  }
+
+  store.subscribe(
+    s => s.theme,
+    theme => {
+      try {
+        if (theme === 'classic') {
+          globe.backgroundImageUrl('');
+        } else {
+          globe.backgroundImageUrl(backgroundTexture);
+        }
+      } catch {
+        // Fallback in test environment
+      }
+    },
+  );
+
   // Day/Night Terminator Controller & Material
   const dayNight = new DayNightController(store, {
     baseTextureUrl: earthTexture,
-    dayTextureUrl: resolveAssetUrl('/textures/earth-day.jpg'),
+    dayTextureUrl: '/textures/earth-day.jpg',
     nightTextureUrl: options.nightTexture,
-    waterMaskUrl: resolveAssetUrl('/textures/water-mask.png'),
-    atlasTextureUrl: resolveAssetUrl('/textures/earth-atlas.jpg'),
+    waterMaskUrl: '/textures/water-mask.png',
+    atlasTextureUrl: '/textures/earth-atlas.jpg',
   });
 
   try {
@@ -143,7 +167,7 @@ export function createGlobe(
 
   const clouds = new CloudsController(globeScene, store, {
     enabled: options.enableClouds ?? true,
-    cloudsTextureUrl: resolveAssetUrl('/textures/clouds.png'),
+    cloudsTextureUrl: '/textures/clouds.png',
   });
 
   // Quality Controller managing presets and FPS degradation

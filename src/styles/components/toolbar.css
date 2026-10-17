@@ -22,14 +22,14 @@
   border-radius: var(--radius-sm);
   background: transparent;
   border: none;
-  color: var(--text-2);
+  color: var(--text-1);
   cursor: pointer;
   transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tl-toolbar-btn:hover {
   background-color: var(--bg-hover);
-  color: var(--text-1);
+  color: var(--c-accent-blue);
 }
 
 .tl-toolbar-btn.active {

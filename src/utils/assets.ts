@@ -12,6 +12,18 @@ export function resolveAssetUrl(path: string): string {
 
   const base = import.meta.env.BASE_URL || '/';
   const normalizedBase = base.endsWith('/') ? base : `${base}/`;
+
+  // Idempotency: if path is already prefixed with base, do not duplicate
+  if (normalizedBase !== '/') {
+    if (path.startsWith(normalizedBase)) {
+      return path;
+    }
+    const baseWithoutLeadingSlash = normalizedBase.replace(/^\//, '');
+    if (path.startsWith(baseWithoutLeadingSlash)) {
+      return `/${path}`;
+    }
+  }
+
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
 
   return `${normalizedBase}${cleanPath}`;

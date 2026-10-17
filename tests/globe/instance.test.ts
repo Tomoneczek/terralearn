@@ -6,6 +6,7 @@ import { createGlobe } from '@/globe/instance';
 const mockGlobeInstance: any = {
   globeImageUrl: vi.fn().mockReturnThis(),
   backgroundImageUrl: vi.fn().mockReturnThis(),
+  backgroundColor: vi.fn().mockReturnThis(),
   atmosphereColor: vi.fn().mockReturnThis(),
   atmosphereAltitude: vi.fn().mockReturnThis(),
   showAtmosphere: vi.fn().mockReturnThis(),

@@ -52,4 +52,22 @@ describe('resolveAssetUrl', () => {
       'blob:http://localhost:3000/abc-123',
     );
   });
+
+  it('is idempotent and prevents duplicate base URL when called repeatedly', () => {
+    vi.stubEnv('BASE_URL', '/terralearn/');
+
+    const once = resolveAssetUrl('/textures/earth-day.jpg');
+    expect(once).toBe('/terralearn/textures/earth-day.jpg');
+
+    const twice = resolveAssetUrl(once);
+    expect(twice).toBe('/terralearn/textures/earth-day.jpg');
+
+    const thrice = resolveAssetUrl(twice);
+    expect(thrice).toBe('/terralearn/textures/earth-day.jpg');
+
+    // Also handles already prefixed path without leading slash
+    expect(resolveAssetUrl('terralearn/textures/clouds.png')).toBe(
+      '/terralearn/textures/clouds.png',
+    );
+  });
 });
