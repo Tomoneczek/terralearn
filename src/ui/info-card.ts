@@ -1,7 +1,8 @@
 import type { Store, AppState } from '@/state/types';
+import type { LayerId } from '@/layers';
 import { resolveAssetUrl } from '@/utils/assets';
-import { t } from '@/i18n';
-import type { ObjectFacts } from '../../scripts/data/buildSearchAndFacts';
+import { t, setLocale, getLocale } from '@/i18n';
+import type { ObjectFacts, GeographicRelationItem } from '../../scripts/data/buildSearchAndFacts';
 
 export interface InfoCardOptions {
   container: HTMLElement;
@@ -85,9 +86,14 @@ export class InfoCard {
   }
 
   private renderContent(id: string): void {
+    const locale = this.store.get().locale ?? 'pl';
+    if (getLocale() !== locale) {
+      setLocale(locale);
+    }
+
     this.element.innerHTML = '';
     const facts = this.factsCache?.[id];
-    const isEn = this.store.get().locale === 'en';
+    const isEn = locale === 'en';
 
     // Card Header
     const header = document.createElement('header');
@@ -185,6 +191,116 @@ export class InfoCard {
       compBox.appendChild(icon);
       compBox.appendChild(compText);
       this.element.appendChild(compBox);
+    }
+
+    // Geographic Relations
+    if (facts?.relations) {
+      const rel = facts.relations;
+      const groups: { title: string; items: GeographicRelationItem[] }[] = [];
+
+      // 1. Capital city
+      if (rel.capital) {
+        groups.push({
+          title: t('card.capitalCity'),
+          items: [rel.capital],
+        });
+      }
+
+      // 2. Countries (flows through, located in, or country)
+      if (rel.countries && rel.countries.length > 0) {
+        let title = t('card.locatedIn');
+        if (facts.kind === 'river') {
+          title = t('card.flowsThrough');
+        } else if (facts.kind === 'capital' || facts.kind === 'megacity' || facts.kind === 'peak') {
+          title = t('card.country');
+        }
+        groups.push({
+          title,
+          items: rel.countries,
+        });
+      }
+
+      // 3. Mountain range
+      if (rel.mountainRange) {
+        groups.push({
+          title: t('card.mountainRange'),
+          items: [rel.mountainRange],
+        });
+      }
+
+      // 4. Neighbors / borders with
+      if (rel.neighbors && rel.neighbors.length > 0) {
+        groups.push({
+          title: t('card.bordersWith'),
+          items: rel.neighbors,
+        });
+      }
+
+      if (groups.length > 0) {
+        const relationsSection = document.createElement('section');
+        relationsSection.className = 'tl-card-relations';
+        relationsSection.setAttribute('aria-label', t('card.relationsTitle'));
+
+        for (const group of groups) {
+          const groupEl = document.createElement('div');
+          groupEl.className = 'tl-relation-group';
+
+          const groupTitle = document.createElement('span');
+          groupTitle.className = 'tl-relation-group-title';
+          groupTitle.textContent = group.title;
+          groupEl.appendChild(groupTitle);
+
+          const chipsContainer = document.createElement('div');
+          chipsContainer.className = 'tl-relation-chips';
+
+          for (const item of group.items) {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'tl-relation-chip';
+            chip.dataset.id = item.id;
+            chip.dataset.layer = item.layerId;
+
+            const itemName = isEn ? item.name_en || item.name_pl : item.name_pl || item.name_en;
+            chip.setAttribute('aria-label', `${group.title}: ${itemName}`);
+
+            const dot = document.createElement('span');
+            dot.className = 'tl-relation-dot';
+            dot.dataset.layer = item.layerId;
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'tl-relation-name';
+            nameSpan.textContent = itemName;
+
+            chip.appendChild(dot);
+            chip.appendChild(nameSpan);
+
+            chip.addEventListener('click', () => {
+              this.store.set({
+                ...this.store.get(),
+                selection: {
+                  id: item.id,
+                  layerId: item.layerId as LayerId,
+                  kind: item.kind,
+                  lat: item.lat,
+                  lng: item.lng,
+                },
+              });
+              if (this.onFlyTo) {
+                this.onFlyTo();
+              } else {
+                window.dispatchEvent(new CustomEvent('tl-center-selected'));
+              }
+            });
+
+            chipsContainer.appendChild(chip);
+          }
+
+          groupEl.appendChild(chipsContainer);
+          relationsSection.appendChild(groupEl);
+        }
+
+        this.element.appendChild(relationsSection);
+      }
     }
 
     // Actions

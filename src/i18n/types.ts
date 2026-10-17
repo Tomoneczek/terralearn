@@ -81,6 +81,13 @@ export interface Dictionary {
     scaleComparison: string;
     showOnGlobe: string;
     close: string;
+    relationsTitle: string;
+    flowsThrough: string;
+    locatedIn: string;
+    bordersWith: string;
+    capitalCity: string;
+    mountainRange: string;
+    country: string;
   };
   search: {
     noResults: string;

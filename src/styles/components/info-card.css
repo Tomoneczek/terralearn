@@ -149,3 +149,93 @@
   border-color: var(--c-accent-blue);
   color: var(--c-accent-blue);
 }
+
+/* Geographic Relations */
+.tl-card-relations {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: 2px;
+}
+
+.tl-relation-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.tl-relation-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tl-relation-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.tl-relation-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  padding: 4px 10px;
+  color: var(--text-1);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.2;
+  transition: all 0.15s var(--ease-out);
+}
+
+.tl-relation-chip:hover {
+  background: var(--bg-hover);
+  border-color: var(--c-accent-blue);
+  color: var(--c-accent-blue);
+  transform: translateY(-1px);
+}
+
+.tl-relation-chip:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}
+
+.tl-relation-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--c-accent-blue);
+  flex-shrink: 0;
+}
+
+.tl-relation-dot[data-layer='countriesTopN'] {
+  background-color: var(--c-border);
+}
+
+.tl-relation-dot[data-layer='capitals'],
+.tl-relation-dot[data-layer='megacities'] {
+  background-color: var(--c-capital);
+}
+
+.tl-relation-dot[data-layer='rivers'],
+.tl-relation-dot[data-layer='lakes'],
+.tl-relation-dot[data-layer='marine'] {
+  background-color: var(--c-water);
+}
+
+.tl-relation-dot[data-layer='mountains'],
+.tl-relation-dot[data-layer='peaks'] {
+  background-color: var(--c-mountain);
+}
+
+.tl-relation-dot[data-layer='deserts'],
+.tl-relation-dot[data-layer='landforms'] {
+  background-color: var(--c-desert);
+}

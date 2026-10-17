@@ -79,6 +79,13 @@ export const pl: Dictionary = {
     scaleComparison: 'Porównanie wielkości',
     showOnGlobe: 'Pokaż na globusie',
     close: 'Zamknij',
+    relationsTitle: 'Relacje geograficzne',
+    flowsThrough: 'Przepływa przez',
+    locatedIn: 'Położenie w państwach',
+    bordersWith: 'Graniczy z',
+    capitalCity: 'Stolica państwa',
+    mountainRange: 'Pasmo górskie',
+    country: 'Kraj',
   },
   search: {
     noResults: 'Brak wyników',
