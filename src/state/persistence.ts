@@ -17,6 +17,7 @@ const PersistedStateSchema = z.object({
   quality: z.enum(['auto', 'low', 'medium', 'high']).optional(),
   graticule: z.enum(['off', 'major', '15deg']).optional(),
   hiddenLabels: z.boolean().optional(),
+  knowledgeMap: z.boolean().optional(),
 });
 
 export type PersistedState = z.infer<typeof PersistedStateSchema>;
@@ -59,6 +60,7 @@ export function savePersistedState(state: AppState): void {
       quality: state.quality,
       graticule: state.graticule,
       hiddenLabels: state.hiddenLabels,
+      knowledgeMap: state.knowledgeMap,
     };
 
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
@@ -92,6 +94,7 @@ export function applyPersistedState(
     quality: persisted.quality ?? baseState.quality,
     graticule: persisted.graticule ?? baseState.graticule,
     hiddenLabels: persisted.hiddenLabels ?? baseState.hiddenLabels,
+    knowledgeMap: persisted.knowledgeMap ?? baseState.knowledgeMap,
   };
 }
 

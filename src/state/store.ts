@@ -13,6 +13,7 @@ export function createInitialState(): AppState {
     graticule: 'off',
     hiddenLabels: false,
     hideSelectionLabel: false,
+    knowledgeMap: false,
     selection: null,
     hovered: null,
     globeClick: null,

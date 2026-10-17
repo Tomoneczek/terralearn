@@ -61,6 +61,7 @@ export class SidebarController {
   private graticuleSelect!: HTMLSelectElement;
   private themeSelect!: HTMLSelectElement;
   private learnToggle!: ToggleSwitch;
+  private knowledgeMapToggle!: ToggleSwitch;
   private unsubscribe: (() => void) | null = null;
 
   constructor(options: SidebarOptions) {
@@ -147,6 +148,18 @@ export class SidebarController {
     );
     this.learnToggle = learnCard.toggle;
     modesSection.appendChild(learnCard.card);
+
+    // Knowledge Mastery Map toggle
+    const knowledgeMapCard = this.createModeRow(
+      t('modes.knowledgeMap'),
+      'hsl(142, 71%, 45%)',
+      this.store.get().knowledgeMap ?? false,
+      checked => {
+        this.store.set({ ...this.store.get(), knowledgeMap: checked });
+      },
+    );
+    this.knowledgeMapToggle = knowledgeMapCard.toggle;
+    modesSection.appendChild(knowledgeMapCard.card);
 
     root.appendChild(modesSection);
 
@@ -730,6 +743,7 @@ export class SidebarController {
         graticule: s.graticule,
         theme: s.theme,
         hiddenLabels: s.hiddenLabels,
+        knowledgeMap: s.knowledgeMap,
       }),
       state => {
         // Sync dayNight
@@ -755,6 +769,9 @@ export class SidebarController {
 
         // Sync hiddenLabels
         this.learnToggle.setChecked(state.hiddenLabels, false);
+
+        // Sync knowledgeMap
+        this.knowledgeMapToggle.setChecked(state.knowledgeMap ?? false, false);
 
         // Sync layers
         for (const [id, toggle] of this.layerToggles.entries()) {

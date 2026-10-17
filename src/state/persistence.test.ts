@@ -18,6 +18,7 @@ describe('State Persistence', () => {
     state.dayNight = false;
     state.quality = 'low';
     state.graticule = '15deg';
+    state.knowledgeMap = true;
     state.layers.lakes.enabled = false;
 
     savePersistedState(state);
@@ -28,6 +29,7 @@ describe('State Persistence', () => {
     expect(loaded?.dayNight).toBe(false);
     expect(loaded?.quality).toBe('low');
     expect(loaded?.graticule).toBe('15deg');
+    expect(loaded?.knowledgeMap).toBe(true);
     expect(loaded?.layers?.lakes?.enabled).toBe(false);
   });
 
@@ -56,6 +58,7 @@ describe('State Persistence', () => {
       dayNight: false,
       quality: 'medium' as const,
       graticule: 'major' as const,
+      knowledgeMap: true,
       layers: {
         lakes: { enabled: false, topN: 35 },
       },
@@ -66,6 +69,7 @@ describe('State Persistence', () => {
     expect(merged.dayNight).toBe(false);
     expect(merged.quality).toBe('medium');
     expect(merged.graticule).toBe('major');
+    expect(merged.knowledgeMap).toBe(true);
     expect(merged.layers.lakes.enabled).toBe(false);
     expect(merged.layers.lakes.topN).toBe(35);
     // Other layers remain untouched

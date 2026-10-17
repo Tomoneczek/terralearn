@@ -31,6 +31,7 @@ export const en: Dictionary = {
     themeDark: 'Satellite (Dark)',
     themeClassic: 'School Atlas (Light)',
     learn: 'Study mode (hide labels)',
+    knowledgeMap: 'Knowledge Mastery Map',
   },
   layers: {
     borders: 'Country borders',
@@ -237,5 +238,16 @@ export const en: Dictionary = {
     explanation:
       'If you dug straight through Earth’s center, only ~4% of points land on dry land! From most of Europe or North America, you end up deep in the Pacific Ocean.',
     pickHint: 'Click anywhere on the globe to check its antipode.',
+  },
+  knowledgeMap: {
+    title: 'Knowledge Mastery Map',
+    legendTitle: 'Mastery Status (SRS)',
+    statusMastered: 'Mastered',
+    statusLearning: 'In progress',
+    statusDue: 'Due for review',
+    statusDifficult: 'Difficult / Mistakes',
+    statusNew: 'Not started',
+    statsMastered: 'Mastered: {count}',
+    statsTotal: 'Total in SRS: {count}',
   },
 };

@@ -33,6 +33,7 @@ export interface Dictionary {
     themeDark: string;
     themeClassic: string;
     learn: string;
+    knowledgeMap: string;
   };
   layers: {
     borders: string;
@@ -236,6 +237,17 @@ export interface Dictionary {
     flyToSource: string;
     explanation: string;
     pickHint: string;
+  };
+  knowledgeMap: {
+    title: string;
+    legendTitle: string;
+    statusMastered: string;
+    statusLearning: string;
+    statusDue: string;
+    statusDifficult: string;
+    statusNew: string;
+    statsMastered: string;
+    statsTotal: string;
   };
 }
 

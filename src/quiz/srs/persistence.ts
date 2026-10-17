@@ -46,6 +46,7 @@ export function saveSrsState(state: SrsState): void {
   if (typeof window === 'undefined' || !window.localStorage) return;
   try {
     window.localStorage.setItem(SRS_STORAGE_KEY, JSON.stringify(state));
+    window.dispatchEvent(new CustomEvent('tl-srs-updated'));
   } catch {
     // Ignore quota or private mode errors
   }
@@ -69,6 +70,7 @@ export function clearSrsState(): void {
   if (typeof window !== 'undefined' && window.localStorage) {
     try {
       window.localStorage.removeItem(SRS_STORAGE_KEY);
+      window.dispatchEvent(new CustomEvent('tl-srs-updated'));
     } catch {
       // Ignore
     }

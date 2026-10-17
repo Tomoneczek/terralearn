@@ -1,5 +1,7 @@
 import type { GeoFeature } from '@/globe/data-loader';
 import type { LayerDef, LayerId } from './types';
+import type { SrsState, SrsItem } from '@/quiz/srs/types';
+import { getItemStatus } from '@/quiz/srs/leitner';
 
 /**
  * Calculates 3D polygon altitude for Globe.gl to prevent Z-fighting and provide
@@ -312,4 +314,93 @@ export function getPointAltitude(feat: GeoFeature): number {
     return 0.026;
   }
   return 0.01;
+}
+
+export const SRS_STATUS_COLORS = {
+  mastered: {
+    fill: 'hsla(142, 71%, 45%, 0.65)',
+    stroke: 'hsl(142, 76%, 55%)',
+    point: 'hsl(142, 71%, 48%)',
+    path: 'hsl(142, 76%, 60%)',
+  },
+  learning: {
+    fill: 'hsla(199, 89%, 48%, 0.55)',
+    stroke: 'hsl(199, 89%, 60%)',
+    point: 'hsl(199, 89%, 52%)',
+    path: 'hsl(199, 89%, 65%)',
+  },
+  due: {
+    fill: 'hsla(38, 92%, 50%, 0.65)',
+    stroke: 'hsl(38, 92%, 55%)',
+    point: 'hsl(38, 92%, 52%)',
+    path: 'hsl(38, 92%, 60%)',
+  },
+  difficult: {
+    fill: 'hsla(0, 84%, 60%, 0.65)',
+    stroke: 'hsl(0, 84%, 65%)',
+    point: 'hsl(0, 84%, 60%)',
+    path: 'hsl(0, 84%, 65%)',
+  },
+} as const;
+
+export type SrsColorTarget = 'fill' | 'stroke' | 'point' | 'path';
+
+/**
+ * Resolves an SRS item from SrsState for a given GeoJSON feature ID,
+ * handling prefix variations (e.g. 'river-amazon' vs 'amazon') and standard country aliases.
+ */
+export function resolveSrsItem(featureId: string, srsState: SrsState): SrsItem | undefined {
+  if (!featureId || !srsState) return undefined;
+  if (srsState[featureId]) return srsState[featureId];
+
+  const prefixes = [
+    'river-',
+    'lake-',
+    'peak-',
+    'desert-',
+    'mountain-',
+    'capital-',
+    'megacity-',
+    'marine-',
+    'landform-',
+  ];
+  for (const prefix of prefixes) {
+    if (featureId.startsWith(prefix)) {
+      const stripped = featureId.slice(prefix.length);
+      if (srsState[stripped]) return srsState[stripped];
+    }
+  }
+
+  // Check if srsState contains a prefixed version of an un-prefixed featureId
+  for (const prefix of prefixes) {
+    const prefixed = `${prefix}${featureId}`;
+    if (srsState[prefixed]) return srsState[prefixed];
+  }
+
+  const countryAliases: Record<string, string> = {
+    FRA: 'FR',
+    FR: 'FRA',
+    DEU: 'DE',
+    DE: 'DEU',
+  };
+  const alias = countryAliases[featureId];
+  if (alias && srsState[alias]) return srsState[alias];
+
+  return undefined;
+}
+
+/**
+ * Returns the SRS mastery color for a feature, or null if unattempted/new.
+ */
+export function getSrsColor(
+  featureId: string,
+  srsState: SrsState,
+  target: SrsColorTarget,
+  now: number = Date.now(),
+): string | null {
+  const item = resolveSrsItem(featureId, srsState);
+  if (!item) return null;
+  const status = getItemStatus(item, now);
+  if (status === 'new') return null;
+  return SRS_STATUS_COLORS[status]?.[target] ?? null;
 }

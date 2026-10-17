@@ -1,6 +1,6 @@
 import type { QuizQuestion, QuizMode, QuizConfig } from './types';
 import { DEFAULT_QUESTIONS_POOL } from '@/i18n/quiz-questions';
-import { loadSrsState, getItemStatus } from './srs';
+import { loadSrsState } from './srs';
 
 export { DEFAULT_QUESTIONS_POOL };
 
@@ -50,7 +50,7 @@ export function filterQuizQuestions(
     if (matchSrs && srsFilter !== 'none' && srsState) {
       const item = srsState[q.id];
       if (srsFilter === 'due') {
-        const isDue = getItemStatus(item) === 'due';
+        const isDue = Boolean(item && Date.now() >= item.nextReview);
         if (!isDue) return false;
       } else if (srsFilter === 'difficult') {
         const isDifficult =

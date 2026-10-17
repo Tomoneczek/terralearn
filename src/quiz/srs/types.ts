@@ -1,4 +1,4 @@
-export type SrsStatus = 'new' | 'learning' | 'due' | 'mastered';
+export type SrsStatus = 'new' | 'learning' | 'due' | 'difficult' | 'mastered';
 
 export interface SrsItem {
   id: string;

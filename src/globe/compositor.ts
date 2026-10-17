@@ -13,7 +13,9 @@ import {
   getPointColor,
   getPointRadius,
   getPointAltitude,
+  getSrsColor,
 } from '@/layers';
+import { loadSrsState, type SrsState } from '@/quiz/srs';
 import { loadGeoData, type GeoFeature } from './data-loader';
 import {
   formatLabelText,
@@ -104,6 +106,7 @@ export class LayerCompositor {
   private lastPaths: PathItem[] = [];
   private lastPoints: GeoFeature[] = [];
   private lastLabels: GeoFeature[] = [];
+  private srsState: SrsState = {};
 
   // Stable accessor references so they can be re-applied on hover without recreating data
   private readonly polygonCapColorAccessor = (feat: GeoFeature): string => {
@@ -111,6 +114,11 @@ export class LayerCompositor {
     const isSelected = state.selection?.id === feat.properties.id;
     const isHovered = state.hovered?.id === feat.properties.id;
     const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
+
+    if (state.knowledgeMap && !isSelected && !isHovered) {
+      const srsColor = getSrsColor(feat.properties.id, this.srsState, 'fill');
+      if (srsColor) return srsColor;
+    }
     return getPolygonCapColor(feat, isSelected, isHovered, def);
   };
 
@@ -127,6 +135,11 @@ export class LayerCompositor {
     const isSelected = state.selection?.id === feat.properties.id;
     const isHovered = state.hovered?.id === feat.properties.id;
     const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
+
+    if (state.knowledgeMap && !isSelected && !isHovered) {
+      const srsStroke = getSrsColor(feat.properties.id, this.srsState, 'stroke');
+      if (srsStroke) return srsStroke;
+    }
     return getPolygonStrokeColor(feat, isSelected, isHovered, def);
   };
 
@@ -143,6 +156,11 @@ export class LayerCompositor {
     const isSelected = state.selection?.id === item.feature.properties.id;
     const isHovered = state.hovered?.id === item.feature.properties.id;
     const def = this.layerDefsMap.get(item.feature.properties.layerId as LayerId);
+
+    if (state.knowledgeMap && !isSelected && !isHovered) {
+      const srsPath = getSrsColor(item.feature.properties.id, this.srsState, 'path');
+      if (srsPath) return srsPath;
+    }
     return getPathColor(item.feature, isSelected, isHovered, def);
   };
 
@@ -151,6 +169,11 @@ export class LayerCompositor {
     const isSelected = state.selection?.id === feat.properties.id;
     const isHovered = state.hovered?.id === feat.properties.id;
     const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
+
+    if (state.knowledgeMap && !isSelected && !isHovered) {
+      const srsPoint = getSrsColor(feat.properties.id, this.srsState, 'point');
+      if (srsPoint) return srsPoint;
+    }
     return getPointColor(feat, isSelected, isHovered, def);
   };
 
@@ -169,6 +192,10 @@ export class LayerCompositor {
     this.globe = globe;
     this.store = store;
     this.layerDefsMap = new Map(LAYER_DEFINITIONS.map(def => [def.id, def]));
+
+    if (this.store.get().knowledgeMap) {
+      this.srsState = loadSrsState();
+    }
 
     this.configureAccessors();
     this.bindStore();
@@ -288,6 +315,29 @@ export class LayerCompositor {
         a.hideSelectionLabel === b.hideSelectionLabel,
     );
     this.unsubs.push(unsubInteractions);
+
+    // 3. Knowledge map mode toggle and SRS updates
+    const unsubKnowledge = this.store.subscribe(
+      s => s.knowledgeMap,
+      km => {
+        if (km) {
+          this.srsState = loadSrsState();
+        }
+        this.refreshDynamicStyles();
+      },
+    );
+    this.unsubs.push(unsubKnowledge);
+
+    const handleSrsUpdated = (): void => {
+      if (this.store.get().knowledgeMap) {
+        this.srsState = loadSrsState();
+        this.refreshDynamicStyles();
+      }
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('tl-srs-updated', handleSrsUpdated);
+      this.unsubs.push(() => window.removeEventListener('tl-srs-updated', handleSrsUpdated));
+    }
   }
 
   public updateSelectionHalo(): void {

@@ -84,8 +84,8 @@ describe('Leitner Box SRS Algorithm', () => {
   it('computes correct learning status based on time and box', () => {
     expect(getItemStatus(undefined, baseTime)).toBe('new');
 
-    const itemDue = calculateNextReview(undefined, 'item1', false, baseTime);
-    expect(getItemStatus(itemDue, baseTime)).toBe('due');
+    const itemDifficult = calculateNextReview(undefined, 'item1', false, baseTime);
+    expect(getItemStatus(itemDifficult, baseTime)).toBe('difficult');
 
     // Future review item in Box 2
     const itemLearning = calculateNextReview(undefined, 'item2', true, baseTime);

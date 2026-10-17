@@ -73,3 +73,37 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.tl-legend-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+.tl-legend-divider {
+  height: 1px;
+  background-color: var(--border-default);
+  margin: var(--space-1) 0;
+}
+
+.tl-legend-stats {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-1);
+  padding: 4px 8px;
+  background: var(--bg-hover);
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-1);
+}
+
+.tl-legend-stats-val {
+  color: hsl(142, 71%, 45%);
+  font-weight: 700;
+}

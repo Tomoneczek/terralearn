@@ -75,11 +75,14 @@ export function getItemStatus(item: SrsItem | undefined, now: number = Date.now(
   if (!item || item.totalAttempts === 0) {
     return 'new';
   }
-  if (now >= item.nextReview) {
-    return 'due';
-  }
   if (item.box === 5) {
     return 'mastered';
+  }
+  if (item.box === 1) {
+    return 'difficult';
+  }
+  if (now >= item.nextReview) {
+    return 'due';
   }
   return 'learning';
 }

@@ -31,6 +31,7 @@ export const pl: Dictionary = {
     themeDark: 'Satelitarny (Ciemny)',
     themeClassic: 'Atlas Szkolny (Jasny)',
     learn: 'Tryb nauki (ukryj nazwy)',
+    knowledgeMap: 'Mapa opanowania wiedzy',
   },
   layers: {
     borders: 'Granice państw',
@@ -237,5 +238,16 @@ export const pl: Dictionary = {
     explanation:
       'Gdyby przekopać się przez sam środek Ziemi, zaledwie w ~4% przypadków trafi się na suchy ląd. Z Polski wyjdziesz na bezkresnym Oceanie Spokojnym, setki kilometrów na płd.-wsch. od Nowej Zelandii!',
     pickHint: 'Kliknij w dowolne miejsce na globusie, aby sprawdzić jego antypody.',
+  },
+  knowledgeMap: {
+    title: 'Mapa opanowania wiedzy',
+    legendTitle: 'Stan opanowania (SRS)',
+    statusMastered: 'Opanowane',
+    statusLearning: 'W trakcie nauki',
+    statusDue: 'Wymaga powtórki',
+    statusDifficult: 'Trudne / pomyłki',
+    statusNew: 'Nierozpoczęte',
+    statsMastered: 'Opanowane: {count}',
+    statsTotal: 'Wszystkie w SRS: {count}',
   },
 };
