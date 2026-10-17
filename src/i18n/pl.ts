@@ -35,6 +35,7 @@ export const pl: Dictionary = {
     mountains: 'Pasma górskie',
     deserts: 'Pustynie',
     peaks: 'Najwyższe szczyty',
+    landforms: 'Formy ukształtowania terenu',
   },
   sliders: {
     topPrefix: 'Top',

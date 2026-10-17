@@ -10,6 +10,7 @@ import {
   type GeoFeature,
   type GeoFeatureCollection,
   GeoFeatureCollectionSchema,
+  type LandformType,
 } from './schema.js';
 
 const EARTH_RADIUS_KM = 6371.0088;
@@ -52,6 +53,20 @@ function makeUniqueId(baseId: string, usedIds: Set<string>): string {
   }
   usedIds.add(id);
   return id;
+}
+
+function titleCasePolish(str: string): string {
+  if (str !== str.toUpperCase()) return str;
+  return str
+    .toLowerCase()
+    .split(/([\s\-–—/]+)/)
+    .map(word => {
+      if (['i', 'w', 'z', 'o', 'na', 'do', 'od', 'po', 'pod', 'nad'].includes(word)) {
+        return word;
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join('');
 }
 
 interface GenericGeometry {
@@ -349,6 +364,75 @@ export async function buildData(): Promise<void> {
     `    ✓ Saved ${regionsCol.features.length} regions (${mountainFeatures.length} mountains, ${desertFeatures.length} deserts) to regions.json`,
   );
 
+  // 4b. Landforms (Plateaus, Plains, Basins, Deltas, Peninsulas)
+  console.log('  → Processing landforms (plateaus, plains, basins, deltas, peninsulas)...');
+  const landformClasses: Record<string, LandformType> = {
+    Plateau: 'plateau',
+    Plain: 'plain',
+    Lowland: 'plain',
+    Basin: 'basin',
+    Depression: 'basin',
+    Delta: 'delta',
+    'Pen/cape': 'peninsula',
+    Peninsula: 'peninsula',
+  };
+
+  const landformFeatures: GeoFeature[] = [];
+  const usedLandformIds = new Set<string>();
+
+  for (const raw of rawRegions.features) {
+    const fclass = String(raw.properties.FEATURECLA || '');
+    const subkind = landformClasses[fclass];
+    if (!subkind) continue;
+
+    const name = raw.properties.NAME;
+    if (!name) continue;
+
+    const [labelLng, labelLat] = computeLabelPoint(raw.geometry);
+    const areaKm2 = Math.round(geoArea(raw) * EARTH_RADIUS_KM * EARTH_RADIUS_KM);
+    const rawPl = overrides.regions[name] || raw.properties.NAME_PL || name;
+    const namePl = titleCasePolish(rawPl);
+    const nameEn = raw.properties.NAME_EN || name;
+    const id = makeUniqueId(`landform-${subkind}-${slugify(name)}`, usedLandformIds);
+
+    landformFeatures.push({
+      type: 'Feature',
+      id,
+      properties: {
+        id,
+        kind: 'landform',
+        layerId: 'landforms',
+        name_pl: namePl,
+        name_en: nameEn,
+        aliases: [raw.properties.NAMEALT, raw.properties.NAME_ALT].filter(Boolean),
+        landformType: subkind,
+        rank: {
+          area: areaKm2,
+        },
+        labelLng,
+        labelLat,
+      },
+      geometry: {
+        type: raw.geometry.type,
+        coordinates: roundCoords(raw.geometry.coordinates),
+      },
+    });
+  }
+
+  landformFeatures.sort((a, b) => (b.properties.rank.area || 0) - (a.properties.rank.area || 0));
+  landformFeatures.forEach((f, idx) => {
+    f.properties.rank.order = idx + 1;
+  });
+
+  const landformsCol: GeoFeatureCollection = {
+    type: 'FeatureCollection',
+    features: landformFeatures,
+  };
+  GeoFeatureCollectionSchema.parse(landformsCol);
+  const landformsFile = path.join(OUT_DIR, 'landforms.json');
+  fs.writeFileSync(landformsFile, JSON.stringify(landformsCol));
+  console.log(`    ✓ Saved ${landformsCol.features.length} landforms to landforms.json`);
+
   // 5. Places (Capitals, Megacities, and High Peaks)
   console.log('  → Processing places (capitals, megacities, and peaks)...');
   const rawPlaces = JSON.parse(
@@ -452,6 +536,7 @@ export async function buildData(): Promise<void> {
     { name: 'rivers.json', budgetGzipKb: 250, path: riversFile },
     { name: 'lakes.json', budgetGzipKb: 150, path: lakesFile },
     { name: 'regions.json', budgetGzipKb: 250, path: regionsFile },
+    { name: 'landforms.json', budgetGzipKb: 200, path: landformsFile },
     { name: 'places.json', budgetGzipKb: 80, path: placesFile },
   ];
 

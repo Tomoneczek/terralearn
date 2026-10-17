@@ -97,6 +97,28 @@ export const LAYER_DEFINITIONS: readonly LayerDef[] = [
       radius: 0.3,
     },
   },
+  {
+    id: 'landforms',
+    group: 'physical',
+    labelKey: 'layers.landforms',
+    icon: 'compass',
+    kind: 'polygon',
+    source: '/data/landforms.json',
+    defaultEnabled: false,
+    topN: {
+      min: 5,
+      max: 100,
+      default: 30,
+      presets: [15, 30, 50, 100],
+      rankBy: 'area',
+    },
+    style: {
+      capColor: 'hsla(140, 50%, 45%, 0.28)',
+      sideColor: 'hsla(140, 55%, 30%, 0.35)',
+      strokeColor: 'hsl(140, 65%, 55%)',
+      altitude: 0.006,
+    },
+  },
 
   // Political geography
   {

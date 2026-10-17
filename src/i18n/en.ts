@@ -35,6 +35,7 @@ export const en: Dictionary = {
     mountains: 'Mountain ranges',
     deserts: 'Deserts',
     peaks: 'Highest peaks',
+    landforms: 'Landforms & Regions',
   },
   sliders: {
     topPrefix: 'Top',

@@ -26,6 +26,15 @@ export function getPolygonAltitude(
     baseAltitude = 0.004;
   } else if (layerId === 'deserts') {
     baseAltitude = 0.005;
+  } else if (layerId === 'landforms') {
+    const subkind = feat.properties.landformType;
+    if (subkind === 'plateau') {
+      baseAltitude = 0.009;
+    } else if (subkind === 'basin') {
+      baseAltitude = 0.0045;
+    } else {
+      baseAltitude = 0.006;
+    }
   } else if (layerId === 'lakes') {
     baseAltitude = 0.007;
   } else if (layerId === 'countriesTopN') {
@@ -48,7 +57,7 @@ export function getPolygonAltitude(
  * Calculates the polygon cap (fill) color based on selection, hover, and layer defaults.
  */
 export function getPolygonCapColor(
-  _feat: GeoFeature,
+  feat: GeoFeature,
   isSelected: boolean,
   isHovered: boolean,
   def?: LayerDef,
@@ -59,6 +68,21 @@ export function getPolygonCapColor(
   if (isHovered) {
     return 'hsla(180, 100%, 80%, 0.45)';
   }
+  if (feat.properties.layerId === 'landforms') {
+    const subkind = feat.properties.landformType;
+    switch (subkind) {
+      case 'plateau':
+        return 'hsla(32, 60%, 50%, 0.32)';
+      case 'plain':
+        return 'hsla(120, 45%, 45%, 0.25)';
+      case 'delta':
+        return 'hsla(165, 60%, 45%, 0.30)';
+      case 'basin':
+        return 'hsla(65, 40%, 45%, 0.25)';
+      case 'peninsula':
+        return 'hsla(150, 50%, 48%, 0.26)';
+    }
+  }
   return def?.style?.capColor || 'transparent';
 }
 
@@ -66,7 +90,7 @@ export function getPolygonCapColor(
  * Calculates the polygon 3D extrusion side color for depth.
  */
 export function getPolygonSideColor(
-  _feat: GeoFeature,
+  feat: GeoFeature,
   isSelected: boolean,
   isHovered: boolean,
   def?: LayerDef,
@@ -77,6 +101,21 @@ export function getPolygonSideColor(
   if (isHovered) {
     return 'hsla(180, 100%, 60%, 0.5)';
   }
+  if (feat.properties.layerId === 'landforms') {
+    const subkind = feat.properties.landformType;
+    switch (subkind) {
+      case 'plateau':
+        return 'hsla(32, 60%, 35%, 0.38)';
+      case 'plain':
+        return 'hsla(120, 45%, 30%, 0.30)';
+      case 'delta':
+        return 'hsla(165, 60%, 30%, 0.35)';
+      case 'basin':
+        return 'hsla(65, 40%, 30%, 0.30)';
+      case 'peninsula':
+        return 'hsla(150, 50%, 32%, 0.32)';
+    }
+  }
   return def?.style?.sideColor || 'transparent';
 }
 
@@ -84,7 +123,7 @@ export function getPolygonSideColor(
  * Calculates polygon border stroke color with golden selection and cyan hover highlights.
  */
 export function getPolygonStrokeColor(
-  _feat: GeoFeature,
+  feat: GeoFeature,
   isSelected: boolean,
   isHovered: boolean,
   def?: LayerDef,
@@ -94,6 +133,21 @@ export function getPolygonStrokeColor(
   }
   if (isHovered) {
     return 'hsl(180, 100%, 80%)'; // Cyan glow
+  }
+  if (feat.properties.layerId === 'landforms') {
+    const subkind = feat.properties.landformType;
+    switch (subkind) {
+      case 'plateau':
+        return 'hsl(32, 75%, 60%)';
+      case 'plain':
+        return 'hsl(120, 60%, 55%)';
+      case 'delta':
+        return 'hsl(165, 75%, 55%)';
+      case 'basin':
+        return 'hsl(65, 55%, 55%)';
+      case 'peninsula':
+        return 'hsl(150, 65%, 55%)';
+    }
   }
   return def?.style?.strokeColor || 'transparent';
 }

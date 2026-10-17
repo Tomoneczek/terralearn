@@ -35,6 +35,8 @@ export function getLayerColor(id: LayerId): string {
       return 'hsl(350, 85%, 62%)';
     case 'megacities':
       return 'hsl(45, 100%, 62%)';
+    case 'landforms':
+      return 'hsl(140, 65%, 55%)';
   }
 }
 

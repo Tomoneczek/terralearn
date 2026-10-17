@@ -10,6 +10,7 @@ export interface GeoFeatureProperties {
   elevation?: number;
   population?: number;
   aliases?: string[];
+  landformType?: string;
   rank?: {
     area?: number;
     population?: number;

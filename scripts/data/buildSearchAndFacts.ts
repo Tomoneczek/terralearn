@@ -28,6 +28,7 @@ interface RawGeoFeature {
     aliases?: string[];
     countryCode?: string;
     countryName?: string;
+    landformType?: string;
     rank?: {
       area?: number;
       population?: number;
@@ -116,7 +117,7 @@ function getFeatureCoords(f: RawGeoFeature): { lat: number; lng: number } {
   return { lat: 0, lng: 0 };
 }
 
-function getKindPl(kind: string): string {
+function getKindPl(kind: string, landformType?: string): string {
   switch (kind) {
     case 'country':
       return 'Państwo';
@@ -125,6 +126,7 @@ function getKindPl(kind: string): string {
     case 'river':
       return 'Rzeka';
     case 'mountain_range':
+    case 'mountain':
       return 'Pasmo górskie';
     case 'desert':
       return 'Pustynia';
@@ -134,6 +136,21 @@ function getKindPl(kind: string): string {
       return 'Metropolia';
     case 'peak':
       return 'Szczyt górski';
+    case 'landform':
+      switch (landformType) {
+        case 'plateau':
+          return 'Wyżyna / Płaskowyż';
+        case 'plain':
+          return 'Nizina / Równina';
+        case 'basin':
+          return 'Kotlina / Basen';
+        case 'delta':
+          return 'Delta rzeczna';
+        case 'peninsula':
+          return 'Półwysep';
+        default:
+          return 'Forma terenu';
+      }
     default:
       return 'Obiekt geograficzny';
   }
@@ -183,7 +200,7 @@ function generateFacts(f: RawGeoFeature): ObjectFacts {
     if (p.rank?.order) {
       stats.push({ label: 'Ranking rzek', value: `#${p.rank.order} na świecie` });
     }
-  } else if (p.kind === 'mountain_range') {
+  } else if (p.kind === 'mountain_range' || p.kind === 'mountain') {
     if (elev) {
       stats.push({ label: 'Maks. wysokość', value: `${elev.toLocaleString('pl-PL')} m n.p.m.` });
       const rysyRatio = elev / 2499;
@@ -197,6 +214,19 @@ function generateFacts(f: RawGeoFeature): ObjectFacts {
       stats.push({ label: 'Powierzchnia', value: `${area.toLocaleString('pl-PL')} km²` });
       const ratio = area / 312696;
       comparison = `Obszar równy ok. ${ratio.toFixed(1)}x terytorium Polski`;
+    }
+  } else if (p.kind === 'landform') {
+    if (area) {
+      stats.push({ label: 'Powierzchnia', value: `${area.toLocaleString('pl-PL')} km²` });
+      const ratio = area / 312696;
+      if (ratio >= 1) {
+        comparison = `Obszar równy ok. ${ratio.toFixed(1)}x terytorium Polski`;
+      } else {
+        comparison = `Obszar stanowi ok. ${(ratio * 100).toFixed(1)}% powierzchni Polski`;
+      }
+    }
+    if (p.rank?.order) {
+      stats.push({ label: 'Ranking form terenu', value: `#${p.rank.order} na świecie` });
     }
   } else if (p.kind === 'capital' || p.kind === 'megacity') {
     if (pop) {
@@ -220,7 +250,7 @@ function generateFacts(f: RawGeoFeature): ObjectFacts {
     name_pl: p.name_pl,
     name_en: p.name_en,
     kind: p.kind,
-    kind_pl: getKindPl(p.kind),
+    kind_pl: getKindPl(p.kind, p.landformType),
     stats,
     comparison,
   };
@@ -235,6 +265,7 @@ export function buildSearchIndexAndFacts(): {
     { filename: 'lakes.json', layerId: 'lakes' },
     { filename: 'rivers.json', layerId: 'rivers' },
     { filename: 'regions.json', layerId: 'mountains' },
+    { filename: 'landforms.json', layerId: 'landforms' },
     { filename: 'places.json', layerId: 'capitals' },
   ];
 
@@ -260,6 +291,7 @@ export function buildSearchIndexAndFacts(): {
       if (p.kind === 'megacity') targetLayerId = 'megacities';
       if (p.kind === 'peak') targetLayerId = 'peaks';
       if (p.kind === 'capital') targetLayerId = 'capitals';
+      if (p.kind === 'landform') targetLayerId = 'landforms';
 
       searchIndex.push({
         id: p.id,

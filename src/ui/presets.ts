@@ -14,14 +14,14 @@ export const PRESETS: readonly LayerPresetConfig[] = [
   {
     id: 'physical',
     nameKey: 'modes.physical',
-    enabledLayers: ['lakes', 'rivers', 'mountains', 'deserts', 'peaks'],
+    enabledLayers: ['lakes', 'rivers', 'mountains', 'deserts', 'peaks', 'landforms'],
     disabledLayers: ['borders', 'countriesTopN', 'capitals', 'megacities'],
   },
   {
     id: 'political',
     nameKey: 'modes.political',
     enabledLayers: ['borders', 'countriesTopN', 'capitals', 'megacities'],
-    disabledLayers: ['lakes', 'rivers', 'mountains', 'deserts', 'peaks'],
+    disabledLayers: ['lakes', 'rivers', 'mountains', 'deserts', 'peaks', 'landforms'],
   },
   {
     id: 'all',
@@ -36,6 +36,7 @@ export const PRESETS: readonly LayerPresetConfig[] = [
       'mountains',
       'deserts',
       'peaks',
+      'landforms',
     ],
     disabledLayers: [],
   },
