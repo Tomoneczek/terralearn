@@ -274,6 +274,10 @@ export interface Dictionary {
     minimizePanel: string;
     mobileNavToggle: string;
   };
+  pwa: {
+    offlineMessage: string;
+    onlineMessage: string;
+  };
 }
 
 // Flat key path type e.g. "layers.lakes" | "sections.physical"

@@ -276,4 +276,8 @@ export const pl: Dictionary = {
     minimizePanel: 'Zminimalizuj panel',
     mobileNavToggle: 'Przełącz panel dolny',
   },
+  pwa: {
+    offlineMessage: 'Jesteś w trybie offline. Pobrane dane mapy są dostępne z pamięci podręcznej.',
+    onlineMessage: 'Połączenie z siecią zostało przywrócone.',
+  },
 };

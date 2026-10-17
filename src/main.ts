@@ -17,6 +17,7 @@ import { QuizConfigModal } from './ui/quiz/quiz-config-modal';
 import { getDistanceColor } from './geo/spherical';
 
 import { t, setLocale } from './i18n';
+import { initPwa } from '@/pwa';
 
 export let globeContext: GlobeContext | null = null;
 export let sidebar: SidebarController | null = null;
@@ -42,6 +43,7 @@ export function bootstrap(): void {
   if (root) {
     root.setAttribute('data-ready', 'true');
     const slots = initLayout(root);
+    initPwa();
 
     // Sync theme to root data-theme attribute
     const syncTheme = (theme: string) => {

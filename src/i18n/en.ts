@@ -276,4 +276,8 @@ export const en: Dictionary = {
     minimizePanel: 'Minimize panel',
     mobileNavToggle: 'Toggle bottom sheet',
   },
+  pwa: {
+    offlineMessage: 'You are offline. Cached map data and layers remain fully accessible.',
+    onlineMessage: 'Internet connection restored.',
+  },
 };
