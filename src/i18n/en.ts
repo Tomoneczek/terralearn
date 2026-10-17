@@ -23,6 +23,10 @@ export const en: Dictionary = {
     qualityHigh: 'High (4K, Bloom)',
     qualityMedium: 'Medium (Balanced)',
     qualityLow: 'Low (Performance)',
+    graticule: 'Cartographic Grid',
+    graticuleOff: 'Off',
+    graticuleMajor: 'Major lines (Equator, Tropics)',
+    graticule15deg: 'Full grid (every 15°)',
     learn: 'Study mode (hide labels)',
   },
   layers: {
@@ -48,6 +52,15 @@ export const en: Dictionary = {
     quizMode: 'Quiz mode (Blind map)',
     greatCircle: 'Shortest route (Great circle)',
     antipodes: 'Antipodes simulator',
+  },
+  graticule: {
+    equator: 'Equator (0°)',
+    tropicCancer: 'Tropic of Cancer (23.4°N)',
+    tropicCapricorn: 'Tropic of Capricorn (23.4°S)',
+    arcticCircle: 'Arctic Circle (66.6°N)',
+    antarcticCircle: 'Antarctic Circle (66.6°S)',
+    primeMeridian: 'Prime Meridian (Greenwich 0°)',
+    antimeridian: '180th Meridian',
   },
   card: {
     title: 'Object card',

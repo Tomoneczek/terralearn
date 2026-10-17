@@ -23,6 +23,10 @@ export const pl: Dictionary = {
     qualityHigh: 'Wysoka (4K, Bloom)',
     qualityMedium: 'Średnia (Zrównoważona)',
     qualityLow: 'Niska (Wydajność)',
+    graticule: 'Siatka kartograficzna',
+    graticuleOff: 'Wyłączona',
+    graticuleMajor: 'Główne linie (Równik, Zwrotniki)',
+    graticule15deg: 'Pełna siatka (co 15°)',
     learn: 'Tryb nauki (ukryj nazwy)',
   },
   layers: {
@@ -48,6 +52,15 @@ export const pl: Dictionary = {
     quizMode: 'Tryb quizu (Ślepa mapa)',
     greatCircle: 'Prawdziwa najkrótsza droga',
     antipodes: 'Symulator Antypodów',
+  },
+  graticule: {
+    equator: 'Równik (0°)',
+    tropicCancer: 'Zwrotnik Raka (23.4°N)',
+    tropicCapricorn: 'Zwrotnik Koziorożca (23.4°S)',
+    arcticCircle: 'Koło podbiegunowe płn. (66.6°N)',
+    antarcticCircle: 'Koło podbiegunowe płd. (66.6°S)',
+    primeMeridian: 'Południk zerowy (Greenwich 0°)',
+    antimeridian: 'Południk 180°',
   },
   card: {
     title: 'Karta obiektu',

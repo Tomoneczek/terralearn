@@ -18,6 +18,7 @@ import {
   type GlobeSizeComparisonDelegate,
 } from './size-comparison-layer';
 import { AntipodesLayerController, type GlobeAntipodesDelegate } from './antipodes-layer';
+import { GraticuleLayerController } from './graticule-layer';
 
 export interface GlobeContext {
   globe: GlobeInstance;
@@ -31,6 +32,7 @@ export interface GlobeContext {
   routes: RouteLayerController;
   sizeComparison: SizeComparisonLayerController;
   antipodes: AntipodesLayerController;
+  graticule: GraticuleLayerController;
   fpsMonitor: FPSMonitor;
   setArcs: (arcs: ArcItem[]) => void;
   destroy: () => void;
@@ -176,6 +178,9 @@ export function createGlobe(
   // Antipodes Simulator Layer Controller
   const antipodes = new AntipodesLayerController(globe as unknown as GlobeAntipodesDelegate, store);
 
+  // Cartographic Graticule Layer Controller (Equator, Tropics, 15° Grid)
+  const graticule = new GraticuleLayerController(globeScene, store);
+
   // ResizeObserver with DPR protection
   const resizeObserver = new ResizeObserver(entries => {
     for (const entry of entries) {
@@ -200,6 +205,7 @@ export function createGlobe(
     routes,
     sizeComparison,
     antipodes,
+    graticule,
     fpsMonitor,
     setArcs: (arcs: ArcItem[]) => {
       try {
@@ -219,6 +225,7 @@ export function createGlobe(
       routes.destroy();
       sizeComparison.destroy();
       antipodes.destroy();
+      graticule.destroy();
       fpsMonitor.stop();
       // Remove globe canvas
       const canvas = container.querySelector('canvas');

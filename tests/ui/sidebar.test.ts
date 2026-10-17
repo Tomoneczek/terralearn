@@ -142,6 +142,35 @@ describe('SidebarController', () => {
     sidebar.destroy();
   });
 
+  it('updates graticule mode in store and reflects store changes in select element', () => {
+    const store = createStore<AppState>(createInitialState());
+    const sidebar = new SidebarController({ container, store });
+
+    const graticuleSelect = container.querySelector<HTMLSelectElement>('#select-graticule');
+    expect(graticuleSelect).not.toBeNull();
+    expect(graticuleSelect?.value).toBe('off');
+
+    // Change via UI
+    if (graticuleSelect) {
+      graticuleSelect.value = 'major';
+      graticuleSelect.dispatchEvent(new Event('change'));
+    }
+    expect(store.get().graticule).toBe('major');
+
+    // Change via UI to 15deg
+    if (graticuleSelect) {
+      graticuleSelect.value = '15deg';
+      graticuleSelect.dispatchEvent(new Event('change'));
+    }
+    expect(store.get().graticule).toBe('15deg');
+
+    // Change via store
+    store.set({ ...store.get(), graticule: 'off' });
+    expect(graticuleSelect?.value).toBe('off');
+
+    sidebar.destroy();
+  });
+
   it('toggles route comparison in store when clicking route comparison button', () => {
     const store = createStore<AppState>(createInitialState());
     const sidebar = new SidebarController({ container, store });

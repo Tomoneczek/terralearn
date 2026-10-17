@@ -25,6 +25,10 @@ export interface Dictionary {
     qualityHigh: string;
     qualityMedium: string;
     qualityLow: string;
+    graticule: string;
+    graticuleOff: string;
+    graticuleMajor: string;
+    graticule15deg: string;
     learn: string;
   };
   layers: {
@@ -50,6 +54,15 @@ export interface Dictionary {
     quizMode: string;
     greatCircle: string;
     antipodes: string;
+  };
+  graticule: {
+    equator: string;
+    tropicCancer: string;
+    tropicCapricorn: string;
+    arcticCircle: string;
+    antarcticCircle: string;
+    primeMeridian: string;
+    antimeridian: string;
   };
   card: {
     title: string;

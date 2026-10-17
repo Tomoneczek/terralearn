@@ -15,6 +15,7 @@ export type AppMode = 'explore' | 'learn' | 'quiz';
 export type AppPreset = 'physical' | 'political' | 'custom';
 export type AppTheme = 'dark' | 'classic';
 export type QualityPreset = 'auto' | 'low' | 'medium' | 'high';
+export type GraticuleMode = 'off' | 'major' | '15deg';
 
 export interface LayerState {
   enabled: boolean;
@@ -65,6 +66,7 @@ export interface AppState {
   dayNight: boolean;
   clouds: boolean;
   quality: QualityPreset;
+  graticule: GraticuleMode;
   hiddenLabels: boolean;
   selection: FeatureRef | null;
   hovered: FeatureRef | null;

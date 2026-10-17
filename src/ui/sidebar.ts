@@ -1,4 +1,4 @@
-import type { Store, AppState, QualityPreset } from '@/state/types';
+import type { Store, AppState, QualityPreset, GraticuleMode } from '@/state/types';
 import type { LayerDef, LayerId } from '@/layers/types';
 import { LAYER_DEFINITIONS } from '@/layers/registry';
 import { t } from '@/i18n';
@@ -56,6 +56,7 @@ export class SidebarController {
   private dayNightToggle!: ToggleSwitch;
   private cloudsToggle!: ToggleSwitch;
   private qualitySelect!: HTMLSelectElement;
+  private graticuleSelect!: HTMLSelectElement;
   private learnToggle!: ToggleSwitch;
   private unsubscribe: (() => void) | null = null;
 
@@ -125,6 +126,9 @@ export class SidebarController {
 
     // Quality selector
     modesSection.appendChild(this.createQualityRow());
+
+    // Cartographic Graticule selector
+    modesSection.appendChild(this.createGraticuleRow());
 
     // Learn / Blind map toggle
     const learnCard = this.createModeRow(
@@ -440,6 +444,65 @@ export class SidebarController {
     return card;
   }
 
+  private createGraticuleRow(): HTMLElement {
+    const card = document.createElement('div');
+    card.className = 'tl-layer-card';
+
+    const row = document.createElement('div');
+    row.className = 'tl-layer-row';
+
+    const info = document.createElement('div');
+    info.className = 'tl-layer-info';
+
+    const dot = document.createElement('span');
+    dot.className = 'tl-layer-dot';
+    dot.style.backgroundColor = 'hsl(185, 100%, 60%)';
+    dot.style.color = 'hsl(185, 100%, 60%)';
+
+    const label = document.createElement('label');
+    label.className = 'tl-layer-name';
+    label.htmlFor = 'select-graticule';
+    label.textContent = t('modes.graticule');
+
+    info.appendChild(dot);
+    info.appendChild(label);
+
+    const select = document.createElement('select');
+    select.className = 'tl-quality-select';
+    select.id = 'select-graticule';
+    select.setAttribute('aria-label', t('modes.graticule'));
+
+    const options: { value: GraticuleMode; label: string }[] = [
+      { value: 'off', label: t('modes.graticuleOff') },
+      { value: 'major', label: t('modes.graticuleMajor') },
+      { value: '15deg', label: t('modes.graticule15deg') },
+    ];
+    for (const opt of options) {
+      const optEl = document.createElement('option');
+      optEl.value = opt.value;
+      optEl.textContent = opt.label;
+      if (this.store.get().graticule === opt.value) {
+        optEl.selected = true;
+      }
+      select.appendChild(optEl);
+    }
+
+    select.addEventListener('change', () => {
+      this.store.set({
+        ...this.store.get(),
+        graticule: select.value as GraticuleMode,
+      });
+    });
+
+    this.graticuleSelect = select;
+
+    row.appendChild(info);
+    row.appendChild(select);
+    card.appendChild(row);
+
+    return card;
+  }
+
   private createLayerItem(layer: LayerDef): HTMLElement {
     const state = this.store.get();
     const layerState = state.layers[layer.id];
@@ -544,6 +607,7 @@ export class SidebarController {
         dayNight: s.dayNight,
         clouds: s.clouds,
         quality: s.quality,
+        graticule: s.graticule,
         hiddenLabels: s.hiddenLabels,
       }),
       state => {
@@ -556,6 +620,11 @@ export class SidebarController {
         // Sync quality
         if (this.qualitySelect) {
           this.qualitySelect.value = state.quality ?? 'auto';
+        }
+
+        // Sync graticule
+        if (this.graticuleSelect) {
+          this.graticuleSelect.value = state.graticule ?? 'off';
         }
 
         // Sync hiddenLabels

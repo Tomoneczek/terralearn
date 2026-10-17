@@ -10,6 +10,7 @@ export function createInitialState(): AppState {
     dayNight: true,
     clouds: true,
     quality: 'auto',
+    graticule: 'off',
     hiddenLabels: false,
     selection: null,
     hovered: null,

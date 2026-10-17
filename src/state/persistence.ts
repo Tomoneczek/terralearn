@@ -15,6 +15,7 @@ const PersistedStateSchema = z.object({
   dayNight: z.boolean().optional(),
   clouds: z.boolean().optional(),
   quality: z.enum(['auto', 'low', 'medium', 'high']).optional(),
+  graticule: z.enum(['off', 'major', '15deg']).optional(),
   hiddenLabels: z.boolean().optional(),
 });
 
@@ -56,6 +57,7 @@ export function savePersistedState(state: AppState): void {
       dayNight: state.dayNight,
       clouds: state.clouds,
       quality: state.quality,
+      graticule: state.graticule,
       hiddenLabels: state.hiddenLabels,
     };
 
@@ -88,6 +90,7 @@ export function applyPersistedState(
     dayNight: persisted.dayNight ?? baseState.dayNight,
     clouds: persisted.clouds ?? baseState.clouds,
     quality: persisted.quality ?? baseState.quality,
+    graticule: persisted.graticule ?? baseState.graticule,
     hiddenLabels: persisted.hiddenLabels ?? baseState.hiddenLabels,
   };
 }
