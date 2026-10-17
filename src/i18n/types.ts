@@ -29,6 +29,9 @@ export interface Dictionary {
     graticuleOff: string;
     graticuleMajor: string;
     graticule15deg: string;
+    theme: string;
+    themeDark: string;
+    themeClassic: string;
     learn: string;
   };
   layers: {

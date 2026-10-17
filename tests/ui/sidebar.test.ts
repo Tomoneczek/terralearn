@@ -171,6 +171,28 @@ describe('SidebarController', () => {
     sidebar.destroy();
   });
 
+  it('updates theme in store and reflects store changes in select element', () => {
+    const store = createStore<AppState>(createInitialState());
+    const sidebar = new SidebarController({ container, store });
+
+    const themeSelect = container.querySelector<HTMLSelectElement>('#select-theme');
+    expect(themeSelect).not.toBeNull();
+    expect(themeSelect?.value).toBe('dark');
+
+    // Change via UI to classic
+    if (themeSelect) {
+      themeSelect.value = 'classic';
+      themeSelect.dispatchEvent(new Event('change'));
+    }
+    expect(store.get().theme).toBe('classic');
+
+    // Change via store back to dark
+    store.set({ ...store.get(), theme: 'dark' });
+    expect(themeSelect?.value).toBe('dark');
+
+    sidebar.destroy();
+  });
+
   it('toggles route comparison in store when clicking route comparison button', () => {
     const store = createStore<AppState>(createInitialState());
     const sidebar = new SidebarController({ container, store });

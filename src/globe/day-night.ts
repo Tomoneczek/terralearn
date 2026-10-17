@@ -86,18 +86,20 @@ export interface DayNightControllerOptions {
   dayTextureUrl?: string;
   nightTextureUrl?: string;
   waterMaskUrl?: string;
+  atlasTextureUrl?: string;
   updateIntervalMs?: number;
 }
 
 export class DayNightController {
   private readonly material: ShaderMaterial;
   private readonly store: Store<AppState>;
-  private unsubscribe: (() => void) | null = null;
+  private readonly unsubs: (() => void)[] = [];
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private baseTexture: Texture | null = null;
   private dayTexture: Texture | null = null;
   private nightTexture: Texture | null = null;
   private waterMask: Texture | null = null;
+  private atlasTexture: Texture | null = null;
 
   constructor(store: Store<AppState>, options: DayNightControllerOptions = {}) {
     this.store = store;
@@ -108,12 +110,14 @@ export class DayNightController {
     const dayUrl = resolveAssetUrl(options.dayTextureUrl ?? '/textures/earth-day.jpg');
     const nightUrl = resolveAssetUrl(options.nightTextureUrl ?? '/textures/earth-night.jpg');
     const maskUrl = resolveAssetUrl(options.waterMaskUrl ?? '/textures/water-mask.png');
+    const atlasUrl = resolveAssetUrl(options.atlasTextureUrl ?? '/textures/earth-atlas.jpg');
 
     const loader = new TextureLoader();
     this.baseTexture = loader.load(baseUrl);
     this.dayTexture = loader.load(dayUrl);
     this.nightTexture = loader.load(nightUrl);
     this.waterMask = loader.load(maskUrl);
+    this.atlasTexture = loader.load(atlasUrl);
 
     const sunDir = calculateSunDirection(new Date());
 
@@ -130,6 +134,7 @@ export class DayNightController {
       fragmentShader: DAY_NIGHT_FRAGMENT_SHADER,
     });
 
+    this.syncTheme(store.get().theme);
     this.bindStore();
 
     // Auto-update sun position every 60s
@@ -161,12 +166,36 @@ export class DayNightController {
     }
   }
 
+  public syncTheme(theme: string): void {
+    const isClassic = theme === 'classic';
+    const activeDayTex = isClassic ? this.atlasTexture : this.dayTexture;
+    const activeBaseTex = isClassic ? this.atlasTexture : this.baseTexture;
+
+    if (this.material.uniforms.uDayTexture) {
+      this.material.uniforms.uDayTexture.value = activeDayTex;
+    }
+    if (this.material.uniforms.uBaseTexture) {
+      this.material.uniforms.uBaseTexture.value = activeBaseTex;
+    }
+  }
+
   private bindStore(): void {
-    this.unsubscribe = this.store.subscribe(
-      s => s.dayNight,
-      dayNight => {
-        this.setEnabled(dayNight);
-      },
+    this.unsubs.push(
+      this.store.subscribe(
+        s => s.dayNight,
+        dayNight => {
+          this.setEnabled(dayNight);
+        },
+      ),
+    );
+
+    this.unsubs.push(
+      this.store.subscribe(
+        s => s.theme,
+        theme => {
+          this.syncTheme(theme);
+        },
+      ),
     );
   }
 
@@ -175,14 +204,15 @@ export class DayNightController {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
-    if (this.unsubscribe) {
-      this.unsubscribe();
-      this.unsubscribe = null;
+    for (const unsub of this.unsubs) {
+      unsub();
     }
+    this.unsubs.length = 0;
     this.baseTexture?.dispose();
     this.dayTexture?.dispose();
     this.nightTexture?.dispose();
     this.waterMask?.dispose();
+    this.atlasTexture?.dispose();
     this.material.dispose();
   }
 }

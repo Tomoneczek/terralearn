@@ -27,6 +27,9 @@ export const en: Dictionary = {
     graticuleOff: 'Off',
     graticuleMajor: 'Major lines (Equator, Tropics)',
     graticule15deg: 'Full grid (every 15°)',
+    theme: 'Map Theme',
+    themeDark: 'Satellite (Dark)',
+    themeClassic: 'School Atlas (Light)',
     learn: 'Study mode (hide labels)',
   },
   layers: {

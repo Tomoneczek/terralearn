@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createStore, createInitialState } from '@/state/store';
+import type { AppState } from '@/state/types';
 import { DayNightController } from '@/globe/day-night';
 import type { Vector3 } from 'three';
 
@@ -226,5 +227,31 @@ describe('DayNightController and Terminator Shader', () => {
     const nightSun: [number, number, number] = [0, 0, -1];
     const nightGlint = computeSpecularGlint(surfaceNormal, nightSun, cameraVector, 1.0);
     expect(nightGlint).toBe(0.0);
+  });
+
+  it('switches between satellite day texture and School Atlas hypsometric texture based on theme (G09-04)', () => {
+    const store = createStore<AppState>({
+      ...createInitialState(),
+      theme: 'dark',
+    });
+
+    const controller = new DayNightController(store);
+    const material = controller.getMaterial();
+
+    const initialDayTex = material.uniforms.uDayTexture?.value;
+    expect(initialDayTex).toBeDefined();
+
+    // Switch to classic (School Atlas) theme
+    store.set(s => ({ ...s, theme: 'classic' }));
+    const classicDayTex = material.uniforms.uDayTexture?.value;
+    const classicBaseTex = material.uniforms.uBaseTexture?.value;
+    expect(classicDayTex).not.toBe(initialDayTex);
+    expect(classicBaseTex).toBe(classicDayTex);
+
+    // Switch back to dark (Satellite) theme
+    store.set(s => ({ ...s, theme: 'dark' }));
+    expect(material.uniforms.uDayTexture?.value).toBe(initialDayTex);
+
+    controller.destroy();
   });
 });

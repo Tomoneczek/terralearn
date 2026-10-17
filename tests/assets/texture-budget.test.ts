@@ -12,6 +12,7 @@ describe('Texture Assets Budget and Quality Integrity (G08-01)', () => {
       'earth-day.jpg': 300 * 1024, // max 300 KB
       'earth-dark.jpg': 120 * 1024, // max 120 KB
       'earth-night.jpg': 800 * 1024, // max 800 KB
+      'earth-atlas.jpg': 350 * 1024, // max 350 KB
       'water-mask.png': 50 * 1024, // max 50 KB
       'clouds.png': 500 * 1024, // max 500 KB
       'night-sky.png': 1000 * 1024, // max 1000 KB
@@ -29,8 +30,8 @@ describe('Texture Assets Budget and Quality Integrity (G08-01)', () => {
       expect(size).toBeLessThanOrEqual(maxBytes);
     }
 
-    // Total textures budget <= 2.8 MB
-    expect(totalBytes).toBeLessThanOrEqual(2.8 * 1024 * 1024);
+    // Total textures budget <= 3.0 MB
+    expect(totalBytes).toBeLessThanOrEqual(3.0 * 1024 * 1024);
   });
 
   it('generates a valid, accurate water mask separating oceans from continents', () => {

@@ -74,6 +74,7 @@ export function createGlobe(
     dayTextureUrl: resolveAssetUrl('/textures/earth-day.jpg'),
     nightTextureUrl: options.nightTexture,
     waterMaskUrl: resolveAssetUrl('/textures/water-mask.png'),
+    atlasTextureUrl: resolveAssetUrl('/textures/earth-atlas.jpg'),
   });
 
   try {

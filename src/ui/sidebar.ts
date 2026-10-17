@@ -1,4 +1,4 @@
-import type { Store, AppState, QualityPreset, GraticuleMode } from '@/state/types';
+import type { Store, AppState, QualityPreset, GraticuleMode, AppTheme } from '@/state/types';
 import type { LayerDef, LayerId } from '@/layers/types';
 import { LAYER_DEFINITIONS } from '@/layers/registry';
 import { t } from '@/i18n';
@@ -57,6 +57,7 @@ export class SidebarController {
   private cloudsToggle!: ToggleSwitch;
   private qualitySelect!: HTMLSelectElement;
   private graticuleSelect!: HTMLSelectElement;
+  private themeSelect!: HTMLSelectElement;
   private learnToggle!: ToggleSwitch;
   private unsubscribe: (() => void) | null = null;
 
@@ -123,6 +124,9 @@ export class SidebarController {
     );
     this.cloudsToggle = cloudsCard.toggle;
     modesSection.appendChild(cloudsCard.card);
+
+    // Map Theme selector (Satellite Dark vs School Atlas Light)
+    modesSection.appendChild(this.createThemeRow());
 
     // Quality selector
     modesSection.appendChild(this.createQualityRow());
@@ -503,6 +507,64 @@ export class SidebarController {
     return card;
   }
 
+  private createThemeRow(): HTMLElement {
+    const card = document.createElement('div');
+    card.className = 'tl-layer-card';
+
+    const row = document.createElement('div');
+    row.className = 'tl-layer-row';
+
+    const info = document.createElement('div');
+    info.className = 'tl-layer-info';
+
+    const dot = document.createElement('span');
+    dot.className = 'tl-layer-dot';
+    dot.style.backgroundColor = 'hsl(212, 95%, 58%)';
+    dot.style.color = 'hsl(212, 95%, 58%)';
+
+    const label = document.createElement('label');
+    label.className = 'tl-layer-name';
+    label.htmlFor = 'select-theme';
+    label.textContent = t('modes.theme');
+
+    info.appendChild(dot);
+    info.appendChild(label);
+
+    const select = document.createElement('select');
+    select.className = 'tl-quality-select';
+    select.id = 'select-theme';
+    select.setAttribute('aria-label', t('modes.theme'));
+
+    const options: { value: AppTheme; label: string }[] = [
+      { value: 'dark', label: t('modes.themeDark') },
+      { value: 'classic', label: t('modes.themeClassic') },
+    ];
+    for (const opt of options) {
+      const optEl = document.createElement('option');
+      optEl.value = opt.value;
+      optEl.textContent = opt.label;
+      if (this.store.get().theme === opt.value) {
+        optEl.selected = true;
+      }
+      select.appendChild(optEl);
+    }
+
+    select.addEventListener('change', () => {
+      this.store.set({
+        ...this.store.get(),
+        theme: select.value as AppTheme,
+      });
+    });
+
+    this.themeSelect = select;
+
+    row.appendChild(info);
+    row.appendChild(select);
+    card.appendChild(row);
+
+    return card;
+  }
+
   private createLayerItem(layer: LayerDef): HTMLElement {
     const state = this.store.get();
     const layerState = state.layers[layer.id];
@@ -608,6 +670,7 @@ export class SidebarController {
         clouds: s.clouds,
         quality: s.quality,
         graticule: s.graticule,
+        theme: s.theme,
         hiddenLabels: s.hiddenLabels,
       }),
       state => {
@@ -616,6 +679,11 @@ export class SidebarController {
 
         // Sync clouds
         this.cloudsToggle.setChecked(state.clouds ?? true, false);
+
+        // Sync theme
+        if (this.themeSelect) {
+          this.themeSelect.value = state.theme ?? 'dark';
+        }
 
         // Sync quality
         if (this.qualitySelect) {

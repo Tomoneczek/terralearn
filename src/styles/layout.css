@@ -107,7 +107,7 @@
   height: 100%;
   position: relative;
   overflow: hidden;
-  background: radial-gradient(circle at 60% 50%, #0c121e 0%, #06080c 80%);
+  background: var(--stage-bg, radial-gradient(circle at 60% 50%, #0c121e 0%, #06080c 80%));
 }
 
 #globe-container {

@@ -56,7 +56,6 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.65);
   --glass-blur: blur(16px);
-
   /* Animation & Easing */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --dur-fast: 150ms;
@@ -66,6 +65,49 @@
   /* Dimensions */
   --rail-width: 56px;
   --sidebar-width: 380px;
+}
+
+:root[data-theme='classic'],
+[data-theme='classic'] {
+  /* Surfaces - School Atlas light theme */
+  --bg-0: #f1f5f9;
+  --bg-1: #ffffff;
+  --bg-2: #f8fafc;
+  --bg-3: #e2e8f0;
+  --bg-card: rgba(255, 255, 255, 0.94);
+  --bg-hover: rgba(0, 0, 0, 0.04);
+  --bg-active: rgba(0, 0, 0, 0.08);
+
+  /* Borders */
+  --border-subtle: hsl(215 20% 90%);
+  --border-default: hsl(215 18% 82%);
+  --border-strong: hsl(215 16% 68%);
+  --border-focus: hsl(212 95% 48%);
+
+  /* Typography */
+  --text-1: hsl(220 30% 12%);
+  --text-2: hsl(215 20% 32%);
+  --text-3: hsl(215 15% 52%);
+  --text-inverse: #ffffff;
+
+  /* Layer Brand Colors adjusted for light background */
+  --c-water: hsl(198 90% 42%);
+  --c-water-glow: hsla(198, 90%, 42%, 0.3);
+  --c-mountain: hsl(25 90% 48%);
+  --c-mountain-glow: hsla(25, 90%, 48%, 0.3);
+  --c-city: hsl(38 90% 45%);
+  --c-border: hsl(215 35% 45%);
+  --c-desert: hsl(35 80% 50%);
+  --c-capital: hsl(350 85% 52%);
+  --c-accent-teal: hsl(160 85% 35%);
+  --c-accent-blue: hsl(212 95% 48%);
+
+  /* Shadows for light theme */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.16);
+  --glass-blur: blur(12px);
+  --stage-bg: radial-gradient(circle at 60% 50%, #e2e8f0 0%, #cbd5e1 80%);
 }
 
 @media (prefers-reduced-motion: reduce) {

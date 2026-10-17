@@ -39,6 +39,13 @@ export function bootstrap(): void {
     root.setAttribute('data-ready', 'true');
     const slots = initLayout(root);
 
+    // Sync theme to root data-theme attribute
+    const syncTheme = (theme: string) => {
+      document.documentElement.setAttribute('data-theme', theme);
+    };
+    syncTheme(store.get().theme);
+    store.subscribe(s => s.theme, syncTheme);
+
     // Initialize Quiz Engine & UI
     quizEngine = new QuizEngine(store, {
       onQuestion: (q, index, total, score) => {

@@ -27,6 +27,9 @@ export const pl: Dictionary = {
     graticuleOff: 'Wyłączona',
     graticuleMajor: 'Główne linie (Równik, Zwrotniki)',
     graticule15deg: 'Pełna siatka (co 15°)',
+    theme: 'Motyw mapy',
+    themeDark: 'Satelitarny (Ciemny)',
+    themeClassic: 'Atlas Szkolny (Jasny)',
     learn: 'Tryb nauki (ukryj nazwy)',
   },
   layers: {

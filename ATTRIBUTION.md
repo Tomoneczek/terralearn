@@ -16,6 +16,8 @@ All geographical datasets and planetary textures in **TerraLearn** are derived s
   - `ne_10m_populated_places_simple` – National capitals and major megacities.
   - `ne_10m_geography_regions_polys` – Mountain ranges and major desert regions.
   - `ne_10m_geography_regions_elevation_points` – High peaks and prominence summits.
+  - `ne_10m_geography_marine_polys` – Global seas, gulfs, and ocean bays.
+  - _Cross-Blended Hypsometric Tints_ – Natural Earth climate-modulated elevation relief map (`earth-atlas.jpg`), created by Tom Patterson and Bernhard Jenny.
 
 ---
 
