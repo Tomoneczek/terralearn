@@ -16,7 +16,7 @@ export const en: Dictionary = {
     all: 'All',
     physical: 'Physical',
     political: 'Political',
-    dayNight: 'Night view (Day/Night)',
+    dayNight: 'Day & Night (Live sunlight)',
     learn: 'Study mode (hide labels)',
   },
   layers: {

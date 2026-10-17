@@ -8,6 +8,7 @@ if (!fs.existsSync(outDir)) {
 
 const list = [
   { name: 'earth-dark.jpg', url: 'https://unpkg.com/three-globe/example/img/earth-dark.jpg' },
+  { name: 'earth-day.jpg', url: 'https://unpkg.com/three-globe/example/img/earth-day.jpg' },
   { name: 'earth-night.jpg', url: 'https://unpkg.com/three-globe/example/img/earth-night.jpg' },
   { name: 'night-sky.png', url: 'https://unpkg.com/three-globe/example/img/night-sky.png' },
 ];

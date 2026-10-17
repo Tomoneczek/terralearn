@@ -4,6 +4,7 @@ import type { Store, AppState } from '@/state/types';
 import { resolveAssetUrl } from '@/utils/assets';
 
 export interface DayNightMaterialUniforms {
+  uBaseTexture: { value: Texture | null };
   uDayTexture: { value: Texture | null };
   uNightTexture: { value: Texture | null };
   uSunDirection: { value: Vector3 };
@@ -23,6 +24,7 @@ export const DAY_NIGHT_VERTEX_SHADER = /* glsl */ `
 `;
 
 export const DAY_NIGHT_FRAGMENT_SHADER = /* glsl */ `
+  uniform sampler2D uBaseTexture;
   uniform sampler2D uDayTexture;
   uniform sampler2D uNightTexture;
   uniform vec3 uSunDirection;
@@ -32,29 +34,42 @@ export const DAY_NIGHT_FRAGMENT_SHADER = /* glsl */ `
   varying vec3 vWorldPosition;
 
   void main() {
-    vec4 dayColor = texture2D(uDayTexture, vUv);
-
     if (uEnabled < 0.5) {
-      gl_FragColor = dayColor;
+      gl_FragColor = texture2D(uBaseTexture, vUv);
       return;
     }
 
+    vec4 dayColor = texture2D(uDayTexture, vUv);
     vec4 nightColor = texture2D(uNightTexture, vUv);
+
     vec3 norm = normalize(vWorldPosition);
     float sunDot = dot(norm, normalize(uSunDirection));
 
-    // Twilight transition belt between -0.12 and 0.12 dot product (~14 degrees)
-    float factor = smoothstep(-0.12, 0.12, sunDot);
+    // Day lighting: direct sunlight + ambient atmosphere scatter
+    float dayScatter = clamp(sunDot, 0.0, 1.0);
+    float dayLight = 0.35 + 0.65 * dayScatter;
+    vec3 dayIlluminated = dayColor.rgb * dayLight;
 
-    // Boost night lights slightly for vibrant contrast
-    vec3 nightBoosted = nightColor.rgb * 1.35;
-    vec3 blended = mix(nightBoosted, dayColor.rgb, factor);
+    // Night lighting: deep dark night with boosted city lights
+    // Deep space ambient for unlit oceans and plains
+    vec3 nightAmbient = vec3(0.015, 0.02, 0.035);
+    vec3 cityLights = nightColor.rgb * 1.5;
+    vec3 nightSurface = max(nightAmbient, cityLights);
 
-    gl_FragColor = vec4(blended, 1.0);
+    // Day-night smooth transition across terminator (~10 degrees)
+    float dayFactor = smoothstep(-0.08, 0.08, sunDot);
+    vec3 surface = mix(nightSurface, dayIlluminated, dayFactor);
+
+    // Warm golden-amber sunset/sunrise atmospheric glow at the terminator
+    float twilight = smoothstep(-0.10, 0.0, sunDot) * (1.0 - smoothstep(0.0, 0.10, sunDot));
+    vec3 twilightGlow = vec3(1.0, 0.45, 0.15) * (twilight * 0.45);
+
+    gl_FragColor = vec4(surface + twilightGlow, 1.0);
   }
 `;
 
 export interface DayNightControllerOptions {
+  baseTextureUrl?: string;
   dayTextureUrl?: string;
   nightTextureUrl?: string;
   updateIntervalMs?: number;
@@ -65,16 +80,21 @@ export class DayNightController {
   private readonly store: Store<AppState>;
   private unsubscribe: (() => void) | null = null;
   private intervalId: ReturnType<typeof setInterval> | null = null;
+  private baseTexture: Texture | null = null;
   private dayTexture: Texture | null = null;
   private nightTexture: Texture | null = null;
 
   constructor(store: Store<AppState>, options: DayNightControllerOptions = {}) {
     this.store = store;
 
-    const dayUrl = resolveAssetUrl(options.dayTextureUrl ?? '/textures/earth-dark.jpg');
+    const baseUrl = resolveAssetUrl(
+      options.baseTextureUrl ?? options.dayTextureUrl ?? '/textures/earth-dark.jpg',
+    );
+    const dayUrl = resolveAssetUrl(options.dayTextureUrl ?? '/textures/earth-day.jpg');
     const nightUrl = resolveAssetUrl(options.nightTextureUrl ?? '/textures/earth-night.jpg');
 
     const loader = new TextureLoader();
+    this.baseTexture = loader.load(baseUrl);
     this.dayTexture = loader.load(dayUrl);
     this.nightTexture = loader.load(nightUrl);
 
@@ -82,6 +102,7 @@ export class DayNightController {
 
     this.material = new ShaderMaterial({
       uniforms: {
+        uBaseTexture: { value: this.baseTexture },
         uDayTexture: { value: this.dayTexture },
         uNightTexture: { value: this.nightTexture },
         uSunDirection: { value: new Vector3(sunDir[0], sunDir[1], sunDir[2]) },
@@ -136,6 +157,7 @@ export class DayNightController {
       this.unsubscribe();
       this.unsubscribe = null;
     }
+    this.baseTexture?.dispose();
     this.dayTexture?.dispose();
     this.nightTexture?.dispose();
     this.material.dispose();

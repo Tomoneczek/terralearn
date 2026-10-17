@@ -51,7 +51,8 @@ export function createGlobe(
 
   // Day/Night Terminator Controller & Material
   const dayNight = new DayNightController(store, {
-    dayTextureUrl: options.earthTexture,
+    baseTextureUrl: earthTexture,
+    dayTextureUrl: resolveAssetUrl('/textures/earth-day.jpg'),
     nightTextureUrl: options.nightTexture,
   });
 

@@ -16,7 +16,7 @@ export const pl: Dictionary = {
     all: 'Wszystkie',
     physical: 'Fizyczna',
     political: 'Polityczna',
-    dayNight: 'Nocny podgląd (Dzień/Noc)',
+    dayNight: 'Dzień i noc (aktualne oświetlenie)',
     learn: 'Tryb nauki (ukryj nazwy)',
   },
   layers: {
