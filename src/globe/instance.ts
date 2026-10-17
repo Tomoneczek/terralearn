@@ -17,6 +17,7 @@ import {
   SizeComparisonLayerController,
   type GlobeSizeComparisonDelegate,
 } from './size-comparison-layer';
+import { AntipodesLayerController, type GlobeAntipodesDelegate } from './antipodes-layer';
 
 export interface GlobeContext {
   globe: GlobeInstance;
@@ -29,6 +30,7 @@ export interface GlobeContext {
   quality: QualityController;
   routes: RouteLayerController;
   sizeComparison: SizeComparisonLayerController;
+  antipodes: AntipodesLayerController;
   fpsMonitor: FPSMonitor;
   setArcs: (arcs: ArcItem[]) => void;
   destroy: () => void;
@@ -171,6 +173,9 @@ export function createGlobe(
     store,
   );
 
+  // Antipodes Simulator Layer Controller
+  const antipodes = new AntipodesLayerController(globe as unknown as GlobeAntipodesDelegate, store);
+
   // ResizeObserver with DPR protection
   const resizeObserver = new ResizeObserver(entries => {
     for (const entry of entries) {
@@ -194,6 +199,7 @@ export function createGlobe(
     quality,
     routes,
     sizeComparison,
+    antipodes,
     fpsMonitor,
     setArcs: (arcs: ArcItem[]) => {
       try {
@@ -212,6 +218,7 @@ export function createGlobe(
       quality.destroy();
       routes.destroy();
       sizeComparison.destroy();
+      antipodes.destroy();
       fpsMonitor.stop();
       // Remove globe canvas
       const canvas = container.querySelector('canvas');

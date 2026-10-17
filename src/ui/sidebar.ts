@@ -7,6 +7,7 @@ import { ToggleSwitch } from './components/toggle';
 import { TopNSlider } from './components/slider';
 import { PRESETS, applyPreset, detectActivePreset, type PresetId } from './presets';
 import { loadGeoData } from '@/globe/data-loader';
+import { antipode } from '@/geo/spherical';
 
 export interface SidebarOptions {
   container: HTMLElement;
@@ -255,6 +256,49 @@ export class SidebarController {
       }
     });
     toolsSection.appendChild(sizeBtn);
+
+    // Antipodes Simulator button
+    const antipodesBtn = document.createElement('button');
+    antipodesBtn.type = 'button';
+    antipodesBtn.className = 'tl-tool-btn';
+    antipodesBtn.id = 'btn-antipodes';
+
+    const antipodesIconSpan = document.createElement('span');
+    antipodesIconSpan.className = 'tl-tool-icon';
+    antipodesIconSpan.appendChild(
+      parseSvg(
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="3"/></svg>',
+      ),
+    );
+
+    const antipodesLabelSpan = document.createElement('span');
+    antipodesLabelSpan.textContent = t('tools.antipodes');
+
+    antipodesBtn.appendChild(antipodesIconSpan);
+    antipodesBtn.appendChild(antipodesLabelSpan);
+    antipodesBtn.addEventListener('click', () => {
+      const current = this.store.get().antipodes;
+      if (current?.active) {
+        this.store.set({ antipodes: null });
+      } else {
+        const sel = this.store.get().selection;
+        const lat = sel?.lat ?? 52.23;
+        const lng = sel?.lng ?? 21.01;
+        const label = sel?.name_pl || sel?.name || 'Warszawa';
+        const anti = antipode({ lat, lng });
+        this.store.set({
+          antipodes: {
+            active: true,
+            source: { lat, lng, label },
+            antipode: {
+              lat: anti.lat,
+              lng: anti.lng,
+            },
+          },
+        });
+      }
+    });
+    toolsSection.appendChild(antipodesBtn);
 
     const quizBtn = document.createElement('button');
     quizBtn.type = 'button';

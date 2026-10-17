@@ -43,6 +43,20 @@ export interface SizeComparisonState {
   geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
 }
 
+export interface AntipodesPoint {
+  lat: number;
+  lng: number;
+  label?: string;
+  locationName?: string;
+  isLand?: boolean;
+}
+
+export interface AntipodesState {
+  active: boolean;
+  source: AntipodesPoint | null;
+  antipode: AntipodesPoint | null;
+}
+
 export interface AppState {
   layers: Record<LayerId, LayerState>;
   mode: AppMode;
@@ -57,6 +71,7 @@ export interface AppState {
   globeClick: { lat: number; lng: number } | null;
   routeComparison: RouteComparisonState | null;
   sizeComparison: SizeComparisonState | null;
+  antipodes: AntipodesState | null;
 }
 
 export type Selector<T, V> = (state: T) => V;

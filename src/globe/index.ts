@@ -9,3 +9,4 @@ export * from './bloom';
 export * from './performance';
 export * from './route-layer';
 export * from './size-comparison-layer';
+export * from './antipodes-layer';

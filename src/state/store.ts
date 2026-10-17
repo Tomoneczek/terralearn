@@ -16,6 +16,7 @@ export function createInitialState(): AppState {
     globeClick: null,
     routeComparison: null,
     sizeComparison: null,
+    antipodes: null,
   };
 }
 

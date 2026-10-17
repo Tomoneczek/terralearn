@@ -130,6 +130,30 @@ export interface Dictionary {
     resetPosition: string;
     changeCountry: string;
   };
+  antipodes: {
+    title: string;
+    close: string;
+    presets: string;
+    presetWarsawPacific: string;
+    presetMadridNz: string;
+    presetBeijingArgentina: string;
+    presetBogotaIndonesia: string;
+    presetHawaiiBotswana: string;
+    sourcePoint: string;
+    antipodalPoint: string;
+    whatIsThere: string;
+    land: string;
+    ocean: string;
+    oceanArctic: string;
+    oceanSouthern: string;
+    oceanAtlantic: string;
+    oceanIndian: string;
+    oceanPacific: string;
+    flyToAntipode: string;
+    flyToSource: string;
+    explanation: string;
+    pickHint: string;
+  };
 }
 
 // Flat key path type e.g. "layers.lakes" | "sections.physical"
