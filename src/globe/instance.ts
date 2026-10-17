@@ -7,6 +7,7 @@ import { attachGlobeEvents, type GlobeEventsDelegate } from './events';
 import { DayNightController } from './day-night';
 import { BloomController } from './bloom';
 import { CloudsController } from './clouds';
+import { AtmosphereController } from './atmosphere';
 import { FPSMonitor } from './performance';
 
 import type { ArcItem } from '@/geo/spherical';
@@ -16,6 +17,7 @@ export interface GlobeContext {
   camera: CameraController;
   compositor: LayerCompositor;
   dayNight: DayNightController;
+  atmosphere: AtmosphereController;
   bloom: BloomController;
   clouds: CloudsController;
   fpsMonitor: FPSMonitor;
@@ -29,6 +31,7 @@ export interface GlobeInitOptions {
   backgroundTexture?: string;
   atmosphereColor?: string;
   atmosphereAltitude?: number;
+  enableAtmosphere?: boolean;
   enableBloom?: boolean;
   enableClouds?: boolean;
 }
@@ -50,7 +53,7 @@ export function createGlobe(
     .backgroundImageUrl(backgroundTexture)
     .atmosphereColor(atmosphereColor)
     .atmosphereAltitude(atmosphereAltitude)
-    .showAtmosphere(true);
+    .showAtmosphere(false);
 
   // Day/Night Terminator Controller & Material
   const dayNight = new DayNightController(store, {
@@ -109,13 +112,20 @@ export function createGlobe(
 
   const bloom = new BloomController(globe, { enabled: options.enableBloom ?? true }, fpsMonitor);
 
-  // 3D Clouds Layer
+  // 3D Scene Objects (Clouds & Atmosphere)
   let globeScene = null;
   try {
     globeScene = globe.scene();
   } catch {
     // Mock environment fallback
   }
+
+  // Dynamic Sun-dependent Fresnel Atmosphere
+  const atmosphere = new AtmosphereController(globeScene, store, {
+    altitude: atmosphereAltitude,
+    sunDirection: dayNight.getSunDirection(),
+    dayColor: atmosphereColor,
+  });
 
   const clouds = new CloudsController(globeScene, store, {
     enabled: options.enableClouds ?? true,
@@ -142,6 +152,7 @@ export function createGlobe(
     camera,
     compositor,
     dayNight,
+    atmosphere,
     bloom,
     clouds,
     fpsMonitor,
@@ -157,6 +168,7 @@ export function createGlobe(
       detachEvents();
       compositor.destroy();
       dayNight.destroy();
+      atmosphere.destroy();
       clouds.destroy();
       fpsMonitor.stop();
       // Remove globe canvas

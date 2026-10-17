@@ -143,6 +143,10 @@ export class DayNightController {
     return this.material;
   }
 
+  public getSunDirection(): Vector3 {
+    return (this.material.uniforms.uSunDirection?.value as Vector3) ?? new Vector3(0, 0, 1);
+  }
+
   public updateSun(date: Date = new Date()): void {
     const [x, y, z] = calculateSunDirection(date);
     const sunUniform = this.material.uniforms.uSunDirection?.value as Vector3 | undefined;

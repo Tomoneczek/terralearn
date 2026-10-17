@@ -80,11 +80,13 @@ describe('Globe Instance Factory', () => {
     expect(mockGlobeInstance.backgroundImageUrl).toHaveBeenCalledWith('/test-sky.png');
     expect(mockGlobeInstance.atmosphereColor).toHaveBeenCalledWith('hsl(200, 100%, 50%)');
     expect(mockGlobeInstance.atmosphereAltitude).toHaveBeenCalledWith(0.2);
-    expect(mockGlobeInstance.showAtmosphere).toHaveBeenCalledWith(true);
+    expect(mockGlobeInstance.showAtmosphere).toHaveBeenCalledWith(false);
 
     expect(context.camera).toBeDefined();
     expect(context.compositor).toBeDefined();
     expect(context.dayNight).toBeDefined();
+    expect(context.atmosphere).toBeDefined();
+    expect(context.clouds).toBeDefined();
     expect(context.bloom).toBeDefined();
     expect(context.fpsMonitor).toBeDefined();
     expect(typeof context.destroy).toBe('function');
