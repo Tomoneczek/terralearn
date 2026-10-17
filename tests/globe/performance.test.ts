@@ -75,6 +75,44 @@ describe('performance module', () => {
       monitor.start();
       monitor.stop();
     });
+
+    it('ignores drops during warmup period to prevent startup stutter degradation', () => {
+      const onDegrade = vi.fn();
+      const monitor = new FPSMonitor({
+        minFps: 40,
+        consecutiveDropsThreshold: 2,
+        warmupPeriodMs: 5000,
+        onDegrade,
+      });
+
+      // Drops with isWarmup=true must be ignored
+      monitor.simulateFrameSample(15, { isWarmup: true });
+      monitor.simulateFrameSample(18, { isWarmup: true });
+      monitor.simulateFrameSample(12, { isWarmup: true });
+      expect(onDegrade).not.toHaveBeenCalled();
+
+      // Once warmup finishes, consecutive drops trigger degrade
+      monitor.simulateFrameSample(15, { isWarmup: false });
+      expect(onDegrade).not.toHaveBeenCalled();
+      monitor.simulateFrameSample(15, { isWarmup: false });
+      expect(onDegrade).toHaveBeenCalledTimes(1);
+    });
+
+    it('triggers upgrade callback when FPS is consistently high', () => {
+      const onUpgrade = vi.fn();
+      const monitor = new FPSMonitor({
+        highFpsThreshold: 50,
+        consecutiveHighThreshold: 3,
+        onUpgrade,
+      });
+
+      monitor.simulateFrameSample(55);
+      monitor.simulateFrameSample(58);
+      expect(onUpgrade).not.toHaveBeenCalled();
+
+      monitor.simulateFrameSample(60);
+      expect(onUpgrade).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('QualityController', () => {
@@ -169,6 +207,34 @@ describe('performance module', () => {
       // 3rd trigger stays at low (floor)
       controller.handleFpsDegrade();
       expect(controller.getActiveTier()).toBe('low');
+
+      controller.destroy();
+    });
+
+    it('adaptively recovers quality tier when performance improves', () => {
+      const store = createStore<AppState>({ ...createInitialState(), quality: 'auto' });
+      const fpsMonitor = new FPSMonitor();
+      const controller = new QualityController(
+        store,
+        mockTargets as unknown as QualityTargets,
+        fpsMonitor,
+      );
+
+      // Force to low
+      controller.handleFpsDegrade();
+      controller.handleFpsDegrade();
+      expect(controller.getActiveTier()).toBe('low');
+      expect(mockTargets.clouds.setVisible).toHaveBeenCalledWith(false);
+
+      // Upgrade 1: low -> medium (clouds restored!)
+      controller.handleFpsUpgrade();
+      expect(controller.getActiveTier()).toBe('medium');
+      expect(mockTargets.clouds.setVisible).toHaveBeenCalledWith(true);
+
+      // Upgrade 2: medium -> high (bloom restored!)
+      controller.handleFpsUpgrade();
+      expect(controller.getActiveTier()).toBe('high');
+      expect(mockTargets.bloom.setEnabled).toHaveBeenCalledWith(true);
 
       controller.destroy();
     });

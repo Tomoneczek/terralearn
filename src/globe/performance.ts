@@ -48,54 +48,95 @@ export interface FPSMonitorOptions {
   minFps?: number;
   sampleIntervalMs?: number;
   consecutiveDropsThreshold?: number;
+  warmupPeriodMs?: number;
+  highFpsThreshold?: number;
+  consecutiveHighThreshold?: number;
   onDegrade?: () => void;
+  onUpgrade?: () => void;
 }
 
 export class FPSMonitor {
   private readonly minFps: number;
   private readonly sampleIntervalMs: number;
   private readonly consecutiveDropsThreshold: number;
+  private readonly warmupPeriodMs: number;
+  private readonly highFpsThreshold: number;
+  private readonly consecutiveHighThreshold: number;
   public onDegrade?: () => void;
+  public onUpgrade?: () => void;
 
   private isRunning = false;
   private frameCount = 0;
   private lastSampleTime = 0;
+  private startTime = 0;
   private currentFps = 60;
   private consecutiveLowFpsCount = 0;
+  private consecutiveHighFpsCount = 0;
   private rafId: number | null = null;
 
   constructor(options: FPSMonitorOptions = {}) {
     this.minFps = options.minFps ?? 35;
     this.sampleIntervalMs = options.sampleIntervalMs ?? 1000;
-    this.consecutiveDropsThreshold = options.consecutiveDropsThreshold ?? 3;
+    this.consecutiveDropsThreshold = options.consecutiveDropsThreshold ?? 4;
+    this.warmupPeriodMs = options.warmupPeriodMs ?? 5000;
+    this.highFpsThreshold = options.highFpsThreshold ?? 50;
+    this.consecutiveHighThreshold = options.consecutiveHighThreshold ?? 5;
     this.onDegrade = options.onDegrade;
+    this.onUpgrade = options.onUpgrade;
   }
 
   public start(): void {
     if (this.isRunning) return;
     this.isRunning = true;
     this.frameCount = 0;
-    this.lastSampleTime = performance.now();
+    const now = performance.now();
+    this.startTime = now;
+    this.lastSampleTime = now;
     this.consecutiveLowFpsCount = 0;
+    this.consecutiveHighFpsCount = 0;
 
-    const loop = (now: number): void => {
+    const loop = (timestamp: number): void => {
       if (!this.isRunning) return;
+
+      // Skip measurement when tab is hidden or minimized (browser throttles rAF to 1 FPS)
+      if (typeof document !== 'undefined' && document.hidden) {
+        this.lastSampleTime = timestamp;
+        this.frameCount = 0;
+        this.rafId = requestAnimationFrame(loop);
+        return;
+      }
+
       this.frameCount++;
-      const elapsed = now - this.lastSampleTime;
+      const elapsed = timestamp - this.lastSampleTime;
 
       if (elapsed >= this.sampleIntervalMs) {
         this.currentFps = Math.round((this.frameCount * 1000) / elapsed);
         this.frameCount = 0;
-        this.lastSampleTime = now;
+        this.lastSampleTime = timestamp;
 
-        if (this.currentFps < this.minFps) {
+        const isWarmingUp = timestamp - this.startTime < this.warmupPeriodMs;
+
+        if (isWarmingUp) {
+          // Warmup grace period: ignore startup drops from shader compilation & data loading
+          this.consecutiveLowFpsCount = 0;
+          this.consecutiveHighFpsCount = 0;
+        } else if (this.currentFps < this.minFps) {
           this.consecutiveLowFpsCount++;
+          this.consecutiveHighFpsCount = 0;
           if (this.consecutiveLowFpsCount >= this.consecutiveDropsThreshold) {
             this.onDegrade?.();
             this.consecutiveLowFpsCount = 0; // Reset after trigger
           }
+        } else if (this.currentFps >= this.highFpsThreshold) {
+          this.consecutiveHighFpsCount++;
+          this.consecutiveLowFpsCount = 0;
+          if (this.consecutiveHighFpsCount >= this.consecutiveHighThreshold) {
+            this.onUpgrade?.();
+            this.consecutiveHighFpsCount = 0;
+          }
         } else {
           this.consecutiveLowFpsCount = 0;
+          this.consecutiveHighFpsCount = 0;
         }
       }
 
@@ -117,16 +158,31 @@ export class FPSMonitor {
     return this.currentFps;
   }
 
-  public simulateFrameSample(fps: number): void {
+  public simulateFrameSample(fps: number, options: { isWarmup?: boolean } = {}): void {
     this.currentFps = fps;
+    if (options.isWarmup) {
+      this.consecutiveLowFpsCount = 0;
+      this.consecutiveHighFpsCount = 0;
+      return;
+    }
+
     if (fps < this.minFps) {
       this.consecutiveLowFpsCount++;
+      this.consecutiveHighFpsCount = 0;
       if (this.consecutiveLowFpsCount >= this.consecutiveDropsThreshold) {
         this.onDegrade?.();
         this.consecutiveLowFpsCount = 0;
       }
+    } else if (fps >= this.highFpsThreshold) {
+      this.consecutiveHighFpsCount++;
+      this.consecutiveLowFpsCount = 0;
+      if (this.consecutiveHighFpsCount >= this.consecutiveHighThreshold) {
+        this.onUpgrade?.();
+        this.consecutiveHighFpsCount = 0;
+      }
     } else {
       this.consecutiveLowFpsCount = 0;
+      this.consecutiveHighFpsCount = 0;
     }
   }
 }
@@ -136,7 +192,7 @@ export class FPSMonitor {
  * - 'low': 1.0 DPR, bloom & clouds disabled, lightweight rendering for weak GPUs.
  * - 'medium': 1.5 DPR, clouds & atmosphere enabled, bloom off, stable >= 50 FPS.
  * - 'high': Native DPR (up to 2.0), bloom, 3D clouds, and atmospheric glow.
- * - 'auto': Dynamically degrades preset when FPS drops below threshold.
+ * - 'auto': Dynamically degrades preset when FPS drops below threshold, with warmup grace period.
  */
 export class QualityController {
   private readonly store: Store<AppState>;
@@ -150,14 +206,23 @@ export class QualityController {
     this.targets = targets;
     this.fpsMonitor = fpsMonitor;
 
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+    const isMobile =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(pointer: coarse) and (max-width: 768px)').matches;
     this.currentTier = isMobile ? 'medium' : 'high';
 
-    // Hook FPS degradation in auto mode
+    // Hook FPS degradation and upgrade in auto mode
     const prevDegrade = this.fpsMonitor.onDegrade;
     this.fpsMonitor.onDegrade = () => {
       prevDegrade?.();
       this.handleFpsDegrade();
+    };
+
+    const prevUpgrade = this.fpsMonitor.onUpgrade;
+    this.fpsMonitor.onUpgrade = () => {
+      prevUpgrade?.();
+      this.handleFpsUpgrade();
     };
 
     this.bindStore();
@@ -185,6 +250,27 @@ export class QualityController {
     } else if (this.currentTier === 'medium') {
       this.currentTier = 'low';
       this.applyCurrentPreset();
+    }
+  }
+
+  public handleFpsUpgrade(): void {
+    const preset = this.store.get().quality;
+    if (preset !== 'auto') {
+      return;
+    }
+
+    if (this.currentTier === 'low') {
+      this.currentTier = 'medium';
+      this.applyCurrentPreset();
+    } else if (this.currentTier === 'medium') {
+      const isMobile =
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(pointer: coarse) and (max-width: 768px)').matches;
+      if (!isMobile) {
+        this.currentTier = 'high';
+        this.applyCurrentPreset();
+      }
     }
   }
 
