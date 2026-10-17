@@ -32,7 +32,7 @@ export class QuizSummaryModal {
     card.setAttribute('aria-label', t('quiz.summary'));
 
     // 1. Badge & Title
-    const badge = getBadgeForScore(summary.totalPoints);
+    const badge = getBadgeForScore(summary.totalPoints, summary.maxPoints);
 
     const title = document.createElement('h2');
     title.className = 'tl-summary-title';
@@ -54,7 +54,7 @@ export class QuizSummaryModal {
     badgeBox.appendChild(badgeDesc);
     card.appendChild(badgeBox);
 
-    // 2. Metrics (Score & Distance)
+    // 2. Metrics (Score & Accuracy / Distance)
     const metricsRow = document.createElement('div');
     metricsRow.className = 'tl-summary-metrics';
 
@@ -69,19 +69,30 @@ export class QuizSummaryModal {
     scoreCol.appendChild(scoreVal);
     scoreCol.appendChild(scoreLbl);
 
-    const distCol = document.createElement('div');
-    distCol.className = 'tl-summary-metric';
-    const distVal = document.createElement('span');
-    distVal.className = 'tl-summary-metric-val';
-    distVal.textContent = `${summary.avgDistanceKm.toLocaleString('pl-PL')} km`;
-    const distLbl = document.createElement('span');
-    distLbl.className = 'tl-summary-metric-lbl';
-    distLbl.textContent = t('quiz.avgError');
-    distCol.appendChild(distVal);
-    distCol.appendChild(distLbl);
+    const secondCol = document.createElement('div');
+    secondCol.className = 'tl-summary-metric';
+    const secondVal = document.createElement('span');
+    secondVal.className = 'tl-summary-metric-val';
+
+    const secondLbl = document.createElement('span');
+    secondLbl.className = 'tl-summary-metric-lbl';
+
+    if (summary.mode === 'reverse') {
+      const correct = summary.correctCount ?? 0;
+      const total = summary.totalQuestions || 1;
+      const pct = Math.round((correct / total) * 100);
+      secondVal.textContent = `${correct} / ${total} (${pct}%)`;
+      secondLbl.textContent = t('quiz.accuracy');
+    } else {
+      secondVal.textContent = `${(summary.avgDistanceKm ?? 0).toLocaleString('pl-PL')} km`;
+      secondLbl.textContent = t('quiz.avgError');
+    }
+
+    secondCol.appendChild(secondVal);
+    secondCol.appendChild(secondLbl);
 
     metricsRow.appendChild(scoreCol);
-    metricsRow.appendChild(distCol);
+    metricsRow.appendChild(secondCol);
     card.appendChild(metricsRow);
 
     // 3. Review list
@@ -98,9 +109,21 @@ export class QuizSummaryModal {
 
       const details = document.createElement('span');
       details.className = 'tl-summary-item-details';
-      const color = getDistanceColor(ans.distanceKm);
-      details.style.color = color;
-      details.textContent = `${ans.distanceKm.toLocaleString('pl-PL')} km (+${ans.points} ${t('quiz.points')})`;
+
+      if (summary.mode === 'reverse') {
+        if (ans.isCorrect) {
+          details.style.color = '#4ade80';
+          details.textContent = `✓ ${t('quiz.correctFeedback')} (+${ans.points} ${t('quiz.points')})`;
+        } else {
+          details.style.color = '#f87171';
+          const given = ans.selectedAnswer || '-';
+          details.textContent = `✗ ${given} → ${ans.question.name_pl} (+0 ${t('quiz.points')})`;
+        }
+      } else {
+        const color = getDistanceColor(ans.distanceKm ?? 0);
+        details.style.color = color;
+        details.textContent = `${(ans.distanceKm ?? 0).toLocaleString('pl-PL')} km (+${ans.points} ${t('quiz.points')})`;
+      }
 
       row.appendChild(name);
       row.appendChild(details);
@@ -118,7 +141,7 @@ export class QuizSummaryModal {
     playAgainBtn.textContent = t('quiz.playAgain');
     playAgainBtn.addEventListener('click', () => {
       this.hide();
-      this.engine.start();
+      this.engine.start(summary.mode);
     });
 
     const repeatMistakesBtn = document.createElement('button');

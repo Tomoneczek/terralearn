@@ -68,6 +68,7 @@ export interface AppState {
   quality: QualityPreset;
   graticule: GraticuleMode;
   hiddenLabels: boolean;
+  hideSelectionLabel?: boolean;
   selection: FeatureRef | null;
   hovered: FeatureRef | null;
   globeClick: { lat: number; lng: number } | null;

@@ -103,7 +103,12 @@ describe('SidebarController', () => {
 
     const quizBtn = container.querySelector<HTMLButtonElement>('#btn-start-quiz');
     quizBtn?.click();
-    expect(onStartQuiz).toHaveBeenCalledTimes(1);
+    expect(onStartQuiz).toHaveBeenCalledWith('classic');
+
+    const quizReverseBtn = container.querySelector<HTMLButtonElement>('#btn-start-quiz-reverse');
+    expect(quizReverseBtn).not.toBeNull();
+    quizReverseBtn?.click();
+    expect(onStartQuiz).toHaveBeenCalledWith('reverse');
 
     sidebar.destroy();
   });

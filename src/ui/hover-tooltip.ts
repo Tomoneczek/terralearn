@@ -62,9 +62,9 @@ export class HoverTooltip {
 
   private bindStore(): void {
     this.unsubscribe = this.store.subscribe(
-      s => s.hovered,
-      hovered => {
-        if (!hovered) {
+      s => ({ hovered: s.hovered, mode: s.mode }),
+      ({ hovered, mode }) => {
+        if (!hovered || mode === 'quiz') {
           this.element.classList.add('hidden');
         } else {
           const color = getLayerColor(hovered.layerId);

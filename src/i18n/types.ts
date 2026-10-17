@@ -55,6 +55,7 @@ export interface Dictionary {
   tools: {
     sizeComparison: string;
     quizMode: string;
+    quizReverse: string;
     greatCircle: string;
     antipodes: string;
   };
@@ -113,6 +114,29 @@ export interface Dictionary {
     badgeApprenticeDesc: string;
     badgeNoviceTitle: string;
     badgeNoviceDesc: string;
+    reversePrompt: string;
+    categoryPrefix: string;
+    accuracy: string;
+    correctFeedback: string;
+    incorrectFeedback: string;
+    typeAnswerPlaceholder: string;
+    modeClassic: string;
+    modeReverse: string;
+    chooseMode: string;
+    categories: {
+      country: string;
+      river: string;
+      lake: string;
+      mountain_range: string;
+      mountain: string;
+      peak: string;
+      desert: string;
+      capital: string;
+      megacity: string;
+      marine: string;
+      landform: string;
+      other: string;
+    };
   };
   route: {
     title: string;

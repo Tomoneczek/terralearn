@@ -48,21 +48,30 @@ export function bootstrap(): void {
 
     // Initialize Quiz Engine & UI
     quizEngine = new QuizEngine(store, {
-      onQuestion: (q, index, total, score) => {
+      onQuestion: (q, index, total, score, mode) => {
         globeContext?.setArcs([]);
-        quizHud?.showQuestion(q, index, total, score);
+        quizHud?.showQuestion(q, index, total, score, mode);
+      },
+      onCameraFlyTo: (lat, lng, alt) => {
+        globeContext?.camera.flyTo(lat, lng, alt ?? 1.2, 1000);
       },
       onFeedback: answer => {
         quizHud?.showFeedback(answer);
-        globeContext?.setArcs([
-          {
-            startLat: answer.clickLat,
-            startLng: answer.clickLng,
-            endLat: answer.question.targetLat,
-            endLng: answer.question.targetLng,
-            color: getDistanceColor(answer.distanceKm),
-          },
-        ]);
+        if (
+          answer.mode === 'classic' &&
+          answer.clickLat !== undefined &&
+          answer.clickLng !== undefined
+        ) {
+          globeContext?.setArcs([
+            {
+              startLat: answer.clickLat,
+              startLng: answer.clickLng,
+              endLat: answer.question.targetLat,
+              endLng: answer.question.targetLng,
+              color: getDistanceColor(answer.distanceKm ?? 0),
+            },
+          ]);
+        }
       },
       onFinish: summary => {
         globeContext?.setArcs([]);
@@ -90,8 +99,8 @@ export function bootstrap(): void {
       sidebar = new SidebarController({
         container: slots.sidebarContainer,
         store,
-        onStartQuiz: () => {
-          quizEngine?.start();
+        onStartQuiz: mode => {
+          quizEngine?.start(mode ?? 'classic');
         },
       });
     }

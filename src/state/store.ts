@@ -12,6 +12,7 @@ export function createInitialState(): AppState {
     quality: 'auto',
     graticule: 'off',
     hiddenLabels: false,
+    hideSelectionLabel: false,
     selection: null,
     hovered: null,
     globeClick: null,

@@ -274,6 +274,7 @@ export class LayerCompositor {
       s => ({
         sel: s.selection,
         hov: s.hovered?.id,
+        hideSelectionLabel: s.hideSelectionLabel,
       }),
       () => {
         this.refreshDynamicStyles();
@@ -283,7 +284,8 @@ export class LayerCompositor {
         a.sel?.id === b.sel?.id &&
         a.sel?.lat === b.sel?.lat &&
         a.sel?.lng === b.sel?.lng &&
-        a.hov === b.hov,
+        a.hov === b.hov &&
+        a.hideSelectionLabel === b.hideSelectionLabel,
     );
     this.unsubs.push(unsubInteractions);
   }
@@ -325,6 +327,7 @@ export class LayerCompositor {
     if (state.hiddenLabels && this.lastLabelCandidates.length > 0) {
       const mergedLabels = selectVisibleLabels(this.lastLabelCandidates, {
         hiddenLabels: true,
+        hideSelectionLabel: state.hideSelectionLabel,
         selectedId: state.selection?.id,
         hoveredId: state.hovered?.id,
       });
@@ -468,6 +471,7 @@ export class LayerCompositor {
 
     const mergedLabels = selectVisibleLabels(labelCandidates, {
       hiddenLabels: state.hiddenLabels,
+      hideSelectionLabel: state.hideSelectionLabel,
       selectedId: state.selection?.id,
       hoveredId: state.hovered?.id,
       maxLabels: 25,

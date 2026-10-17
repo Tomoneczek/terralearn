@@ -63,9 +63,9 @@ export class InfoCard {
 
   private bindStore(): void {
     this.unsubscribe = this.store.subscribe(
-      s => s.selection,
-      selection => {
-        if (!selection) {
+      s => ({ selection: s.selection, mode: s.mode }),
+      ({ selection, mode }) => {
+        if (!selection || mode === 'quiz') {
           this.element.classList.add('hidden');
           this.element.innerHTML = '';
         } else {

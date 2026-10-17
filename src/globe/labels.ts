@@ -13,6 +13,7 @@ export const LABEL_PRIORITY: Readonly<Record<string, number>> = {
 
 export interface LabelSelectionOptions {
   hiddenLabels: boolean;
+  hideSelectionLabel?: boolean;
   selectedId?: string;
   hoveredId?: string;
   maxLabels?: number;
@@ -139,9 +140,12 @@ export function selectVisibleLabels(
   candidates: readonly GeoFeature[],
   options: LabelSelectionOptions,
 ): GeoFeature[] {
-  const { hiddenLabels, selectedId, hoveredId, maxLabels = 25 } = options;
+  const { hiddenLabels, hideSelectionLabel, selectedId, hoveredId, maxLabels = 25 } = options;
 
   if (hiddenLabels) {
+    if (hideSelectionLabel) {
+      return [];
+    }
     // In quiz/learning mode, reveal label only on hover or selection
     return candidates.filter(
       f =>

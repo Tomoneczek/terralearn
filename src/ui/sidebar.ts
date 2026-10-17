@@ -9,10 +9,12 @@ import { PRESETS, applyPreset, detectActivePreset, type PresetId } from './prese
 import { loadGeoData } from '@/globe/data-loader';
 import { antipode } from '@/geo/spherical';
 
+import type { QuizMode } from '@/quiz/types';
+
 export interface SidebarOptions {
   container: HTMLElement;
   store: Store<AppState>;
-  onStartQuiz?: () => void;
+  onStartQuiz?: (mode?: QuizMode) => void;
 }
 
 export function getLayerColor(id: LayerId): string {
@@ -45,7 +47,7 @@ export function getLayerColor(id: LayerId): string {
 export class SidebarController {
   private readonly container: HTMLElement;
   private readonly store: Store<AppState>;
-  private readonly onStartQuiz?: () => void;
+  private readonly onStartQuiz?: (mode?: QuizMode) => void;
 
   private readonly presetButtons = new Map<PresetId, HTMLButtonElement>();
   private readonly layerToggles = new Map<LayerId, ToggleSwitch>();
@@ -332,13 +334,40 @@ export class SidebarController {
     quizBtn.appendChild(labelSpan);
     quizBtn.addEventListener('click', () => {
       if (this.onStartQuiz) {
-        this.onStartQuiz();
+        this.onStartQuiz('classic');
       } else {
-        window.dispatchEvent(new CustomEvent('tl-start-quiz'));
+        window.dispatchEvent(new CustomEvent('tl-start-quiz', { detail: { mode: 'classic' } }));
+      }
+    });
+
+    const quizReverseBtn = document.createElement('button');
+    quizReverseBtn.type = 'button';
+    quizReverseBtn.className = 'tl-tool-btn';
+    quizReverseBtn.id = 'btn-start-quiz-reverse';
+
+    const iconReverseSpan = document.createElement('span');
+    iconReverseSpan.className = 'tl-tool-icon';
+    iconReverseSpan.appendChild(
+      parseSvg(
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>',
+      ),
+    );
+
+    const labelReverseSpan = document.createElement('span');
+    labelReverseSpan.textContent = t('tools.quizReverse');
+
+    quizReverseBtn.appendChild(iconReverseSpan);
+    quizReverseBtn.appendChild(labelReverseSpan);
+    quizReverseBtn.addEventListener('click', () => {
+      if (this.onStartQuiz) {
+        this.onStartQuiz('reverse');
+      } else {
+        window.dispatchEvent(new CustomEvent('tl-start-quiz', { detail: { mode: 'reverse' } }));
       }
     });
 
     toolsSection.appendChild(quizBtn);
+    toolsSection.appendChild(quizReverseBtn);
     root.appendChild(toolsSection);
 
     this.container.appendChild(root);

@@ -42,7 +42,7 @@ describe('QuizEngine', () => {
 
     expect(engine.getState()).toBe('question');
     expect(store.get().hiddenLabels).toBe(true);
-    expect(onQuestion).toHaveBeenCalledWith(customQuestions[0], 0, 2, 0);
+    expect(onQuestion).toHaveBeenCalledWith(customQuestions[0], 0, 2, 0, 'classic');
 
     engine.destroy();
   });
@@ -128,5 +128,115 @@ describe('QuizEngine', () => {
     expect(store.get().layers.rivers.enabled).toBe(false);
 
     engine.destroy();
+  });
+
+  it('runs reverse quiz mode with camera flyTo and halo selection', () => {
+    const store = createStore<AppState>(createInitialState());
+    const onCameraFlyTo = vi.fn();
+    const onFeedback = vi.fn();
+    let roundSummary: QuizRoundSummary | null = null;
+
+    const engine = new QuizEngine(store, {
+      onCameraFlyTo,
+      onFeedback,
+      onFinish: summary => {
+        roundSummary = summary;
+      },
+    });
+
+    const reverseQuestions: QuizQuestion[] = [
+      {
+        ...customQuestions[0]!,
+        options: ['Polska', 'Niemcy', 'Czechy', 'Francja'],
+        altitude: 1.2,
+      },
+      {
+        ...customQuestions[1]!,
+        options: ['Jezioro Wiktorii', 'Bajkał', 'Tanganika', 'Huron'],
+        altitude: 1.0,
+      },
+    ];
+
+    engine.start('reverse', 2, reverseQuestions);
+
+    expect(engine.getState()).toBe('question');
+    expect(engine.getMode()).toBe('reverse');
+    expect(store.get().mode).toBe('quiz');
+    expect(store.get().hiddenLabels).toBe(true);
+    expect(store.get().hideSelectionLabel).toBe(true);
+    expect(store.get().selection?.id).toBe('PL');
+    expect(onCameraFlyTo).toHaveBeenCalledWith(52.0, 19.0, 1.2);
+
+    // Answer Q1 correctly
+    engine.handleSelectAnswer('Polska');
+    expect(engine.getState()).toBe('feedback');
+    expect(store.get().hideSelectionLabel).toBe(false); // revealed in feedback
+    expect(onFeedback).toHaveBeenCalledTimes(1);
+    expect(engine.getAnswers()[0]?.isCorrect).toBe(true);
+    expect(engine.getAnswers()[0]?.points).toBe(1000);
+
+    // Move to Q2
+    engine.nextQuestion();
+    expect(engine.getState()).toBe('question');
+    expect(store.get().hideSelectionLabel).toBe(true);
+    expect(store.get().selection?.id).toBe('lake-victoria');
+    expect(onCameraFlyTo).toHaveBeenCalledWith(-1.0, 33.0, 1.0);
+
+    // Answer Q2 incorrectly
+    engine.handleSelectAnswer('Bajkał');
+    expect(engine.getState()).toBe('feedback');
+    expect(engine.getAnswers()[1]?.isCorrect).toBe(false);
+    expect(engine.getAnswers()[1]?.points).toBe(0);
+
+    // Finish round
+    engine.nextQuestion();
+    expect(engine.getState()).toBe('finished');
+    expect(roundSummary).not.toBeNull();
+    const summary = roundSummary as unknown as QuizRoundSummary;
+    expect(summary.mode).toBe('reverse');
+    expect(summary.totalPoints).toBe(1000);
+    expect(summary.correctCount).toBe(1);
+    expect(summary.totalQuestions).toBe(2);
+
+    // Repeat mistakes: should only repeat Q2 (lake-victoria)
+    engine.repeatMistakes();
+    expect(engine.getState()).toBe('question');
+    expect(engine.getCurrentQuestion()?.id).toBe('lake-victoria');
+
+    engine.destroy();
+  });
+
+  it('regression: selectVisibleLabels strictly suppresses selected label when hideSelectionLabel is true', async () => {
+    const { selectVisibleLabels } = await import('@/globe/labels');
+    const candidates = [
+      {
+        type: 'Feature' as const,
+        properties: {
+          id: 'PL',
+          name_pl: 'Polska',
+          name_en: 'Poland',
+          kind: 'country',
+          layerId: 'countriesTopN' as const,
+        },
+        geometry: { type: 'Point' as const, coordinates: [19, 52] },
+      },
+    ];
+
+    // During question phase: hiddenLabels=true AND hideSelectionLabel=true -> empty
+    const labelsInQuestion = selectVisibleLabels(candidates, {
+      hiddenLabels: true,
+      hideSelectionLabel: true,
+      selectedId: 'PL',
+    });
+    expect(labelsInQuestion).toEqual([]);
+
+    // During feedback phase: hiddenLabels=true AND hideSelectionLabel=false -> revealed
+    const labelsInFeedback = selectVisibleLabels(candidates, {
+      hiddenLabels: true,
+      hideSelectionLabel: false,
+      selectedId: 'PL',
+    });
+    expect(labelsInFeedback.length).toBe(1);
+    expect(labelsInFeedback[0]?.properties.id).toBe('PL');
   });
 });
