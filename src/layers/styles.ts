@@ -22,6 +22,8 @@ export function getPolygonAltitude(
     const elevation = typeof rawElevation === 'number' ? rawElevation : 3000;
     const clampedElevation = Math.max(500, Math.min(8848, elevation));
     baseAltitude = 0.015 + (clampedElevation / 8848) * 0.033;
+  } else if (layerId === 'marine') {
+    baseAltitude = 0.003;
   } else if (layerId === 'borders') {
     baseAltitude = 0.004;
   } else if (layerId === 'deserts') {
@@ -68,6 +70,21 @@ export function getPolygonCapColor(
   if (isHovered) {
     return 'hsla(180, 100%, 80%, 0.45)';
   }
+  if (feat.properties.layerId === 'marine') {
+    const subkind = feat.properties.marineType;
+    switch (subkind) {
+      case 'sea':
+        return 'hsla(210, 85%, 45%, 0.20)';
+      case 'gulf':
+      case 'bay':
+        return 'hsla(195, 75%, 45%, 0.22)';
+      case 'strait':
+      case 'channel':
+        return 'hsla(180, 80%, 45%, 0.25)';
+      default:
+        return 'hsla(205, 80%, 50%, 0.18)';
+    }
+  }
   if (feat.properties.layerId === 'landforms') {
     const subkind = feat.properties.landformType;
     switch (subkind) {
@@ -101,6 +118,21 @@ export function getPolygonSideColor(
   if (isHovered) {
     return 'hsla(180, 100%, 60%, 0.5)';
   }
+  if (feat.properties.layerId === 'marine') {
+    const subkind = feat.properties.marineType;
+    switch (subkind) {
+      case 'sea':
+        return 'hsla(210, 85%, 30%, 0.25)';
+      case 'gulf':
+      case 'bay':
+        return 'hsla(195, 75%, 30%, 0.25)';
+      case 'strait':
+      case 'channel':
+        return 'hsla(180, 80%, 30%, 0.28)';
+      default:
+        return 'hsla(205, 70%, 35%, 0.25)';
+    }
+  }
   if (feat.properties.layerId === 'landforms') {
     const subkind = feat.properties.landformType;
     switch (subkind) {
@@ -133,6 +165,21 @@ export function getPolygonStrokeColor(
   }
   if (isHovered) {
     return 'hsl(180, 100%, 80%)'; // Cyan glow
+  }
+  if (feat.properties.layerId === 'marine') {
+    const subkind = feat.properties.marineType;
+    switch (subkind) {
+      case 'sea':
+        return 'hsl(210, 90%, 65%)';
+      case 'gulf':
+      case 'bay':
+        return 'hsl(195, 90%, 65%)';
+      case 'strait':
+      case 'channel':
+        return 'hsl(180, 95%, 65%)';
+      default:
+        return 'hsl(195, 90%, 65%)';
+    }
   }
   if (feat.properties.layerId === 'landforms') {
     const subkind = feat.properties.landformType;

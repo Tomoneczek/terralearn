@@ -119,6 +119,28 @@ export const LAYER_DEFINITIONS: readonly LayerDef[] = [
       altitude: 0.006,
     },
   },
+  {
+    id: 'marine',
+    group: 'physical',
+    labelKey: 'layers.marine',
+    icon: 'anchor',
+    kind: 'polygon',
+    source: '/data/marine.json',
+    defaultEnabled: false,
+    topN: {
+      min: 5,
+      max: 100,
+      default: 30,
+      presets: [10, 30, 60, 100],
+      rankBy: 'area',
+    },
+    style: {
+      capColor: 'hsla(205, 80%, 50%, 0.18)',
+      sideColor: 'hsla(205, 70%, 35%, 0.25)',
+      strokeColor: 'hsl(195, 90%, 65%)',
+      altitude: 0.003,
+    },
+  },
 
   // Political geography
   {

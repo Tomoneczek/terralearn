@@ -11,6 +11,7 @@ export interface GeoFeatureProperties {
   population?: number;
   aliases?: string[];
   landformType?: string;
+  marineType?: string;
   rank?: {
     area?: number;
     population?: number;

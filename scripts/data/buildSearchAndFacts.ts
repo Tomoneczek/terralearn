@@ -29,6 +29,7 @@ interface RawGeoFeature {
     countryCode?: string;
     countryName?: string;
     landformType?: string;
+    marineType?: string;
     rank?: {
       area?: number;
       population?: number;
@@ -117,7 +118,7 @@ function getFeatureCoords(f: RawGeoFeature): { lat: number; lng: number } {
   return { lat: 0, lng: 0 };
 }
 
-function getKindPl(kind: string, landformType?: string): string {
+function getKindPl(kind: string, subType?: string): string {
   switch (kind) {
     case 'country':
       return 'Państwo';
@@ -137,7 +138,7 @@ function getKindPl(kind: string, landformType?: string): string {
     case 'peak':
       return 'Szczyt górski';
     case 'landform':
-      switch (landformType) {
+      switch (subType) {
         case 'plateau':
           return 'Wyżyna / Płaskowyż';
         case 'plain':
@@ -150,6 +151,25 @@ function getKindPl(kind: string, landformType?: string): string {
           return 'Półwysep';
         default:
           return 'Forma terenu';
+      }
+    case 'marine':
+      switch (subType) {
+        case 'sea':
+          return 'Morze';
+        case 'gulf':
+        case 'bay':
+          return 'Zatoka';
+        case 'strait':
+          return 'Cieśnina';
+        case 'channel':
+          return 'Kanał morski';
+        case 'sound':
+        case 'fjord':
+          return 'Fiord / Cieśnina';
+        case 'ocean':
+          return 'Ocean';
+        default:
+          return 'Akwen morski';
       }
     default:
       return 'Obiekt geograficzny';
@@ -228,6 +248,19 @@ function generateFacts(f: RawGeoFeature): ObjectFacts {
     if (p.rank?.order) {
       stats.push({ label: 'Ranking form terenu', value: `#${p.rank.order} na świecie` });
     }
+  } else if (p.kind === 'marine') {
+    if (area) {
+      stats.push({ label: 'Powierzchnia', value: `${area.toLocaleString('pl-PL')} km²` });
+      const balticRatio = area / 377000;
+      if (balticRatio >= 1) {
+        comparison = `Powierzchnia równa ok. ${balticRatio.toFixed(1)}x Morze Bałtyckie`;
+      } else {
+        comparison = `Powierzchnia stanowi ok. ${(balticRatio * 100).toFixed(1)}% Morza Bałtyckiego`;
+      }
+    }
+    if (p.rank?.order) {
+      stats.push({ label: 'Ranking akwenów morskich', value: `#${p.rank.order} na świecie` });
+    }
   } else if (p.kind === 'capital' || p.kind === 'megacity') {
     if (pop) {
       stats.push({ label: 'Ludność', value: `${pop.toLocaleString('pl-PL')} mieszkańców` });
@@ -250,7 +283,7 @@ function generateFacts(f: RawGeoFeature): ObjectFacts {
     name_pl: p.name_pl,
     name_en: p.name_en,
     kind: p.kind,
-    kind_pl: getKindPl(p.kind, p.landformType),
+    kind_pl: getKindPl(p.kind, p.landformType || p.marineType),
     stats,
     comparison,
   };
@@ -266,6 +299,7 @@ export function buildSearchIndexAndFacts(): {
     { filename: 'rivers.json', layerId: 'rivers' },
     { filename: 'regions.json', layerId: 'mountains' },
     { filename: 'landforms.json', layerId: 'landforms' },
+    { filename: 'marine.json', layerId: 'marine' },
     { filename: 'places.json', layerId: 'capitals' },
   ];
 
@@ -292,6 +326,7 @@ export function buildSearchIndexAndFacts(): {
       if (p.kind === 'peak') targetLayerId = 'peaks';
       if (p.kind === 'capital') targetLayerId = 'capitals';
       if (p.kind === 'landform') targetLayerId = 'landforms';
+      if (p.kind === 'marine') targetLayerId = 'marine';
 
       searchIndex.push({
         id: p.id,

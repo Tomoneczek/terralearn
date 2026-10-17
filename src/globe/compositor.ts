@@ -398,6 +398,7 @@ export class LayerCompositor {
         if (def.id === 'megacities' && f.properties.kind !== 'megacity') return false;
         if (def.id === 'peaks' && f.properties.kind !== 'peak') return false;
         if (def.id === 'landforms' && f.properties.kind !== 'landform') return false;
+        if (def.id === 'marine' && f.properties.kind !== 'marine') return false;
         if (def.id === 'borders' && f.properties.kind !== 'country') return false;
         if (def.id === 'countriesTopN' && f.properties.kind !== 'country') return false;
 

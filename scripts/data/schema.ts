@@ -10,6 +10,7 @@ export const GeoFeatureKindSchema = z.enum([
   'desert',
   'peak',
   'landform',
+  'marine',
 ]);
 
 export type GeoFeatureKind = z.infer<typeof GeoFeatureKindSchema>;
@@ -17,6 +18,19 @@ export type GeoFeatureKind = z.infer<typeof GeoFeatureKindSchema>;
 export const LandformTypeSchema = z.enum(['plateau', 'plain', 'basin', 'delta', 'peninsula']);
 
 export type LandformType = z.infer<typeof LandformTypeSchema>;
+
+export const MarineTypeSchema = z.enum([
+  'sea',
+  'gulf',
+  'bay',
+  'strait',
+  'channel',
+  'sound',
+  'fjord',
+  'ocean',
+]);
+
+export type MarineType = z.infer<typeof MarineTypeSchema>;
 
 export const GeoFeaturePropertiesSchema = z.object({
   id: z.string().min(1),
@@ -26,6 +40,7 @@ export const GeoFeaturePropertiesSchema = z.object({
   name_en: z.string().min(1),
   aliases: z.array(z.string()).default([]),
   landformType: LandformTypeSchema.optional(),
+  marineType: MarineTypeSchema.optional(),
   rank: z.object({
     area: z.number().nonnegative().optional(),
     population: z.number().nonnegative().optional(),

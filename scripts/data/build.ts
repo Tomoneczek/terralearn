@@ -11,6 +11,7 @@ import {
   type GeoFeatureCollection,
   GeoFeatureCollectionSchema,
   type LandformType,
+  type MarineType,
 } from './schema.js';
 
 const EARTH_RADIUS_KM = 6371.0088;
@@ -433,6 +434,80 @@ export async function buildData(): Promise<void> {
   fs.writeFileSync(landformsFile, JSON.stringify(landformsCol));
   console.log(`    ✓ Saved ${landformsCol.features.length} landforms to landforms.json`);
 
+  // 4c. Marine (Seas, Gulfs, Bays, Straits, Channels)
+  console.log('  → Processing marine bodies (seas, gulfs, bays, straits, channels)...');
+  const rawMarine = JSON.parse(
+    fs.readFileSync(path.join(RAW_DIR, 'ne_10m_geography_marine_polys.geojson'), 'utf-8'),
+  );
+
+  const marineClasses: Record<string, MarineType> = {
+    sea: 'sea',
+    gulf: 'gulf',
+    bay: 'bay',
+    strait: 'strait',
+    channel: 'channel',
+    sound: 'sound',
+    fjord: 'fjord',
+  };
+
+  const marineFeatures: GeoFeature[] = [];
+  const usedMarineIds = new Set<string>();
+
+  for (const raw of rawMarine.features) {
+    const fclass = String(raw.properties.featurecla || '');
+    const subkind = marineClasses[fclass];
+    if (!subkind) continue;
+
+    const name = raw.properties.name || raw.properties.name_en;
+    if (!name) continue;
+
+    const [labelLng, labelLat] = computeLabelPoint(raw.geometry);
+    const areaKm2 = Math.round(geoArea(raw) * EARTH_RADIUS_KM * EARTH_RADIUS_KM);
+    const rawPl = raw.properties.name_pl || raw.properties.name;
+    const namePl = titleCasePolish(rawPl);
+    const nameEn = raw.properties.name_en || name;
+    const id = makeUniqueId(`marine-${subkind}-${slugify(name)}`, usedMarineIds);
+
+    marineFeatures.push({
+      type: 'Feature',
+      id,
+      properties: {
+        id,
+        kind: 'marine',
+        layerId: 'marine',
+        name_pl: namePl,
+        name_en: nameEn,
+        aliases: [raw.properties.namealt, raw.properties.name_abb].filter(Boolean),
+        marineType: subkind,
+        rank: {
+          area: areaKm2,
+        },
+        labelLng,
+        labelLat,
+      },
+      geometry: {
+        type: raw.geometry.type,
+        coordinates: roundCoords(raw.geometry.coordinates),
+      },
+    });
+  }
+
+  // Sort by area descending and select Top 120
+  marineFeatures.sort((a, b) => (b.properties.rank.area || 0) - (a.properties.rank.area || 0));
+  const topMarineFeatures = marineFeatures.slice(0, 120);
+  topMarineFeatures.forEach((f, idx) => {
+    f.properties.rank.order = idx + 1;
+  });
+
+  const marineCol: GeoFeatureCollection = {
+    type: 'FeatureCollection',
+    features: topMarineFeatures,
+  };
+  GeoFeatureCollectionSchema.parse(marineCol);
+  const marineFile = path.join(OUT_DIR, 'marine.json');
+  fs.writeFileSync(marineFile, JSON.stringify(marineCol));
+  console.log(`    ✓ Saved ${marineCol.features.length} marine bodies to marine.json`);
+
   // 5. Places (Capitals, Megacities, and High Peaks)
   console.log('  → Processing places (capitals, megacities, and peaks)...');
   const rawPlaces = JSON.parse(
@@ -537,6 +612,7 @@ export async function buildData(): Promise<void> {
     { name: 'lakes.json', budgetGzipKb: 150, path: lakesFile },
     { name: 'regions.json', budgetGzipKb: 250, path: regionsFile },
     { name: 'landforms.json', budgetGzipKb: 200, path: landformsFile },
+    { name: 'marine.json', budgetGzipKb: 250, path: marineFile },
     { name: 'places.json', budgetGzipKb: 80, path: placesFile },
   ];
 

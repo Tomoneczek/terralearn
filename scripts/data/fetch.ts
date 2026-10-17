@@ -34,6 +34,11 @@ export const DATASETS = [
     filename: 'ne_10m_geography_regions_elevation_points.geojson',
     url: 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_geography_regions_elevation_points.geojson',
   },
+  {
+    id: 'marine',
+    filename: 'ne_10m_geography_marine_polys.geojson',
+    url: 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_geography_marine_polys.geojson',
+  },
 ] as const;
 
 export async function fetchDatasets(force = false): Promise<void> {

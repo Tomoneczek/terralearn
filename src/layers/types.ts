@@ -10,7 +10,8 @@ export type LayerId =
   | 'mountains'
   | 'deserts'
   | 'peaks'
-  | 'landforms';
+  | 'landforms'
+  | 'marine';
 
 export type LayerGroup = 'modes' | 'physical' | 'political' | 'tools';
 

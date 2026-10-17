@@ -38,6 +38,7 @@ export interface Dictionary {
     deserts: string;
     peaks: string;
     landforms: string;
+    marine: string;
   };
   sliders: {
     topPrefix: string;

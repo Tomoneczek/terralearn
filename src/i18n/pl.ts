@@ -36,6 +36,7 @@ export const pl: Dictionary = {
     deserts: 'Pustynie',
     peaks: 'Najwyższe szczyty',
     landforms: 'Formy ukształtowania terenu',
+    marine: 'Morza i zatoki',
   },
   sliders: {
     topPrefix: 'Top',
