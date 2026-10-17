@@ -28,6 +28,7 @@ export const QuizConfigSchema = z.object({
   ]),
   difficulty: z.enum(['easy', 'medium', 'hard']),
   questionCount: z.number().int().min(1).max(50),
+  srsFilter: z.enum(['none', 'due', 'difficult']).optional(),
 });
 
 export const DEFAULT_QUIZ_CONFIG: QuizConfig = {
@@ -36,6 +37,7 @@ export const DEFAULT_QUIZ_CONFIG: QuizConfig = {
   continent: 'all',
   difficulty: 'medium',
   questionCount: 10,
+  srsFilter: 'none',
 };
 
 /**

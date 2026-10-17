@@ -9,12 +9,12 @@ import { PRESETS, applyPreset, detectActivePreset, type PresetId } from './prese
 import { loadGeoData } from '@/globe/data-loader';
 import { antipode } from '@/geo/spherical';
 
-import type { QuizMode } from '@/quiz/types';
+import type { QuizMode, QuizConfig } from '@/quiz/types';
 
 export interface SidebarOptions {
   container: HTMLElement;
   store: Store<AppState>;
-  onStartQuiz?: (mode?: QuizMode) => void;
+  onStartQuiz?: (mode?: QuizMode, configOverride?: Partial<QuizConfig>) => void;
 }
 
 export function getLayerColor(id: LayerId): string {
@@ -47,7 +47,7 @@ export function getLayerColor(id: LayerId): string {
 export class SidebarController {
   private readonly container: HTMLElement;
   private readonly store: Store<AppState>;
-  private readonly onStartQuiz?: (mode?: QuizMode) => void;
+  private readonly onStartQuiz?: (mode?: QuizMode, configOverride?: Partial<QuizConfig>) => void;
 
   private readonly presetButtons = new Map<PresetId, HTMLButtonElement>();
   private readonly layerToggles = new Map<LayerId, ToggleSwitch>();
@@ -366,8 +366,37 @@ export class SidebarController {
       }
     });
 
+    const srsBtn = document.createElement('button');
+    srsBtn.type = 'button';
+    srsBtn.className = 'tl-tool-btn';
+    srsBtn.id = 'btn-start-quiz-srs';
+
+    const srsIconSpan = document.createElement('span');
+    srsIconSpan.className = 'tl-tool-icon';
+    srsIconSpan.appendChild(
+      parseSvg(
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>',
+      ),
+    );
+
+    const srsLabelSpan = document.createElement('span');
+    srsLabelSpan.textContent = t('quiz.srsTraining');
+
+    srsBtn.appendChild(srsIconSpan);
+    srsBtn.appendChild(srsLabelSpan);
+    srsBtn.addEventListener('click', () => {
+      if (this.onStartQuiz) {
+        this.onStartQuiz('classic', { srsFilter: 'due' });
+      } else {
+        window.dispatchEvent(
+          new CustomEvent('tl-start-quiz', { detail: { mode: 'classic', srsFilter: 'due' } }),
+        );
+      }
+    });
+
     toolsSection.appendChild(quizBtn);
     toolsSection.appendChild(quizReverseBtn);
+    toolsSection.appendChild(srsBtn);
     root.appendChild(toolsSection);
 
     this.container.appendChild(root);

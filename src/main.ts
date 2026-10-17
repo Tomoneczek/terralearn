@@ -112,16 +112,22 @@ export function bootstrap(): void {
       sidebar = new SidebarController({
         container: slots.sidebarContainer,
         store,
-        onStartQuiz: mode => {
-          quizConfigModal?.show({ mode: mode ?? 'classic' });
+        onStartQuiz: (mode, configOverride) => {
+          quizConfigModal?.show({ mode: mode ?? 'classic', ...configOverride });
         },
       });
     }
 
     if (typeof window !== 'undefined') {
       window.addEventListener('tl-start-quiz', (e: Event) => {
-        const custom = e as CustomEvent<{ mode?: 'classic' | 'reverse' }>;
-        quizConfigModal?.show({ mode: custom.detail?.mode ?? 'classic' });
+        const custom = e as CustomEvent<{
+          mode?: 'classic' | 'reverse';
+          srsFilter?: 'none' | 'due' | 'difficult';
+        }>;
+        quizConfigModal?.show({
+          mode: custom.detail?.mode ?? 'classic',
+          srsFilter: custom.detail?.srsFilter,
+        });
       });
     }
 

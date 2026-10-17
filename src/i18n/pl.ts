@@ -135,6 +135,12 @@ export const pl: Dictionary = {
     cancel: 'Anuluj',
     availableQuestions: 'Dostępne obiekty w tym zakresie:',
     changeScope: 'Zmień zakres',
+    srsFilter: 'Powtórki w czasie (SRS)',
+    srsFilterNone: 'Wszystkie obiekty',
+    srsFilterDue: 'Do powtórki (SRS)',
+    srsFilterDifficult: 'Trudne / mylone',
+    srsTraining: 'Trening SRS (powtórki)',
+    srsDueCount: '{count} do powtórki',
     continents: {
       all: 'Cały świat (globalny)',
       europe: 'Europa',

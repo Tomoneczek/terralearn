@@ -1,4 +1,11 @@
-import type { QuizConfig, QuizMode, QuizCategory, ContinentId, QuizDifficulty } from '@/quiz/types';
+import type {
+  QuizConfig,
+  QuizMode,
+  QuizCategory,
+  ContinentId,
+  QuizDifficulty,
+  SrsFilter,
+} from '@/quiz/types';
 import { countMatchingQuestions } from '@/quiz/questions';
 import { loadLastQuizConfig, saveLastQuizConfig, DEFAULT_QUIZ_CONFIG } from '@/quiz/persistence';
 import { parseSvg } from '../dom';
@@ -275,7 +282,42 @@ export class QuizConfigModal {
     diffSection.appendChild(diffGroup);
     card.appendChild(diffSection);
 
-    // 5. Question Count Selector (Pills)
+    // 5. SRS Repetition Selector (Pills)
+    const srsSection = document.createElement('div');
+    srsSection.className = 'tl-quiz-config-section';
+
+    const srsLabel = document.createElement('label');
+    srsLabel.className = 'tl-quiz-config-label';
+    srsLabel.textContent = t('quiz.srsFilter');
+    srsSection.appendChild(srsLabel);
+
+    const srsGroup = document.createElement('div');
+    srsGroup.className = 'tl-quiz-pill-group';
+
+    const srsOptions: { id: SrsFilter; label: string }[] = [
+      { id: 'none', label: t('quiz.srsFilterNone') },
+      { id: 'due', label: t('quiz.srsFilterDue') },
+      { id: 'difficult', label: t('quiz.srsFilterDifficult') },
+    ];
+
+    for (const opt of srsOptions) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      const isSelected = (this.currentConfig.srsFilter ?? 'none') === opt.id;
+      btn.className = `tl-quiz-pill-btn ${isSelected ? 'active' : ''}`;
+      btn.textContent = opt.label;
+      btn.addEventListener('click', () => {
+        this.currentConfig.srsFilter = opt.id;
+        srsGroup.querySelectorAll('.tl-quiz-pill-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.updateMatchingCount(countBadge);
+      });
+      srsGroup.appendChild(btn);
+    }
+    srsSection.appendChild(srsGroup);
+    card.appendChild(srsSection);
+
+    // 6. Question Count Selector (Pills)
     const countSection = document.createElement('div');
     countSection.className = 'tl-quiz-config-section';
 

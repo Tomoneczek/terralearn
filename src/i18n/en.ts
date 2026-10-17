@@ -135,6 +135,12 @@ export const en: Dictionary = {
     cancel: 'Cancel',
     availableQuestions: 'Features available in this scope:',
     changeScope: 'Change scope',
+    srsFilter: 'Spaced Repetition (SRS)',
+    srsFilterNone: 'All features',
+    srsFilterDue: 'Due for review (SRS)',
+    srsFilterDifficult: 'Difficult / mistakes',
+    srsTraining: 'SRS Training (Reviews)',
+    srsDueCount: '{count} due',
     continents: {
       all: 'Entire World (Global)',
       europe: 'Europe',

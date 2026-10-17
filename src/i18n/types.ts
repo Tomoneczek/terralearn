@@ -137,6 +137,12 @@ export interface Dictionary {
     cancel: string;
     availableQuestions: string;
     changeScope: string;
+    srsFilter: string;
+    srsFilterNone: string;
+    srsFilterDue: string;
+    srsFilterDifficult: string;
+    srsTraining: string;
+    srsDueCount: string;
     continents: {
       all: string;
       europe: string;

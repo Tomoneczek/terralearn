@@ -1,5 +1,6 @@
 import type { QuizQuestion, QuizMode, QuizConfig } from './types';
 import { DEFAULT_QUESTIONS_POOL } from '@/i18n/quiz-questions';
+import { loadSrsState, getItemStatus } from './srs';
 
 export { DEFAULT_QUESTIONS_POOL };
 
@@ -33,7 +34,7 @@ function shuffleArray<T>(arr: T[], random: () => number): T[] {
 /**
  * Filters a pool of quiz questions according to the specified QuizConfig criteria.
  * If allowFallback is true and fewer than 4 questions match, it progressively relaxes
- * difficulty, continent, and category constraints so a playable round is always possible.
+ * difficulty, SRS, continent, and category constraints so a playable round is always possible.
  */
 export function filterQuizQuestions(
   pool: readonly QuizQuestion[] = DEFAULT_QUESTIONS_POOL,
@@ -42,9 +43,24 @@ export function filterQuizQuestions(
 ): QuizQuestion[] {
   if (!config) return [...pool];
 
-  const { category = 'all', continent = 'all', difficulty = 'hard' } = config;
+  const { category = 'all', continent = 'all', difficulty = 'hard', srsFilter = 'none' } = config;
+  const srsState = srsFilter !== 'none' ? loadSrsState() : null;
 
-  const matchesFilter = (q: QuizQuestion, matchDifficulty = true): boolean => {
+  const matchesFilter = (q: QuizQuestion, matchDifficulty = true, matchSrs = true): boolean => {
+    if (matchSrs && srsFilter !== 'none' && srsState) {
+      const item = srsState[q.id];
+      if (srsFilter === 'due') {
+        const isDue = getItemStatus(item) === 'due';
+        if (!isDue) return false;
+      } else if (srsFilter === 'difficult') {
+        const isDifficult =
+          item &&
+          (item.box === 1 ||
+            (item.totalAttempts >= 2 && item.successCount / item.totalAttempts < 0.6));
+        if (!isDifficult) return false;
+      }
+    }
+
     if (category !== 'all') {
       const catMatch = q.category === category || q.kind === category || q.layerId === category;
       if (!catMatch) return false;
@@ -62,39 +78,57 @@ export function filterQuizQuestions(
     return true;
   };
 
-  const exactMatches = pool.filter(q => matchesFilter(q, true));
+  const exactMatches = pool.filter(q => matchesFilter(q, true, true));
 
   if (!allowFallback || exactMatches.length >= 4) {
     return exactMatches;
   }
 
+  const padPool = (relaxed: QuizQuestion[]): QuizQuestion[] => {
+    const padded = [...exactMatches];
+    for (const item of relaxed) {
+      if (!padded.some(p => p.id === item.id)) {
+        padded.push(item);
+      }
+    }
+    return padded;
+  };
+
   // Graceful fallback for narrow combinations:
-  // 1. Relax difficulty within chosen continent and category
-  const relaxedDifficulty = pool.filter(q => matchesFilter(q, false));
+  // 1. Relax difficulty within chosen SRS, continent, and category
+  const relaxedDifficulty = pool.filter(q => matchesFilter(q, false, true));
   if (relaxedDifficulty.length >= 4) {
-    return relaxedDifficulty;
+    return padPool(relaxedDifficulty);
   }
 
-  // 2. Relax continent within category
+  // 2. Relax SRS filter
+  if (srsFilter !== 'none') {
+    const relaxedSrs = pool.filter(q => matchesFilter(q, false, false));
+    if (relaxedSrs.length >= 4) {
+      return padPool(relaxedSrs);
+    }
+  }
+
+  // 3. Relax continent within category
   if (category !== 'all') {
     const relaxedContinent = pool.filter(
       q => q.category === category || q.kind === category || q.layerId === category,
     );
     if (relaxedContinent.length >= 4) {
-      return relaxedContinent;
+      return padPool(relaxedContinent);
     }
   }
 
-  // 3. Relax category within continent
+  // 4. Relax category within continent
   if (continent !== 'all') {
     const relaxedCategory = pool.filter(q => q.continent === continent);
     if (relaxedCategory.length >= 4) {
-      return relaxedCategory;
+      return padPool(relaxedCategory);
     }
   }
 
-  // 4. Default to full pool
-  return [...pool];
+  // 5. Default to full pool
+  return padPool([...pool]);
 }
 
 /**
@@ -183,10 +217,29 @@ export function generateQuizQuestions(
   config?: QuizConfig,
 ): QuizQuestion[] {
   const random = createRandom(seed);
-  const candidatePool = config ? filterQuizQuestions(pool, config, true) : [...pool];
-  const shuffled = shuffleArray([...candidatePool], random);
   const targetCount = config?.questionCount ?? count;
-  const selected = shuffled.slice(0, Math.min(targetCount, shuffled.length));
+
+  const candidatePool = config ? filterQuizQuestions(pool, config, true) : [...pool];
+  let selected: QuizQuestion[];
+
+  if (config?.srsFilter && config.srsFilter !== 'none') {
+    // Exact SRS matches
+    const exactMatches = filterQuizQuestions(pool, config, false);
+
+    const shuffledMatches = shuffleArray([...exactMatches], random);
+    const remainingSlots = Math.max(0, targetCount - shuffledMatches.length);
+
+    if (remainingSlots > 0) {
+      const paddingCandidates = candidatePool.filter(q => !exactMatches.some(m => m.id === q.id));
+      const shuffledPadding = shuffleArray([...paddingCandidates], random);
+      selected = [...shuffledMatches, ...shuffledPadding.slice(0, remainingSlots)];
+    } else {
+      selected = shuffledMatches.slice(0, targetCount);
+    }
+  } else {
+    const shuffled = shuffleArray([...candidatePool], random);
+    selected = shuffled.slice(0, Math.min(targetCount, shuffled.length));
+  }
 
   if (mode === 'reverse') {
     return selected.map(q => {

@@ -10,6 +10,7 @@ import type {
 import { generateQuizQuestions } from './questions';
 import { haversineDistanceKm } from '@/geo/spherical';
 import { calculatePoints, calculateReversePoints } from './scoring';
+import { updateSrsItem } from './srs';
 
 export interface QuizEngineListeners {
   onStateChange?: (state: QuizState) => void;
@@ -143,6 +144,7 @@ export class QuizEngine {
 
     const dist = haversineDistanceKm(lat, lng, currentQ.targetLat, currentQ.targetLng);
     const points = calculatePoints(dist);
+    const isCorrect = dist <= 200;
 
     const answer: QuizAnswer = {
       question: currentQ,
@@ -150,9 +152,11 @@ export class QuizEngine {
       clickLat: lat,
       clickLng: lng,
       distanceKm: dist,
+      isCorrect,
       points,
     };
     this.answers.push(answer);
+    updateSrsItem(currentQ.id, isCorrect);
 
     this.setState('feedback');
     this.listeners.onFeedback?.(answer);
@@ -184,6 +188,7 @@ export class QuizEngine {
       points,
     };
     this.answers.push(answer);
+    updateSrsItem(currentQ.id, isCorrect);
 
     // In feedback phase, reveal label so user sees the verified name
     this.store.set({ hideSelectionLabel: false });

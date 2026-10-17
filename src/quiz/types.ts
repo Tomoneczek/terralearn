@@ -18,6 +18,7 @@ export type QuizCategory =
   | 'landforms';
 
 export type QuizDifficulty = 'easy' | 'medium' | 'hard';
+export type SrsFilter = 'none' | 'due' | 'difficult';
 
 export interface QuizConfig {
   mode: QuizMode;
@@ -25,6 +26,7 @@ export interface QuizConfig {
   continent: ContinentId;
   difficulty: QuizDifficulty;
   questionCount: number;
+  srsFilter?: SrsFilter;
 }
 
 export interface QuizQuestion {
