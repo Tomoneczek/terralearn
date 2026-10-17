@@ -123,6 +123,41 @@ export interface Dictionary {
     modeClassic: string;
     modeReverse: string;
     chooseMode: string;
+    configTitle: string;
+    configSubtitle: string;
+    selectMode: string;
+    selectCategory: string;
+    selectContinent: string;
+    selectDifficulty: string;
+    selectQuestionCount: string;
+    difficultyEasy: string;
+    difficultyMedium: string;
+    difficultyHard: string;
+    startQuiz: string;
+    cancel: string;
+    availableQuestions: string;
+    changeScope: string;
+    continents: {
+      all: string;
+      europe: string;
+      asia: string;
+      africa: string;
+      northAmerica: string;
+      southAmerica: string;
+      oceania: string;
+    };
+    categoryOptions: {
+      all: string;
+      countries: string;
+      capitals: string;
+      rivers: string;
+      lakes: string;
+      mountains: string;
+      peaks: string;
+      deserts: string;
+      marine: string;
+      landforms: string;
+    };
     categories: {
       country: string;
       river: string;

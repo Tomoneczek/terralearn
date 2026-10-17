@@ -13,6 +13,7 @@ import { HoverTooltip } from './ui/hover-tooltip';
 import { QuizEngine } from './quiz/engine';
 import { QuizHud } from './ui/quiz/quiz-hud';
 import { QuizSummaryModal } from './ui/quiz/quiz-summary';
+import { QuizConfigModal } from './ui/quiz/quiz-config-modal';
 import { getDistanceColor } from './geo/spherical';
 
 export let globeContext: GlobeContext | null = null;
@@ -29,6 +30,7 @@ export let hoverTooltip: HoverTooltip | null = null;
 export let quizEngine: QuizEngine | null = null;
 export let quizHud: QuizHud | null = null;
 export let quizSummary: QuizSummaryModal | null = null;
+export let quizConfigModal: QuizConfigModal | null = null;
 export let routeHud: RouteHud | null = null;
 export let sizeComparisonHud: SizeComparisonHud | null = null;
 export let antipodesHud: AntipodesHud | null = null;
@@ -90,9 +92,20 @@ export function bootstrap(): void {
       engine: quizEngine,
     });
 
+    quizConfigModal = new QuizConfigModal({
+      container: root,
+      onStart: config => {
+        quizEngine?.startWithConfig(config);
+      },
+    });
+
     quizSummary = new QuizSummaryModal({
       container: root,
       engine: quizEngine,
+      onChangeScope: () => {
+        const currentConfig = quizEngine?.getConfig();
+        quizConfigModal?.show(currentConfig ?? undefined);
+      },
     });
 
     if (slots.sidebarContainer) {
@@ -100,8 +113,15 @@ export function bootstrap(): void {
         container: slots.sidebarContainer,
         store,
         onStartQuiz: mode => {
-          quizEngine?.start(mode ?? 'classic');
+          quizConfigModal?.show({ mode: mode ?? 'classic' });
         },
+      });
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('tl-start-quiz', (e: Event) => {
+        const custom = e as CustomEvent<{ mode?: 'classic' | 'reverse' }>;
+        quizConfigModal?.show({ mode: custom.detail?.mode ?? 'classic' });
       });
     }
 

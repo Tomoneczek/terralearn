@@ -7,13 +7,16 @@ import { t } from '@/i18n';
 export interface QuizSummaryModalOptions {
   container: HTMLElement;
   engine: QuizEngine;
+  onChangeScope?: () => void;
 }
 
 export class QuizSummaryModal {
   public readonly element: HTMLElement;
   private readonly engine: QuizEngine;
+  private readonly options: QuizSummaryModalOptions;
 
   constructor(options: QuizSummaryModalOptions) {
+    this.options = options;
     this.engine = options.engine;
 
     this.element = document.createElement('div');
@@ -141,7 +144,20 @@ export class QuizSummaryModal {
     playAgainBtn.textContent = t('quiz.playAgain');
     playAgainBtn.addEventListener('click', () => {
       this.hide();
-      this.engine.start(summary.mode);
+      if (summary.config) {
+        this.engine.startWithConfig(summary.config);
+      } else {
+        this.engine.start(summary.mode);
+      }
+    });
+
+    const changeScopeBtn = document.createElement('button');
+    changeScopeBtn.type = 'button';
+    changeScopeBtn.className = 'tl-btn-secondary';
+    changeScopeBtn.textContent = t('quiz.changeScope');
+    changeScopeBtn.addEventListener('click', () => {
+      this.hide();
+      this.options.onChangeScope?.();
     });
 
     const repeatMistakesBtn = document.createElement('button');
@@ -163,6 +179,7 @@ export class QuizSummaryModal {
     });
 
     actions.appendChild(playAgainBtn);
+    actions.appendChild(changeScopeBtn);
     actions.appendChild(repeatMistakesBtn);
     actions.appendChild(exitBtn);
     card.appendChild(actions);

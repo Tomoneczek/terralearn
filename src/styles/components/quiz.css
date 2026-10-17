@@ -419,3 +419,165 @@
 .tl-btn-tertiary:hover {
   color: var(--text-1);
 }
+
+/* Quiz Config Modal styles */
+.tl-quiz-config-card {
+  width: 100%;
+  max-width: 520px;
+  background-color: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.tl-quiz-config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.tl-quiz-config-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-1);
+}
+
+.tl-quiz-config-subtitle {
+  margin: var(--space-1) 0 0 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.tl-quiz-config-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.tl-quiz-config-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tl-quiz-mode-group {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.tl-quiz-mode-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-2);
+  border: 1px solid var(--border-default);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tl-quiz-mode-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-1);
+}
+
+.tl-quiz-mode-btn.active {
+  background-color: hsla(212, 95%, 58%, 0.15);
+  border-color: var(--c-accent-blue);
+  color: #60a5fa;
+  font-weight: 700;
+}
+
+.tl-quiz-config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.tl-quiz-config-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.tl-quiz-config-select {
+  background-color: var(--bg-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 8px var(--space-2);
+  color: var(--text-1);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.tl-quiz-config-select:focus {
+  border-color: var(--c-accent-blue);
+}
+
+.tl-quiz-pill-group {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.tl-quiz-pill-btn {
+  flex: 1;
+  padding: 7px var(--space-2);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-2);
+  border: 1px solid var(--border-default);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.tl-quiz-pill-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-1);
+}
+
+.tl-quiz-pill-btn.active {
+  background-color: hsla(212, 95%, 58%, 0.15);
+  border-color: var(--c-accent-blue);
+  color: #60a5fa;
+  font-weight: 700;
+}
+
+.tl-quiz-count-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-accent-blue);
+  background-color: hsla(212, 95%, 58%, 0.1);
+  border: 1px solid hsla(212, 95%, 58%, 0.25);
+  padding: 6px var(--space-3);
+  border-radius: var(--radius-full);
+  text-align: center;
+  align-self: center;
+}
+
+.tl-quiz-config-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}

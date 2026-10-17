@@ -239,4 +239,40 @@ describe('QuizEngine', () => {
     expect(labelsInFeedback.length).toBe(1);
     expect(labelsInFeedback[0]?.properties.id).toBe('PL');
   });
+
+  it('supports startWithConfig and carries config through to summary', () => {
+    const store = createStore<AppState>(createInitialState());
+    let finishedSummary: QuizRoundSummary | null = null;
+    const engine = new QuizEngine(store, {
+      onFinish: s => {
+        finishedSummary = s;
+      },
+    });
+
+    const config = {
+      mode: 'classic' as const,
+      category: 'rivers' as const,
+      continent: 'europe' as const,
+      difficulty: 'hard' as const,
+      questionCount: 2,
+    };
+
+    engine.startWithConfig(config, customQuestions);
+    expect(engine.getState()).toBe('question');
+    expect(engine.getConfig()).toEqual(config);
+
+    // Answer Q1
+    engine.handleGlobeClick(52.0, 19.0);
+    engine.nextQuestion();
+
+    // Answer Q2
+    engine.handleGlobeClick(-1.0, 33.0);
+    engine.nextQuestion();
+
+    expect(engine.getState()).toBe('finished');
+    expect(finishedSummary).not.toBeNull();
+    expect((finishedSummary as unknown as QuizRoundSummary).config).toEqual(config);
+
+    engine.destroy();
+  });
 });

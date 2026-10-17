@@ -1,5 +1,12 @@
 import type { Store, AppState } from '@/state/types';
-import type { QuizQuestion, QuizAnswer, QuizState, QuizRoundSummary, QuizMode } from './types';
+import type {
+  QuizQuestion,
+  QuizAnswer,
+  QuizState,
+  QuizRoundSummary,
+  QuizMode,
+  QuizConfig,
+} from './types';
 import { generateQuizQuestions } from './questions';
 import { haversineDistanceKm } from '@/geo/spherical';
 import { calculatePoints, calculateReversePoints } from './scoring';
@@ -25,6 +32,7 @@ export class QuizEngine {
 
   private state: QuizState = 'idle';
   private mode: QuizMode = 'classic';
+  private config: QuizConfig | null = null;
   private questions: QuizQuestion[] = [];
   private answers: QuizAnswer[] = [];
   private currentIndex = 0;
@@ -52,32 +60,11 @@ export class QuizEngine {
   }
 
   /**
-   * Starts a quiz session. Supports overloaded signatures for backward compatibility.
+   * Starts a quiz session with a specific configuration.
    */
-  public start(
-    modeOrCount: QuizMode | number = 'classic',
-    countOrCustom?: number | QuizQuestion[],
-    customQuestions?: QuizQuestion[],
-  ): void {
-    let mode: QuizMode = 'classic';
-    let count = 10;
-    let custom: QuizQuestion[] | undefined;
-
-    if (typeof modeOrCount === 'number') {
-      mode = 'classic';
-      count = modeOrCount;
-      if (Array.isArray(countOrCustom)) {
-        custom = countOrCustom;
-      }
-    } else {
-      mode = modeOrCount;
-      if (typeof countOrCustom === 'number') {
-        count = countOrCustom;
-      }
-      custom = customQuestions;
-    }
-
-    this.mode = mode;
+  public startWithConfig(config: QuizConfig, customQuestions?: QuizQuestion[]): void {
+    this.config = { ...config };
+    this.mode = config.mode;
 
     // 1. Snapshot previous settings
     const currentState = this.store.get();
@@ -90,18 +77,62 @@ export class QuizEngine {
       ...currentState,
       mode: 'quiz',
       hiddenLabels: true,
-      hideSelectionLabel: mode === 'reverse',
+      hideSelectionLabel: config.mode === 'reverse',
       selection: null,
       hovered: null,
     });
 
     // 3. Initialize questions & answers
-    this.questions = custom ?? generateQuizQuestions(undefined, count, undefined, mode);
+    this.questions =
+      customQuestions ??
+      generateQuizQuestions(undefined, config.questionCount, undefined, config.mode, config);
     this.answers = [];
     this.currentIndex = 0;
 
     this.setState('question');
     this.emitCurrentQuestion();
+  }
+
+  /**
+   * Starts a quiz session. Supports overloaded signatures for backward compatibility.
+   */
+  public start(
+    modeOrCountOrConfig: QuizMode | number | QuizConfig = 'classic',
+    countOrCustom?: number | QuizQuestion[],
+    customQuestions?: QuizQuestion[],
+  ): void {
+    if (typeof modeOrCountOrConfig === 'object' && modeOrCountOrConfig !== null) {
+      this.startWithConfig(modeOrCountOrConfig, customQuestions);
+      return;
+    }
+
+    let mode: QuizMode = 'classic';
+    let count = 10;
+    let custom: QuizQuestion[] | undefined;
+
+    if (typeof modeOrCountOrConfig === 'number') {
+      mode = 'classic';
+      count = modeOrCountOrConfig;
+      if (Array.isArray(countOrCustom)) {
+        custom = countOrCustom;
+      }
+    } else {
+      mode = modeOrCountOrConfig;
+      if (typeof countOrCustom === 'number') {
+        count = countOrCustom;
+      }
+      custom = customQuestions;
+    }
+
+    const config: QuizConfig = {
+      mode,
+      category: 'all',
+      continent: 'all',
+      difficulty: 'hard',
+      questionCount: count,
+    };
+
+    this.startWithConfig(config, custom);
   }
 
   public handleGlobeClick(lat: number, lng: number): void {
@@ -174,21 +205,22 @@ export class QuizEngine {
   }
 
   public repeatMistakes(): void {
-    if (this.mode === 'reverse') {
-      const mistakes = this.answers.filter(a => !a.isCorrect).map(a => a.question);
+    const isReverse = this.mode === 'reverse';
+    const mistakes = isReverse
+      ? this.answers.filter(a => !a.isCorrect).map(a => a.question)
+      : this.answers.filter(a => (a.distanceKm ?? 0) > 200).map(a => a.question);
 
-      if (mistakes.length > 0) {
-        this.start('reverse', mistakes.length, mistakes);
+    if (mistakes.length > 0) {
+      if (this.config) {
+        this.startWithConfig({ ...this.config, questionCount: mistakes.length }, mistakes);
       } else {
-        this.start('reverse');
+        this.start(this.mode, mistakes.length, mistakes);
       }
     } else {
-      const mistakes = this.answers.filter(a => (a.distanceKm ?? 0) > 200).map(a => a.question);
-
-      if (mistakes.length > 0) {
-        this.start('classic', mistakes.length, mistakes);
+      if (this.config) {
+        this.startWithConfig(this.config);
       } else {
-        this.start('classic');
+        this.start(this.mode);
       }
     }
   }
@@ -203,6 +235,7 @@ export class QuizEngine {
       const correctCount = this.answers.filter(a => a.isCorrect).length;
       summary = {
         mode: 'reverse',
+        config: this.config ? { ...this.config } : undefined,
         totalPoints,
         maxPoints: this.questions.length * 1000,
         correctCount,
@@ -219,6 +252,7 @@ export class QuizEngine {
 
       summary = {
         mode: 'classic',
+        config: this.config ? { ...this.config } : undefined,
         totalPoints,
         maxPoints: this.questions.length * 1200,
         avgDistanceKm: avgDistance,
@@ -310,6 +344,10 @@ export class QuizEngine {
 
   public getAnswers(): readonly QuizAnswer[] {
     return this.answers;
+  }
+
+  public getConfig(): QuizConfig | null {
+    return this.config ? { ...this.config } : null;
   }
 
   public destroy(): void {
