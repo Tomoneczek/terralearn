@@ -25,9 +25,9 @@ export class BloomController {
       const composer = target.postProcessingComposer ? target.postProcessingComposer() : null;
       if (composer) {
         const resolution = new Vector2(window.innerWidth || 1024, window.innerHeight || 768);
-        const strength = options.strength ?? 0.75;
+        const strength = options.strength ?? 0.25;
         const radius = options.radius ?? 0.35;
-        const threshold = options.threshold ?? 0.7;
+        const threshold = options.threshold ?? 0.88;
 
         this.pass = new UnrealBloomPass(resolution, strength, radius, threshold);
         this.pass.enabled = this.isBloomEnabled;
@@ -39,9 +39,12 @@ export class BloomController {
     }
 
     if (monitor) {
-      // Hook graceful degradation
-      monitor.simulateFrameSample = (fps: number) => {
-        if (fps < 35 && this.isBloomEnabled) {
+      // Hook graceful degradation using monitor's configured minFps
+      const thresholdFps = monitor.minFps ?? 22;
+      const prevSimulate = monitor.simulateFrameSample.bind(monitor);
+      monitor.simulateFrameSample = (fps: number, opts?: { isWarmup?: boolean }) => {
+        prevSimulate(fps, opts);
+        if (fps < thresholdFps && this.isBloomEnabled && !opts?.isWarmup) {
           this.setEnabled(false);
         }
       };

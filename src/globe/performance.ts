@@ -56,7 +56,7 @@ export interface FPSMonitorOptions {
 }
 
 export class FPSMonitor {
-  private readonly minFps: number;
+  public readonly minFps: number;
   private readonly sampleIntervalMs: number;
   private readonly consecutiveDropsThreshold: number;
   private readonly warmupPeriodMs: number;
@@ -75,11 +75,11 @@ export class FPSMonitor {
   private rafId: number | null = null;
 
   constructor(options: FPSMonitorOptions = {}) {
-    this.minFps = options.minFps ?? 35;
+    this.minFps = options.minFps ?? 22;
     this.sampleIntervalMs = options.sampleIntervalMs ?? 1000;
-    this.consecutiveDropsThreshold = options.consecutiveDropsThreshold ?? 4;
+    this.consecutiveDropsThreshold = options.consecutiveDropsThreshold ?? 6;
     this.warmupPeriodMs = options.warmupPeriodMs ?? 5000;
-    this.highFpsThreshold = options.highFpsThreshold ?? 50;
+    this.highFpsThreshold = options.highFpsThreshold ?? 48;
     this.consecutiveHighThreshold = options.consecutiveHighThreshold ?? 5;
     this.onDegrade = options.onDegrade;
     this.onUpgrade = options.onUpgrade;

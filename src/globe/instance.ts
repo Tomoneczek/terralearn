@@ -141,14 +141,12 @@ export function createGlobe(
 
   // Performance Monitor & Bloom Post-Processing
   const fpsMonitor = new FPSMonitor({
-    minFps: 35,
-    onDegrade: () => {
-      bloom.setEnabled(false);
-    },
+    minFps: 22,
+    consecutiveDropsThreshold: 6,
   });
   fpsMonitor.start();
 
-  const bloom = new BloomController(globe, { enabled: options.enableBloom ?? true }, fpsMonitor);
+  const bloom = new BloomController(globe, { enabled: options.enableBloom ?? true });
 
   // 3D Scene Objects (Clouds & Atmosphere)
   let globeScene = null;

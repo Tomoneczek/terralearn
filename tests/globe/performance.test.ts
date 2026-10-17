@@ -113,6 +113,36 @@ describe('performance module', () => {
       monitor.simulateFrameSample(60);
       expect(onUpgrade).toHaveBeenCalledTimes(1);
     });
+
+    it('defaults to conservative minFps 22 and does not degrade at standard 28-30 FPS', () => {
+      const onDegrade = vi.fn();
+      const monitor = new FPSMonitor({ onDegrade });
+
+      expect(monitor.minFps).toBe(22);
+
+      // Simulate 10 samples of 28 FPS (smooth interactive WebGL frame rate)
+      for (let i = 0; i < 10; i++) {
+        monitor.simulateFrameSample(28);
+      }
+
+      // Must never trigger degradation on 28 FPS
+      expect(onDegrade).not.toHaveBeenCalled();
+    });
+
+    it('triggers degrade on sustained severe drop (< 22 FPS for 6 samples)', () => {
+      const onDegrade = vi.fn();
+      const monitor = new FPSMonitor({ onDegrade });
+
+      // 5 drops (< 6 threshold)
+      for (let i = 0; i < 5; i++) {
+        monitor.simulateFrameSample(18);
+      }
+      expect(onDegrade).not.toHaveBeenCalled();
+
+      // 6th drop triggers
+      monitor.simulateFrameSample(18);
+      expect(onDegrade).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('QualityController', () => {
@@ -269,6 +299,30 @@ describe('performance module', () => {
 
       store.set({ ...store.get(), quality: 'low' });
       expect(mockTargets.setPixelRatio).toHaveBeenCalledWith(QUALITY_PROFILES.low.dprMax);
+
+      controller.destroy();
+    });
+
+    it('maintains high quality tier with bloom and clouds active at 28-30 FPS', () => {
+      const store = createStore<AppState>({ ...createInitialState(), quality: 'auto' });
+      const fpsMonitor = new FPSMonitor();
+      const controller = new QualityController(
+        store,
+        mockTargets as unknown as QualityTargets,
+        fpsMonitor,
+      );
+
+      expect(controller.getActiveTier()).toBe('high');
+      expect(mockTargets.bloom.setEnabled).toHaveBeenCalledWith(true);
+      expect(mockTargets.clouds.setVisible).toHaveBeenCalledWith(true);
+
+      // Simulate 10 samples of standard 28 FPS WebGL rendering
+      for (let i = 0; i < 10; i++) {
+        fpsMonitor.simulateFrameSample(28);
+      }
+
+      // Remains high, bloom and clouds remain untouched
+      expect(controller.getActiveTier()).toBe('high');
 
       controller.destroy();
     });

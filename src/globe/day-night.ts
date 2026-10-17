@@ -54,13 +54,13 @@ export const DAY_NIGHT_FRAGMENT_SHADER = /* glsl */ `
     float dayLight = 0.35 + 0.65 * dayScatter;
     vec3 dayIlluminated = dayColor.rgb * dayLight;
 
-    // Ocean Specular Glint (Blinn-Phong) - only on water illuminated by sunlight
+    // Ocean Specular Glint (Blinn-Phong) - soft sun shimmer on water without mirror glare
     // cameraPosition is built-in Three.js uniform injected in ShaderMaterial
     vec3 viewDir = normalize(cameraPosition - vWorldPosition);
     vec3 halfVec = normalize(sunDir + viewDir);
     float nDotH = max(0.0, dot(norm, halfVec));
-    float specular = pow(nDotH, 64.0) * isWater * step(0.0, sunDot);
-    vec3 sunGlint = vec3(1.0, 0.95, 0.85) * (specular * 1.2);
+    float specular = pow(nDotH, 128.0) * isWater * step(0.0, sunDot);
+    vec3 sunGlint = vec3(1.0, 0.95, 0.85) * (specular * 0.35);
     dayIlluminated += sunGlint;
 
     // Night lighting: deep dark night with boosted city lights
