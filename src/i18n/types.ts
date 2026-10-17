@@ -19,6 +19,7 @@ export interface Dictionary {
     physical: string;
     political: string;
     dayNight: string;
+    clouds: string;
     learn: string;
   };
   layers: {

@@ -26,6 +26,7 @@ export interface AppState {
   preset: AppPreset;
   theme: AppTheme;
   dayNight: boolean;
+  clouds: boolean;
   hiddenLabels: boolean;
   selection: FeatureRef | null;
   hovered: FeatureRef | null;

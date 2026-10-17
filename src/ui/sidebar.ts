@@ -47,6 +47,7 @@ export class SidebarController {
   private readonly layerCards = new Map<LayerId, HTMLElement>();
 
   private dayNightToggle!: ToggleSwitch;
+  private cloudsToggle!: ToggleSwitch;
   private learnToggle!: ToggleSwitch;
   private unsubscribe: (() => void) | null = null;
 
@@ -101,6 +102,18 @@ export class SidebarController {
     );
     this.dayNightToggle = dayNightCard.toggle;
     modesSection.appendChild(dayNightCard.card);
+
+    // 3D Clouds toggle
+    const cloudsCard = this.createModeRow(
+      t('modes.clouds'),
+      'hsl(200, 90%, 70%)',
+      this.store.get().clouds ?? true,
+      checked => {
+        this.store.set({ ...this.store.get(), clouds: checked });
+      },
+    );
+    this.cloudsToggle = cloudsCard.toggle;
+    modesSection.appendChild(cloudsCard.card);
 
     // Learn / Blind map toggle
     const learnCard = this.createModeRow(
@@ -330,11 +343,15 @@ export class SidebarController {
       s => ({
         layers: s.layers,
         dayNight: s.dayNight,
+        clouds: s.clouds,
         hiddenLabels: s.hiddenLabels,
       }),
       state => {
         // Sync dayNight
         this.dayNightToggle.setChecked(state.dayNight, false);
+
+        // Sync clouds
+        this.cloudsToggle.setChecked(state.clouds ?? true, false);
 
         // Sync hiddenLabels
         this.learnToggle.setChecked(state.hiddenLabels, false);

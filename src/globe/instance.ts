@@ -6,6 +6,7 @@ import { LayerCompositor, type GlobeCompositorTarget } from './compositor';
 import { attachGlobeEvents, type GlobeEventsDelegate } from './events';
 import { DayNightController } from './day-night';
 import { BloomController } from './bloom';
+import { CloudsController } from './clouds';
 import { FPSMonitor } from './performance';
 
 import type { ArcItem } from '@/geo/spherical';
@@ -16,6 +17,7 @@ export interface GlobeContext {
   compositor: LayerCompositor;
   dayNight: DayNightController;
   bloom: BloomController;
+  clouds: CloudsController;
   fpsMonitor: FPSMonitor;
   setArcs: (arcs: ArcItem[]) => void;
   destroy: () => void;
@@ -28,6 +30,7 @@ export interface GlobeInitOptions {
   atmosphereColor?: string;
   atmosphereAltitude?: number;
   enableBloom?: boolean;
+  enableClouds?: boolean;
 }
 
 export function createGlobe(
@@ -106,6 +109,19 @@ export function createGlobe(
 
   const bloom = new BloomController(globe, { enabled: options.enableBloom ?? true }, fpsMonitor);
 
+  // 3D Clouds Layer
+  let globeScene = null;
+  try {
+    globeScene = globe.scene();
+  } catch {
+    // Mock environment fallback
+  }
+
+  const clouds = new CloudsController(globeScene, store, {
+    enabled: options.enableClouds ?? true,
+    cloudsTextureUrl: resolveAssetUrl('/textures/clouds.png'),
+  });
+
   // Events
   const detachEvents = attachGlobeEvents(globe as unknown as GlobeEventsDelegate, store, container);
 
@@ -127,6 +143,7 @@ export function createGlobe(
     compositor,
     dayNight,
     bloom,
+    clouds,
     fpsMonitor,
     setArcs: (arcs: ArcItem[]) => {
       try {
@@ -140,6 +157,7 @@ export function createGlobe(
       detachEvents();
       compositor.destroy();
       dayNight.destroy();
+      clouds.destroy();
       fpsMonitor.stop();
       // Remove globe canvas
       const canvas = container.querySelector('canvas');

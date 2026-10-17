@@ -13,6 +13,7 @@ const PersistedStateSchema = z.object({
   layers: z.record(z.string(), LayerStateSchema).optional(),
   theme: z.enum(['dark', 'classic']).optional(),
   dayNight: z.boolean().optional(),
+  clouds: z.boolean().optional(),
   hiddenLabels: z.boolean().optional(),
 });
 
@@ -52,6 +53,7 @@ export function savePersistedState(state: AppState): void {
       layers: state.layers,
       theme: state.theme,
       dayNight: state.dayNight,
+      clouds: state.clouds,
       hiddenLabels: state.hiddenLabels,
     };
 
@@ -82,6 +84,7 @@ export function applyPersistedState(
     layers: mergedLayers,
     theme: persisted.theme ?? baseState.theme,
     dayNight: persisted.dayNight ?? baseState.dayNight,
+    clouds: persisted.clouds ?? baseState.clouds,
     hiddenLabels: persisted.hiddenLabels ?? baseState.hiddenLabels,
   };
 }
