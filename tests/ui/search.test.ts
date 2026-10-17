@@ -109,4 +109,97 @@ describe('SearchOverlay', () => {
 
     search.destroy();
   });
+
+  it('navigates search results with ArrowDown/ArrowUp and selects via Enter', async () => {
+    const onSelect = vi.fn();
+    const store = createStore<AppState>(createInitialState());
+    const search = new SearchOverlay({ container, store, onSelect });
+    await new Promise(r => setTimeout(r, 20));
+
+    const input = container.querySelector<HTMLInputElement>('.tl-search-input')!;
+    input.value = 'pol';
+    input.dispatchEvent(new Event('input'));
+
+    // Press ArrowDown
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    // Press ArrowUp
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+    // Press Enter to select highlighted
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    expect(onSelect).toHaveBeenCalled();
+    search.destroy();
+  });
+
+  it('displays empty state for unmatched query and closes on empty input or outside click', async () => {
+    const store = createStore<AppState>(createInitialState());
+    const search = new SearchOverlay({ container, store });
+    await new Promise(r => setTimeout(r, 20));
+
+    const input = container.querySelector<HTMLInputElement>('.tl-search-input')!;
+    const dropdown = container.querySelector('.tl-search-dropdown')!;
+
+    // 1. Unmatched query
+    input.value = 'xyz123nonexistent';
+    input.dispatchEvent(new Event('input'));
+    expect(dropdown.querySelector('.tl-search-empty')).not.toBeNull();
+    expect(dropdown.classList.contains('open')).toBe(true);
+
+    // 2. Clear input -> closes dropdown
+    input.value = '';
+    input.dispatchEvent(new Event('input'));
+    expect(dropdown.classList.contains('open')).toBe(false);
+
+    // 3. Re-open and click outside
+    input.value = 'pol';
+    input.dispatchEvent(new Event('input'));
+    expect(dropdown.classList.contains('open')).toBe(true);
+
+    document.body.click();
+    expect(dropdown.classList.contains('open')).toBe(false);
+
+    search.destroy();
+  });
+
+  it('handles global shortcut "/" and formats items in English locale', async () => {
+    const store = createStore<AppState>({
+      ...createInitialState(),
+      locale: 'en',
+    });
+    const search = new SearchOverlay({ container, store });
+    await new Promise(r => setTimeout(r, 20));
+
+    const input = container.querySelector<HTMLInputElement>('.tl-search-input')!;
+
+    // Global "/" keypress focuses input
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '/', bubbles: true }));
+    expect(document.activeElement).toBe(input);
+
+    // Typing in English locale
+    input.value = 'Poland';
+    input.dispatchEvent(new Event('input'));
+
+    const items = container.querySelectorAll('.tl-search-item');
+    expect(items.length).toBeGreaterThan(0);
+    expect(items[0]?.textContent).toContain('Poland');
+
+    search.destroy();
+  });
+
+  it('handles network fetch errors gracefully without throwing', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new Error('Network error loading index'))),
+    );
+
+    const store = createStore<AppState>(createInitialState());
+    const search = new SearchOverlay({ container, store });
+    await new Promise(r => setTimeout(r, 20));
+
+    const input = container.querySelector<HTMLInputElement>('.tl-search-input')!;
+    input.value = 'test';
+    input.dispatchEvent(new Event('input'));
+
+    search.destroy();
+  });
 });

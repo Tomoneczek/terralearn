@@ -123,6 +123,8 @@ describe('SidebarController', () => {
     expect(getLayerColor('countriesTopN')).toBe('hsl(212, 95%, 58%)');
     expect(getLayerColor('capitals')).toBe('hsl(350, 85%, 62%)');
     expect(getLayerColor('megacities')).toBe('hsl(45, 100%, 62%)');
+    expect(getLayerColor('landforms')).toBe('hsl(140, 65%, 55%)');
+    expect(getLayerColor('marine')).toBe('hsl(205, 90%, 60%)');
   });
 
   it('updates quality preset in store and reflects store changes in select element', () => {
@@ -212,6 +214,141 @@ describe('SidebarController', () => {
     // Deactivate route comparison
     routeBtn?.click();
     expect(store.get().routeComparison).toBeNull();
+
+    sidebar.destroy();
+  });
+
+  it('toggles size comparison and antipodes tools in store', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                id: 'PL',
+                properties: {
+                  id: 'PL',
+                  name_pl: 'Polska',
+                  rank: { area: 312696 },
+                  labelLat: 52,
+                  labelLng: 19,
+                },
+                geometry: { type: 'Polygon', coordinates: [] },
+              },
+            ],
+          }),
+        }),
+      ),
+    );
+
+    const store = createStore<AppState>({
+      ...createInitialState(),
+      selection: {
+        id: 'PL',
+        layerId: 'countriesTopN',
+        kind: 'country',
+        name_pl: 'Polska',
+        lat: 52,
+        lng: 19,
+      },
+    });
+    const sidebar = new SidebarController({ container, store });
+
+    // 1. Size Comparison
+    const sizeBtn = container.querySelector<HTMLButtonElement>('#btn-size-compare');
+    expect(sizeBtn).not.toBeNull();
+    sizeBtn?.click();
+    await new Promise(r => setTimeout(r, 20));
+    expect(store.get().sizeComparison?.active).toBe(true);
+    expect(store.get().sizeComparison?.countryId).toBe('PL');
+
+    // Click again to deactivate
+    sizeBtn?.click();
+    expect(store.get().sizeComparison).toBeNull();
+
+    // 2. Antipodes Simulator
+    const antipodesBtn = container.querySelector<HTMLButtonElement>('#btn-antipodes');
+    expect(antipodesBtn).not.toBeNull();
+    antipodesBtn?.click();
+    expect(store.get().antipodes?.active).toBe(true);
+    expect(store.get().antipodes?.source?.lat).toBe(52);
+
+    // Click again to deactivate
+    antipodesBtn?.click();
+    expect(store.get().antipodes).toBeNull();
+
+    sidebar.destroy();
+  });
+
+  it('handles language switcher and clouds / knowledgeMap toggles', () => {
+    const store = createStore<AppState>(createInitialState());
+    const sidebar = new SidebarController({ container, store });
+
+    // Language select
+    const langSelect = container.querySelector<HTMLSelectElement>('#select-language');
+    expect(langSelect).not.toBeNull();
+    if (langSelect) {
+      langSelect.value = 'en';
+      langSelect.dispatchEvent(new Event('change'));
+      expect(store.get().locale).toBe('en');
+    }
+
+    // Find cards by label
+    const allCards = Array.from(container.querySelectorAll<HTMLElement>('.tl-layer-card'));
+    const cloudsCard = allCards.find(
+      c => c.textContent?.includes('Chmury') || c.textContent?.includes('Clouds'),
+    );
+    const cloudsToggle = cloudsCard?.querySelector<HTMLButtonElement>('.tl-toggle');
+    expect(cloudsToggle).toBeDefined();
+    cloudsToggle?.click();
+    expect(store.get().clouds).toBe(false);
+
+    // Knowledge map toggle in UI
+    const kmCard = allCards.find(
+      c => c.textContent?.includes('opanowania') || c.textContent?.includes('Knowledge'),
+    );
+    const kmToggle = kmCard?.querySelector<HTMLButtonElement>('.tl-toggle');
+    expect(kmToggle).toBeDefined();
+    kmToggle?.click();
+    expect(store.get().knowledgeMap).toBe(true);
+
+    sidebar.destroy();
+  });
+
+  it('handles progress export and import file interactions', () => {
+    const store = createStore<AppState>(createInitialState());
+    const sidebar = new SidebarController({ container, store });
+
+    const exportBtn = container.querySelector<HTMLButtonElement>('#btn-export-progress');
+    const importBtn = container.querySelector<HTMLButtonElement>('#btn-import-progress');
+    const fileInput = container.querySelector<HTMLInputElement>('#input-import-progress');
+
+    expect(exportBtn).not.toBeNull();
+    expect(importBtn).not.toBeNull();
+    expect(fileInput).not.toBeNull();
+
+    // Click export
+    exportBtn?.click();
+
+    // Trigger fileInput click via importBtn
+    let inputClicked = false;
+    if (fileInput) {
+      fileInput.click = () => {
+        inputClicked = true;
+      };
+    }
+    importBtn?.click();
+    expect(inputClicked).toBe(true);
+
+    // Test file input with empty files
+    fileInput?.dispatchEvent(new Event('change'));
+
+    // Test refresh
+    sidebar.refresh();
 
     sidebar.destroy();
   });

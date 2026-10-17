@@ -445,4 +445,477 @@ describe('LayerCompositor', () => {
 
     compositor.destroy();
   });
+
+  it('handles MultiLineString and LineString path caching across multiple compose calls', async () => {
+    const multiPathFeature: GeoFeatureCollection = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          id: 'river-multi',
+          properties: {
+            id: 'r-multi',
+            kind: 'river',
+            layerId: 'rivers',
+            name_pl: 'Rzeka M',
+            name_en: 'River M',
+            rank: { order: 1 },
+          },
+          geometry: {
+            type: 'MultiLineString',
+            coordinates: [
+              [
+                [10, 20],
+                [11, 21],
+              ],
+              [
+                [12, 22],
+                [13, 23],
+              ],
+            ],
+          },
+        },
+        {
+          type: 'Feature',
+          id: 'river-single',
+          properties: {
+            id: 'r-single',
+            kind: 'river',
+            layerId: 'rivers',
+            name_pl: 'Rzeka S',
+            name_en: 'River S',
+            rank: { order: 2 },
+          },
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [30, 40],
+              [31, 41],
+            ],
+          },
+        },
+      ],
+    };
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => multiPathFeature,
+        }),
+      ),
+    );
+
+    const store = createStore<AppState>({
+      ...createInitialState(),
+      layers: {
+        ...defaultLayersState(),
+        rivers: { enabled: true, topN: 10 },
+      },
+    });
+
+    const compositor = new LayerCompositor(mockGlobe, store);
+
+    // First compose - populates cache
+    const firstRes = await compositor.compose();
+    expect(firstRes.pathsCount).toBe(3);
+
+    // Second compose - hits the cache update branches (else branches in pathItemCache)
+    const secondRes = await compositor.compose();
+    expect(secondRes.pathsCount).toBe(3);
+
+    compositor.destroy();
+  });
+
+  it('filters features by kind for layers sharing datasets', async () => {
+    const mixedFeatures: GeoFeatureCollection = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          id: '1',
+          properties: { id: '1', kind: 'other', layerId: 'mountains', name_pl: 'O', name_en: 'O' },
+          geometry: { type: 'Point', coordinates: [0, 0] },
+        },
+        {
+          type: 'Feature',
+          id: '2',
+          properties: {
+            id: '2',
+            kind: 'mountain',
+            layerId: 'mountains',
+            name_pl: 'M',
+            name_en: 'M',
+          },
+          geometry: { type: 'Point', coordinates: [1, 1] },
+        },
+        {
+          type: 'Feature',
+          id: '3',
+          properties: { id: '3', kind: 'desert', layerId: 'deserts', name_pl: 'D', name_en: 'D' },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 0],
+              ],
+            ],
+          },
+        },
+        {
+          type: 'Feature',
+          id: '4',
+          properties: { id: '4', kind: 'capital', layerId: 'capitals', name_pl: 'C', name_en: 'C' },
+          geometry: { type: 'Point', coordinates: [2, 2] },
+        },
+        {
+          type: 'Feature',
+          id: '5',
+          properties: {
+            id: '5',
+            kind: 'megacity',
+            layerId: 'megacities',
+            name_pl: 'MC',
+            name_en: 'MC',
+          },
+          geometry: { type: 'Point', coordinates: [3, 3] },
+        },
+        {
+          type: 'Feature',
+          id: '6',
+          properties: { id: '6', kind: 'peak', layerId: 'peaks', name_pl: 'P', name_en: 'P' },
+          geometry: { type: 'Point', coordinates: [4, 4] },
+        },
+        {
+          type: 'Feature',
+          id: '7',
+          properties: {
+            id: '7',
+            kind: 'landform',
+            layerId: 'landforms',
+            name_pl: 'L',
+            name_en: 'L',
+          },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 0],
+              ],
+            ],
+          },
+        },
+        {
+          type: 'Feature',
+          id: '8',
+          properties: { id: '8', kind: 'marine', layerId: 'marine', name_pl: 'MA', name_en: 'MA' },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 0],
+              ],
+            ],
+          },
+        },
+        {
+          type: 'Feature',
+          id: '9',
+          properties: {
+            id: '9',
+            kind: 'country',
+            layerId: 'countriesTopN',
+            name_pl: 'CO',
+            name_en: 'CO',
+          },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 0],
+              ],
+            ],
+          },
+        },
+      ],
+    };
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => mixedFeatures,
+        }),
+      ),
+    );
+
+    const store = createStore<AppState>({
+      ...createInitialState(),
+      layers: {
+        ...defaultLayersState(),
+        mountains: { enabled: true },
+        deserts: { enabled: true },
+        capitals: { enabled: true },
+        megacities: { enabled: true },
+        peaks: { enabled: true },
+        landforms: { enabled: true },
+        marine: { enabled: true },
+        borders: { enabled: true },
+        countriesTopN: { enabled: true },
+      },
+    });
+
+    const compositor = new LayerCompositor(mockGlobe, store);
+    const res = await compositor.compose();
+    expect(res.pointsCount + res.polygonsCount).toBeGreaterThan(0);
+
+    compositor.destroy();
+  });
+
+  it('evaluates accessors for rings, points, labels, and knowledgeMap', () => {
+    let capturedRingAlt: ((d: Record<string, unknown>) => number) | undefined;
+    let capturedRingColor: ((d: Record<string, unknown>) => string) | undefined;
+    let capturedRingRadius: ((d: Record<string, unknown>) => number) | undefined;
+    let capturedRingSpeed: ((d: Record<string, unknown>) => number) | undefined;
+    let capturedRingPeriod: ((d: Record<string, unknown>) => number) | undefined;
+    let capturedPointLat: ((d: GeoFeature) => number) | undefined;
+    let capturedPointLng: ((d: GeoFeature) => number) | undefined;
+    let capturedLabelLat: ((d: GeoFeature) => number) | undefined;
+    let capturedLabelLng: ((d: GeoFeature) => number) | undefined;
+    let capturedLabelColor: ((d: GeoFeature) => string) | undefined;
+    let capturedPointColor: ((d: GeoFeature) => string) | undefined;
+    let capturedPathColor:
+      ((d: { id: string; feature: GeoFeature; points: [number, number][] }) => string) | undefined;
+
+    mockGlobe.ringAltitude = vi.fn(fn => {
+      capturedRingAlt = fn;
+      return mockGlobe;
+    });
+    mockGlobe.ringColor = vi.fn(fn => {
+      capturedRingColor = fn;
+      return mockGlobe;
+    });
+    mockGlobe.ringMaxRadius = vi.fn(fn => {
+      capturedRingRadius = fn;
+      return mockGlobe;
+    });
+    mockGlobe.ringPropagationSpeed = vi.fn(fn => {
+      capturedRingSpeed = fn;
+      return mockGlobe;
+    });
+    mockGlobe.ringRepeatPeriod = vi.fn(fn => {
+      capturedRingPeriod = fn;
+      return mockGlobe;
+    });
+    mockGlobe.pointLat = vi.fn(fn => {
+      capturedPointLat = fn;
+      return mockGlobe;
+    });
+    mockGlobe.pointLng = vi.fn(fn => {
+      capturedPointLng = fn;
+      return mockGlobe;
+    });
+    mockGlobe.labelLat = vi.fn(fn => {
+      capturedLabelLat = fn;
+      return mockGlobe;
+    });
+    mockGlobe.labelLng = vi.fn(fn => {
+      capturedLabelLng = fn;
+      return mockGlobe;
+    });
+    mockGlobe.labelColor = vi.fn(fn => {
+      capturedLabelColor = fn;
+      return mockGlobe;
+    });
+    mockGlobe.pointColor = vi.fn(fn => {
+      capturedPointColor = fn;
+      return mockGlobe;
+    });
+    mockGlobe.pathColor = vi.fn(fn => {
+      capturedPathColor = fn;
+      return mockGlobe;
+    });
+
+    const store = createStore<AppState>({
+      ...createInitialState(),
+      knowledgeMap: true,
+      selection: { id: 'selected-1', layerId: 'countriesTopN' as LayerId, kind: 'country' },
+      hovered: { id: 'hovered-1', layerId: 'countriesTopN' as LayerId, kind: 'country' },
+    });
+
+    const compositor = new LayerCompositor(mockGlobe, store);
+
+    // Ring accessors with default and custom values
+    expect(capturedRingAlt?.({ altitude: 0.05 })).toBe(0.05);
+    expect(capturedRingAlt?.({})).toBe(0.015);
+    expect(capturedRingColor?.({ color: '#ff0000' })).toBe('#ff0000');
+    expect(capturedRingColor?.({})).toBe('rgba(255, 215, 60, 0.8)');
+    expect(capturedRingRadius?.({ maxRadius: 5 })).toBe(5);
+    expect(capturedRingRadius?.({})).toBe(3.5);
+    expect(capturedRingSpeed?.({ propagationSpeed: 4 })).toBe(4);
+    expect(capturedRingSpeed?.({})).toBe(2.5);
+    expect(capturedRingPeriod?.({ repeatPeriod: 500 })).toBe(500);
+    expect(capturedRingPeriod?.({})).toBe(1000);
+
+    // Point coordinate accessors
+    const ptWithCoords: GeoFeature = {
+      type: 'Feature',
+      id: 'p1',
+      properties: { id: 'p1', kind: 'capital', layerId: 'capitals', name_pl: 'P', name_en: 'P' },
+      geometry: { type: 'Point', coordinates: [10, 20] },
+    };
+    const ptEmptyCoords: GeoFeature = {
+      type: 'Feature',
+      id: 'p2',
+      properties: { id: 'p2', kind: 'capital', layerId: 'capitals', name_pl: 'P', name_en: 'P' },
+      geometry: { type: 'Point', coordinates: [] },
+    };
+    expect(capturedPointLat?.(ptWithCoords)).toBe(20);
+    expect(capturedPointLat?.(ptEmptyCoords)).toBe(0);
+    expect(capturedPointLng?.(ptWithCoords)).toBe(10);
+    expect(capturedPointLng?.(ptEmptyCoords)).toBe(0);
+
+    // Label coordinate accessors (explicit labelLat/Lng vs coordinates vs fallback)
+    const labelExplicit: GeoFeature = {
+      type: 'Feature',
+      id: 'l1',
+      properties: {
+        id: 'l1',
+        kind: 'capital',
+        layerId: 'capitals',
+        name_pl: 'L',
+        name_en: 'L',
+        labelLat: 45,
+        labelLng: 30,
+      },
+      geometry: { type: 'Point', coordinates: [10, 20] },
+    };
+    expect(capturedLabelLat?.(labelExplicit)).toBe(45);
+    expect(capturedLabelLat?.(ptWithCoords)).toBe(20);
+    expect(capturedLabelLat?.(ptEmptyCoords)).toBe(0);
+    expect(capturedLabelLng?.(labelExplicit)).toBe(30);
+    expect(capturedLabelLng?.(ptWithCoords)).toBe(10);
+    expect(capturedLabelLng?.(ptEmptyCoords)).toBe(0);
+
+    // Label color accessor
+    const selFeat: GeoFeature = {
+      type: 'Feature',
+      id: 'selected-1',
+      properties: {
+        id: 'selected-1',
+        kind: 'country',
+        layerId: 'countriesTopN',
+        name_pl: 'S',
+        name_en: 'S',
+      },
+      geometry: { type: 'Point', coordinates: [0, 0] },
+    };
+    const hovFeat: GeoFeature = {
+      type: 'Feature',
+      id: 'hovered-1',
+      properties: {
+        id: 'hovered-1',
+        kind: 'country',
+        layerId: 'countriesTopN',
+        name_pl: 'H',
+        name_en: 'H',
+      },
+      geometry: { type: 'Point', coordinates: [0, 0] },
+    };
+    expect(capturedLabelColor?.(selFeat)).toBe('rgba(255, 220, 100, 1)');
+    expect(capturedLabelColor?.(hovFeat)).toBe('rgba(180, 240, 255, 1)');
+    expect(capturedLabelColor?.(ptWithCoords)).toBe('rgba(255, 255, 255, 0.95)');
+
+    // Point & path color accessors with knowledgeMap active
+    const testPointFeat: GeoFeature = {
+      type: 'Feature',
+      id: 'pt-1',
+      properties: {
+        id: 'pt-1',
+        kind: 'capital',
+        layerId: 'capitals',
+        name_pl: 'PT',
+        name_en: 'PT',
+      },
+      geometry: { type: 'Point', coordinates: [0, 0] },
+    };
+    expect(capturedPointColor?.(testPointFeat)).toBeDefined();
+
+    const testPathItem = {
+      id: 'p-1',
+      feature: {
+        type: 'Feature',
+        id: 'r-1',
+        properties: { id: 'r-1', kind: 'river', layerId: 'rivers', name_pl: 'R', name_en: 'R' },
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [0, 0],
+            [1, 1],
+          ],
+        },
+      } as GeoFeature,
+      points: [
+        [0, 0],
+        [1, 1],
+      ] as [number, number][],
+    };
+    expect(capturedPathColor?.(testPathItem)).toBeDefined();
+
+    compositor.destroy();
+  });
+
+  it('handles lifecycle destruction, debounced scheduling, and network error resilience', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new Error('Fetch network failure'))),
+    );
+
+    const store = createStore<AppState>({
+      ...createInitialState(),
+      layers: {
+        ...defaultLayersState(),
+        countriesTopN: { enabled: true },
+      },
+    });
+
+    const compositor = new LayerCompositor(mockGlobe, store);
+
+    // Resilience against network errors - compose should catch and not throw
+    const res = await compositor.compose();
+    expect(res.polygonsCount).toBe(0);
+
+    // Debounced scheduling
+    compositor.scheduleCompose(20);
+    compositor.scheduleCompose(10); // cancels previous timer
+
+    await new Promise(r => setTimeout(r, 40));
+
+    // Refresh dynamic styles when hiddenLabels is true
+    store.set({ ...store.get(), hiddenLabels: true });
+    compositor.refreshDynamicStyles();
+
+    // Destroy
+    compositor.destroy();
+
+    // Invocations after destruction should be safe no-ops
+    compositor.scheduleCompose(10);
+    compositor.refreshDynamicStyles();
+    const destroyedRes = await compositor.compose();
+    expect(destroyedRes.polygonsCount).toBe(0);
+  });
 });

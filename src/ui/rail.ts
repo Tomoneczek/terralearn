@@ -17,6 +17,7 @@ export function createRail(items: RailItem[], onSelect?: (id: string) => void): 
 
   // Logo button
   const logoBtn = document.createElement('button');
+  logoBtn.type = 'button';
   logoBtn.className = 'rail-btn rail-logo';
   logoBtn.setAttribute('aria-label', 'TerraLearn Home');
   logoBtn.appendChild(
@@ -33,6 +34,7 @@ export function createRail(items: RailItem[], onSelect?: (id: string) => void): 
   // Nav buttons
   items.forEach(item => {
     const btn = document.createElement('button');
+    btn.type = 'button';
     btn.className = `rail-btn${item.active ? ' active' : ''}`;
     btn.setAttribute('aria-label', item.label);
     btn.title = item.label;

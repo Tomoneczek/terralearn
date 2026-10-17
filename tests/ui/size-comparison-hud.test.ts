@@ -8,6 +8,7 @@ import {
   POLAND_AREA_KM2,
   SIZE_PRESETS,
 } from '@/ui/size-comparison-hud';
+import { clearGeoDataCache } from '@/globe/data-loader';
 
 describe('SizeComparisonHud', () => {
   let container: HTMLElement;
@@ -25,6 +26,7 @@ describe('SizeComparisonHud', () => {
   };
 
   beforeEach(() => {
+    clearGeoDataCache();
     container = document.createElement('div');
     document.body.appendChild(container);
   });
@@ -180,6 +182,98 @@ describe('SizeComparisonHud', () => {
       const current = store.get().sizeComparison;
       expect(current?.targetLat).toBe(0);
       expect(current?.targetLng).toBe(20);
+
+      hud.destroy();
+    });
+
+    it('switches compared country when store selection changes', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: async () => ({
+              type: 'FeatureCollection',
+              features: [
+                {
+                  type: 'Feature',
+                  id: 'FR',
+                  properties: {
+                    id: 'FR',
+                    kind: 'country',
+                    name_pl: 'Francja',
+                    rank: { area: 551695 },
+                    labelLat: 46,
+                    labelLng: 2,
+                  },
+                  geometry: samplePolygon,
+                },
+              ],
+            }),
+          }),
+        ),
+      );
+
+      const store = createStore<AppState>(createInitialState());
+      const hud = new SizeComparisonHud({ container, store });
+
+      // Wait for preloadCountries to finish loading mock countries
+      await new Promise(r => setTimeout(r, 50));
+
+      // Start comparison with Greenland
+      store.set({
+        sizeComparison: {
+          active: true,
+          countryId: 'GL',
+          countryName: 'Grenlandia',
+          countryAreaKm2: 2189751,
+          targetLat: 70,
+          targetLng: -40,
+          geometry: samplePolygon,
+        },
+      });
+
+      // User selects France
+      store.set({
+        selection: { id: 'FR', layerId: 'countriesTopN', kind: 'country', name_pl: 'Francja' },
+      });
+
+      await new Promise(r => setTimeout(r, 50));
+
+      const updated = store.get().sizeComparison;
+      expect(updated?.countryId).toBe('FR');
+      expect(updated?.countryName).toBe('Francja');
+
+      // Test invalid country code in setCountry
+      await hud.setCountry('NON_EXISTENT');
+      expect(store.get().sizeComparison?.countryId).toBe('FR');
+
+      hud.destroy();
+    });
+
+    it('handles empty/zero country area and preload errors gracefully', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.reject(new Error('Preload network failure'))),
+      );
+
+      const store = createStore<AppState>(createInitialState());
+      const hud = new SizeComparisonHud({ container, store });
+
+      store.set({
+        sizeComparison: {
+          active: true,
+          countryId: 'XX',
+          countryName: 'Nieznany',
+          countryAreaKm2: 0,
+          targetLat: 0,
+          targetLng: 0,
+          geometry: samplePolygon,
+        },
+      });
+
+      const el = container.querySelector('.tl-size-hud');
+      expect(el?.classList.contains('hidden')).toBe(false);
 
       hud.destroy();
     });
