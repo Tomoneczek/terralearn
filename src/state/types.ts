@@ -33,6 +33,16 @@ export interface RouteComparisonState {
   to: RoutePoint | null;
 }
 
+export interface SizeComparisonState {
+  active: boolean;
+  countryId: string | null;
+  countryName: string | null;
+  countryAreaKm2: number | null;
+  targetLat: number;
+  targetLng: number;
+  geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
+}
+
 export interface AppState {
   layers: Record<LayerId, LayerState>;
   mode: AppMode;
@@ -46,6 +56,7 @@ export interface AppState {
   hovered: FeatureRef | null;
   globeClick: { lat: number; lng: number } | null;
   routeComparison: RouteComparisonState | null;
+  sizeComparison: SizeComparisonState | null;
 }
 
 export type Selector<T, V> = (state: T) => V;

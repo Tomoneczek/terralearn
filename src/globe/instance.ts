@@ -13,6 +13,10 @@ import { FPSMonitor, QualityController } from './performance';
 import type { ArcItem } from '@/geo/spherical';
 
 import { RouteLayerController, type GlobeRouteDelegate } from './route-layer';
+import {
+  SizeComparisonLayerController,
+  type GlobeSizeComparisonDelegate,
+} from './size-comparison-layer';
 
 export interface GlobeContext {
   globe: GlobeInstance;
@@ -24,6 +28,7 @@ export interface GlobeContext {
   clouds: CloudsController;
   quality: QualityController;
   routes: RouteLayerController;
+  sizeComparison: SizeComparisonLayerController;
   fpsMonitor: FPSMonitor;
   setArcs: (arcs: ArcItem[]) => void;
   destroy: () => void;
@@ -160,6 +165,12 @@ export function createGlobe(
   // Spherical Route Layer Controller (Orthodrome vs Loxodrome)
   const routes = new RouteLayerController(globe as unknown as GlobeRouteDelegate, store);
 
+  // Size Comparison Ghost Layer Controller
+  const sizeComparison = new SizeComparisonLayerController(
+    globe as unknown as GlobeSizeComparisonDelegate,
+    store,
+  );
+
   // ResizeObserver with DPR protection
   const resizeObserver = new ResizeObserver(entries => {
     for (const entry of entries) {
@@ -182,6 +193,7 @@ export function createGlobe(
     clouds,
     quality,
     routes,
+    sizeComparison,
     fpsMonitor,
     setArcs: (arcs: ArcItem[]) => {
       try {
@@ -199,6 +211,7 @@ export function createGlobe(
       clouds.destroy();
       quality.destroy();
       routes.destroy();
+      sizeComparison.destroy();
       fpsMonitor.stop();
       // Remove globe canvas
       const canvas = container.querySelector('canvas');

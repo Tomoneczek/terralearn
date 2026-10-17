@@ -18,6 +18,7 @@ import { getDistanceColor } from './geo/spherical';
 export let globeContext: GlobeContext | null = null;
 export let sidebar: SidebarController | null = null;
 import { RouteHud } from '@/ui/route-hud';
+import { SizeComparisonHud } from '@/ui/size-comparison-hud';
 
 export let searchOverlay: SearchOverlay | null = null;
 export let toolbar: Toolbar | null = null;
@@ -28,6 +29,7 @@ export let quizEngine: QuizEngine | null = null;
 export let quizHud: QuizHud | null = null;
 export let quizSummary: QuizSummaryModal | null = null;
 export let routeHud: RouteHud | null = null;
+export let sizeComparisonHud: SizeComparisonHud | null = null;
 
 export function bootstrap(): void {
   const root = document.getElementById('app');
@@ -127,6 +129,14 @@ export function bootstrap(): void {
     });
 
     routeHud = new RouteHud({
+      container: root,
+      store,
+      onFlyTo: (lat, lng, alt) => {
+        globeContext?.camera.flyTo(lat, lng, alt);
+      },
+    });
+
+    sizeComparisonHud = new SizeComparisonHud({
       container: root,
       store,
       onFlyTo: (lat, lng, alt) => {

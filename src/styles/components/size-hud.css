@@ -1,0 +1,221 @@
+/* True Size Comparison HUD Overlay */
+.tl-size-hud {
+  position: absolute;
+  top: var(--space-4, 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(520px, calc(100vw - 32px));
+  background: rgba(13, 17, 23, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 215, 60, 0.25);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.5),
+    0 0 24px rgba(255, 215, 60, 0.12);
+  padding: var(--space-4, 16px);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+  color: var(--text-1, #f0f6fc);
+  animation: tl-hud-slide-down 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tl-size-hud.hidden {
+  display: none !important;
+}
+
+.tl-size-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: var(--space-2, 8px);
+}
+
+.tl-size-title-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+}
+
+.tl-size-icon {
+  color: #ffd700;
+  display: flex;
+  align-items: center;
+}
+
+.tl-size-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.tl-size-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-3, #8b949e);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.tl-size-close-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Presets bar */
+.tl-size-presets {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  flex-wrap: wrap;
+  font-size: 11px;
+}
+
+.tl-size-presets-label {
+  color: var(--text-3, #8b949e);
+  font-weight: 500;
+}
+
+.tl-size-preset-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-2, #c9d1d9);
+  padding: 3px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.15s ease;
+}
+
+.tl-size-preset-btn:hover {
+  background: rgba(255, 215, 60, 0.15);
+  border-color: rgba(255, 215, 60, 0.4);
+  color: #ffd700;
+}
+
+/* Body */
+.tl-size-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+}
+
+.tl-size-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 215, 60, 0.18);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-3, 12px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}
+
+.tl-size-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tl-size-country-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffd700;
+}
+
+.tl-size-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 215, 60, 0.15);
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 60, 0.3);
+}
+
+.tl-size-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.tl-size-stat-label {
+  color: var(--text-3, #8b949e);
+}
+
+.tl-size-stat-val {
+  font-weight: 600;
+  color: #fff;
+}
+
+.tl-size-ratio-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-top: 4px;
+  border-left: 3px solid #ffd700;
+}
+
+.tl-size-ratio-item {
+  font-size: 12px;
+  color: #e6edf3;
+  font-weight: 500;
+}
+
+.tl-size-explanation {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-3, #8b949e);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 8px 10px;
+  border-radius: 6px;
+  border-left: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+.tl-size-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #00f0ff;
+  opacity: 0.9;
+}
+
+.tl-size-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2, 8px);
+  padding-top: var(--space-2, 8px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tl-size-reset-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-2, #c9d1d9);
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tl-size-reset-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}

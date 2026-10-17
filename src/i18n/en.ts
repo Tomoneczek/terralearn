@@ -111,4 +111,23 @@ export const en: Dictionary = {
     presetLondonSf: 'London → San Francisco',
     presetNySingapore: 'New York → Singapore',
   },
+  sizeCompare: {
+    title: 'True Size Comparison',
+    close: 'Close',
+    presets: 'Examples (Mercator myth):',
+    presetGreenlandAfrica: 'Greenland over Africa',
+    presetGreenlandEurope: 'Greenland over Europe',
+    presetBrazilEurope: 'Brazil over Europe',
+    presetPolandMed: 'Poland over Mediterranean',
+    presetAustraliaEurope: 'Australia over Europe',
+    selectedCountry: 'Selected country:',
+    area: 'True surface area',
+    ratioVsAfrica: 'Africa (~30.4M km²) fits this country ~{ratio}×',
+    ratioVsPoland: 'This country is ~{ratio}× the size of Poland',
+    explanation:
+      'The Mercator projection drastically distorts polar regions. On traditional school maps, Greenland appears equal in size to Africa, while in reality Africa is nearly 14 times larger!',
+    dragHint: 'Click anywhere on the globe to move the ghost outline.',
+    resetPosition: 'Reset to original location',
+    changeCountry: 'Change country',
+  },
 };

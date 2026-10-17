@@ -111,4 +111,23 @@ export const pl: Dictionary = {
     presetLondonSf: 'Londyn → San Francisco',
     presetNySingapore: 'Nowy Jork → Singapur',
   },
+  sizeCompare: {
+    title: 'Porównywarka rozmiarów (True Size)',
+    close: 'Zamknij',
+    presets: 'Przykłady (mit Merkatora):',
+    presetGreenlandAfrica: 'Grenlandia nad Afryką',
+    presetGreenlandEurope: 'Grenlandia nad Europą',
+    presetBrazilEurope: 'Brazylia nad Europą',
+    presetPolandMed: 'Polska nad M. Śródziemnym',
+    presetAustraliaEurope: 'Australia nad Europą',
+    selectedCountry: 'Wybrany kraj:',
+    area: 'Prawdziwa powierzchnia',
+    ratioVsAfrica: 'Afryka (~30.4 mln km²) mieści ten kraj ~{ratio}×',
+    ratioVsPoland: 'Kraj ten jest ~{ratio}× większy od Polski',
+    explanation:
+      'Rzut Merkatora drastycznie zniekształca obszary podbiegunowe. Na tradycyjnej mapie Grenlandia wydaje się tak duża jak Afryka, podczas gdy w rzeczywistości Afryka jest od niej prawie 14 razy większa!',
+    dragHint: 'Kliknij w dowolne miejsce na globusie, aby przenieść obrys.',
+    resetPosition: 'Przywróć pierwotne położenie',
+    changeCountry: 'Zmień kraj',
+  },
 };

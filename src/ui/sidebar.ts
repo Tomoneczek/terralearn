@@ -6,6 +6,7 @@ import { parseSvg } from './dom';
 import { ToggleSwitch } from './components/toggle';
 import { TopNSlider } from './components/slider';
 import { PRESETS, applyPreset, detectActivePreset, type PresetId } from './presets';
+import { loadGeoData } from '@/globe/data-loader';
 
 export interface SidebarOptions {
   container: HTMLElement;
@@ -207,6 +208,53 @@ export class SidebarController {
       }
     });
     toolsSection.appendChild(routeBtn);
+
+    // Size Comparison button (True Size)
+    const sizeBtn = document.createElement('button');
+    sizeBtn.type = 'button';
+    sizeBtn.className = 'tl-tool-btn';
+    sizeBtn.id = 'btn-size-compare';
+
+    const sizeIconSpan = document.createElement('span');
+    sizeIconSpan.className = 'tl-tool-icon';
+    sizeIconSpan.appendChild(
+      parseSvg(
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 3H3v18h18V3z"/><path d="m9 9 6 6m0-6-6 6"/></svg>',
+      ),
+    );
+
+    const sizeLabelSpan = document.createElement('span');
+    sizeLabelSpan.textContent = t('tools.sizeComparison');
+
+    sizeBtn.appendChild(sizeIconSpan);
+    sizeBtn.appendChild(sizeLabelSpan);
+    sizeBtn.addEventListener('click', () => {
+      const current = this.store.get().sizeComparison;
+      if (current?.active) {
+        this.store.set({ sizeComparison: null });
+      } else {
+        const sel = this.store.get().selection;
+        const isCountry = sel && sel.kind === 'country';
+        const targetId = isCountry ? sel.id : 'GL';
+        void loadGeoData('/data/countries.json').then(data => {
+          const feat = data.features.find(f => f.properties.id === targetId);
+          if (feat) {
+            this.store.set({
+              sizeComparison: {
+                active: true,
+                countryId: feat.properties.id,
+                countryName: feat.properties.name_pl || feat.properties.name_en || targetId,
+                countryAreaKm2: feat.properties.rank?.area ?? 0,
+                targetLat: feat.properties.labelLat ?? 0,
+                targetLng: feat.properties.labelLng ?? 0,
+                geometry: feat.geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon,
+              },
+            });
+          }
+        });
+      }
+    });
+    toolsSection.appendChild(sizeBtn);
 
     const quizBtn = document.createElement('button');
     quizBtn.type = 'button';

@@ -112,6 +112,24 @@ export interface Dictionary {
     presetLondonSf: string;
     presetNySingapore: string;
   };
+  sizeCompare: {
+    title: string;
+    close: string;
+    presets: string;
+    presetGreenlandAfrica: string;
+    presetGreenlandEurope: string;
+    presetBrazilEurope: string;
+    presetPolandMed: string;
+    presetAustraliaEurope: string;
+    selectedCountry: string;
+    area: string;
+    ratioVsAfrica: string;
+    ratioVsPoland: string;
+    explanation: string;
+    dragHint: string;
+    resetPosition: string;
+    changeCountry: string;
+  };
 }
 
 // Flat key path type e.g. "layers.lakes" | "sections.physical"
