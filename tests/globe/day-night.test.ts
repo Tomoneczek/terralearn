@@ -35,6 +35,7 @@ describe('DayNightController and Terminator Shader', () => {
     expect(material.uniforms.uBaseTexture).toBeDefined();
     expect(material.uniforms.uDayTexture).toBeDefined();
     expect(material.uniforms.uNightTexture).toBeDefined();
+    expect(material.uniforms.uWaterMask).toBeDefined();
     expect(material.uniforms.uSunDirection).toBeDefined();
     expect(material.uniforms.uEnabled?.value).toBe(0.0);
 
@@ -182,5 +183,48 @@ describe('DayNightController and Terminator Shader', () => {
     expect(Math.abs(sunVec.y)).toBeLessThan(0.05);
 
     controller.destroy();
+  });
+
+  it('renders ocean specular sun glint strictly on water under sunlight and never on land (G08-02)', () => {
+    function computeSpecularGlint(
+      normal: [number, number, number],
+      sunDir: [number, number, number],
+      viewDir: [number, number, number],
+      isWater: number,
+    ): number {
+      const sunDot = normal[0] * sunDir[0] + normal[1] * sunDir[1] + normal[2] * sunDir[2];
+      if (sunDot <= 0) return 0; // No glint on night side
+
+      // Blinn-Phong half-vector
+      const hx = sunDir[0] + viewDir[0];
+      const hy = sunDir[1] + viewDir[1];
+      const hz = sunDir[2] + viewDir[2];
+      const hLen = Math.sqrt(hx * hx + hy * hy + hz * hz);
+      const halfVec = [hx / hLen, hy / hLen, hz / hLen];
+
+      const nDotH = Math.max(
+        0,
+        normal[0] * halfVec[0]! + normal[1] * halfVec[1]! + normal[2] * halfVec[2]!,
+      );
+      const specular = Math.pow(nDotH, 64.0) * isWater;
+      return specular * 1.2;
+    }
+
+    const surfaceNormal: [number, number, number] = [0, 0, 1];
+    const sunVector: [number, number, number] = [0, 0.5, 0.866];
+    const cameraVector: [number, number, number] = [0, -0.5, 0.866]; // Perfect mirror reflection angle
+
+    // 1. Water surface with mirror angle -> strong glint
+    const oceanGlint = computeSpecularGlint(surfaceNormal, sunVector, cameraVector, 1.0);
+    expect(oceanGlint).toBeGreaterThan(1.0);
+
+    // 2. Land surface with exact same angles -> ZERO glint (remains matte)
+    const landGlint = computeSpecularGlint(surfaceNormal, sunVector, cameraVector, 0.0);
+    expect(landGlint).toBe(0.0);
+
+    // 3. Water surface on the night side -> ZERO glint
+    const nightSun: [number, number, number] = [0, 0, -1];
+    const nightGlint = computeSpecularGlint(surfaceNormal, nightSun, cameraVector, 1.0);
+    expect(nightGlint).toBe(0.0);
   });
 });

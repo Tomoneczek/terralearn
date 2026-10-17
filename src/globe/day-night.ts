@@ -7,6 +7,7 @@ export interface DayNightMaterialUniforms {
   uBaseTexture: { value: Texture | null };
   uDayTexture: { value: Texture | null };
   uNightTexture: { value: Texture | null };
+  uWaterMask: { value: Texture | null };
   uSunDirection: { value: Vector3 };
   uEnabled: { value: number };
 }
@@ -27,6 +28,7 @@ export const DAY_NIGHT_FRAGMENT_SHADER = /* glsl */ `
   uniform sampler2D uBaseTexture;
   uniform sampler2D uDayTexture;
   uniform sampler2D uNightTexture;
+  uniform sampler2D uWaterMask;
   uniform vec3 uSunDirection;
   uniform float uEnabled;
 
@@ -41,14 +43,25 @@ export const DAY_NIGHT_FRAGMENT_SHADER = /* glsl */ `
 
     vec4 dayColor = texture2D(uDayTexture, vUv);
     vec4 nightColor = texture2D(uNightTexture, vUv);
+    float isWater = texture2D(uWaterMask, vUv).r;
 
     vec3 norm = normalize(vWorldPosition);
-    float sunDot = dot(norm, normalize(uSunDirection));
+    vec3 sunDir = normalize(uSunDirection);
+    float sunDot = dot(norm, sunDir);
 
     // Day lighting: direct sunlight + ambient atmosphere scatter
     float dayScatter = clamp(sunDot, 0.0, 1.0);
     float dayLight = 0.35 + 0.65 * dayScatter;
     vec3 dayIlluminated = dayColor.rgb * dayLight;
+
+    // Ocean Specular Glint (Blinn-Phong) - only on water illuminated by sunlight
+    // cameraPosition is built-in Three.js uniform injected in ShaderMaterial
+    vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+    vec3 halfVec = normalize(sunDir + viewDir);
+    float nDotH = max(0.0, dot(norm, halfVec));
+    float specular = pow(nDotH, 64.0) * isWater * step(0.0, sunDot);
+    vec3 sunGlint = vec3(1.0, 0.95, 0.85) * (specular * 1.2);
+    dayIlluminated += sunGlint;
 
     // Night lighting: deep dark night with boosted city lights
     // Deep space ambient for unlit oceans and plains
@@ -72,6 +85,7 @@ export interface DayNightControllerOptions {
   baseTextureUrl?: string;
   dayTextureUrl?: string;
   nightTextureUrl?: string;
+  waterMaskUrl?: string;
   updateIntervalMs?: number;
 }
 
@@ -83,6 +97,7 @@ export class DayNightController {
   private baseTexture: Texture | null = null;
   private dayTexture: Texture | null = null;
   private nightTexture: Texture | null = null;
+  private waterMask: Texture | null = null;
 
   constructor(store: Store<AppState>, options: DayNightControllerOptions = {}) {
     this.store = store;
@@ -92,11 +107,13 @@ export class DayNightController {
     );
     const dayUrl = resolveAssetUrl(options.dayTextureUrl ?? '/textures/earth-day.jpg');
     const nightUrl = resolveAssetUrl(options.nightTextureUrl ?? '/textures/earth-night.jpg');
+    const maskUrl = resolveAssetUrl(options.waterMaskUrl ?? '/textures/water-mask.png');
 
     const loader = new TextureLoader();
     this.baseTexture = loader.load(baseUrl);
     this.dayTexture = loader.load(dayUrl);
     this.nightTexture = loader.load(nightUrl);
+    this.waterMask = loader.load(maskUrl);
 
     const sunDir = calculateSunDirection(new Date());
 
@@ -105,6 +122,7 @@ export class DayNightController {
         uBaseTexture: { value: this.baseTexture },
         uDayTexture: { value: this.dayTexture },
         uNightTexture: { value: this.nightTexture },
+        uWaterMask: { value: this.waterMask },
         uSunDirection: { value: new Vector3(sunDir[0], sunDir[1], sunDir[2]) },
         uEnabled: { value: store.get().dayNight ? 1.0 : 0.0 },
       },
@@ -160,6 +178,7 @@ export class DayNightController {
     this.baseTexture?.dispose();
     this.dayTexture?.dispose();
     this.nightTexture?.dispose();
+    this.waterMask?.dispose();
     this.material.dispose();
   }
 }
