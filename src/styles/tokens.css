@@ -69,6 +69,8 @@
 
 :root[data-theme='classic'],
 [data-theme='classic'] {
+  color-scheme: light;
+
   /* Surfaces - School Atlas light theme */
   --bg-0: #f1f5f9;
   --bg-1: #ffffff;

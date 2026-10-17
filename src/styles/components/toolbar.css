@@ -36,3 +36,9 @@
   background-color: hsla(212, 95%, 58%, 0.18);
   color: var(--c-accent-blue);
 }
+
+.tl-toolbar-btn svg {
+  display: block;
+  flex-shrink: 0;
+  pointer-events: none;
+}

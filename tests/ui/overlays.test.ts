@@ -73,6 +73,13 @@ describe('UI Overlays', () => {
       const buttons = container.querySelectorAll<HTMLButtonElement>('.tl-toolbar-btn');
       expect(buttons.length).toBe(5);
 
+      // Verify each button has a valid SVG element in the SVG namespace
+      buttons.forEach(btn => {
+        const svg = btn.querySelector('svg');
+        expect(svg).toBeDefined();
+        expect(svg?.namespaceURI).toBe('http://www.w3.org/2000/svg');
+      });
+
       // 1. Zoom In
       buttons[0]?.click();
       expect(mockCamera.zoomIn).toHaveBeenCalledTimes(1);

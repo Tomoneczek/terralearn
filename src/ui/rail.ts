@@ -22,7 +22,7 @@ export function createRail(items: RailItem[], onSelect?: (id: string) => void): 
   logoBtn.appendChild(
     parseSvg(`
     <svg viewBox="0 0 100 100" width="28" height="28">
-      <circle cx="50" cy="50" r="46" fill="#0b0e14" stroke="#38bdf8" stroke-width="4"/>
+      <circle cx="50" cy="50" r="46" fill="var(--bg-1, #0b0e14)" stroke="#38bdf8" stroke-width="4"/>
       <ellipse cx="50" cy="50" rx="46" ry="18" fill="none" stroke="#0ea5e9" stroke-width="2" opacity="0.6"/>
       <circle cx="50" cy="50" r="10" fill="#38bdf8"/>
     </svg>

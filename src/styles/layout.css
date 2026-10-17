@@ -54,6 +54,12 @@
   color: var(--border-focus);
 }
 
+.rail-btn svg {
+  display: block;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
 .rail-logo {
   width: 32px;
   height: 32px;
