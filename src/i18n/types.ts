@@ -32,6 +32,9 @@ export interface Dictionary {
     theme: string;
     themeDark: string;
     themeClassic: string;
+    language: string;
+    langPl: string;
+    langEn: string;
     learn: string;
     knowledgeMap: string;
   };

@@ -67,6 +67,7 @@ export interface AppState {
   clouds: boolean;
   quality: QualityPreset;
   graticule: GraticuleMode;
+  locale: 'pl' | 'en';
   hiddenLabels: boolean;
   hideSelectionLabel?: boolean;
   knowledgeMap?: boolean;

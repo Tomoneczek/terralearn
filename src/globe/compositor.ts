@@ -265,7 +265,7 @@ export class LayerCompositor {
       const coords = feat.geometry.coordinates as number[];
       return Number(coords[0] ?? 0);
     });
-    this.globe.labelText(feat => formatLabelText(feat));
+    this.globe.labelText(feat => formatLabelText(feat, this.store.get().locale));
     this.globe.labelSize(feat => getLabelSize(feat));
     this.globe.labelDotRadius(feat => getLabelDotRadius(feat));
     this.globe.labelAltitude(feat => getLabelAltitude(feat));
@@ -327,6 +327,15 @@ export class LayerCompositor {
       },
     );
     this.unsubs.push(unsubKnowledge);
+
+    // 4. Locale change updates label language on globe
+    const unsubLocale = this.store.subscribe(
+      s => s.locale,
+      () => {
+        this.scheduleCompose();
+      },
+    );
+    this.unsubs.push(unsubLocale);
 
     const handleSrsUpdated = (): void => {
       if (this.store.get().knowledgeMap) {

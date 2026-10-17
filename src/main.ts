@@ -16,6 +16,8 @@ import { QuizSummaryModal } from './ui/quiz/quiz-summary';
 import { QuizConfigModal } from './ui/quiz/quiz-config-modal';
 import { getDistanceColor } from './geo/spherical';
 
+import { t, setLocale } from './i18n';
+
 export let globeContext: GlobeContext | null = null;
 export let sidebar: SidebarController | null = null;
 import { RouteHud } from '@/ui/route-hud';
@@ -47,6 +49,22 @@ export function bootstrap(): void {
     };
     syncTheme(store.get().theme);
     store.subscribe(s => s.theme, syncTheme);
+
+    // Sync locale to i18n, HTML lang attribute, document title, and components
+    const syncLocale = (locale: 'pl' | 'en') => {
+      setLocale(locale);
+      document.documentElement.setAttribute('lang', locale);
+      document.title = t('app.title');
+      sidebar?.refresh();
+      searchOverlay?.refresh();
+      toolbar?.refresh();
+      legendOverlay?.refresh();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tl-locale-updated', { detail: { locale } }));
+      }
+    };
+    syncLocale(store.get().locale ?? 'pl');
+    store.subscribe(s => s.locale, syncLocale);
 
     // Initialize Quiz Engine & UI
     quizEngine = new QuizEngine(store, {

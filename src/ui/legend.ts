@@ -14,6 +14,7 @@ export class LegendOverlay {
   public readonly element: HTMLElement;
   private readonly store: Store<AppState>;
   private readonly itemsContainer: HTMLElement;
+  private readonly titleEl: HTMLElement;
   private readonly unsubs: (() => void)[] = [];
   private isCollapsed = false;
 
@@ -30,6 +31,7 @@ export class LegendOverlay {
     const title = document.createElement('span');
     title.className = 'tl-legend-title';
     title.textContent = t('legend.title');
+    this.titleEl = title;
 
     const toggleBtn = document.createElement('button');
     toggleBtn.type = 'button';
@@ -56,14 +58,23 @@ export class LegendOverlay {
     this.renderItems();
   }
 
+  public refresh(): void {
+    if (this.titleEl) {
+      this.titleEl.textContent = t('legend.title');
+    }
+    this.element.setAttribute('aria-label', t('legend.title'));
+    this.renderItems();
+  }
+
   private bindStore(): void {
     const unsubStore = this.store.subscribe(
       s => ({
         layers: s.layers,
         knowledgeMap: s.knowledgeMap,
+        locale: s.locale,
       }),
       () => {
-        this.renderItems();
+        this.refresh();
       },
     );
     this.unsubs.push(unsubStore);

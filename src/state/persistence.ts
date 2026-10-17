@@ -16,6 +16,7 @@ export const PersistedStateSchema = z.object({
   clouds: z.boolean().optional(),
   quality: z.enum(['auto', 'low', 'medium', 'high']).optional(),
   graticule: z.enum(['off', 'major', '15deg']).optional(),
+  locale: z.enum(['pl', 'en']).optional(),
   hiddenLabels: z.boolean().optional(),
   knowledgeMap: z.boolean().optional(),
 });
@@ -59,6 +60,7 @@ export function savePersistedState(state: AppState): void {
       clouds: state.clouds,
       quality: state.quality,
       graticule: state.graticule,
+      locale: state.locale,
       hiddenLabels: state.hiddenLabels,
       knowledgeMap: state.knowledgeMap,
     };
@@ -93,6 +95,7 @@ export function applyPersistedState(
     clouds: persisted.clouds ?? baseState.clouds,
     quality: persisted.quality ?? baseState.quality,
     graticule: persisted.graticule ?? baseState.graticule,
+    locale: persisted.locale ?? baseState.locale,
     hiddenLabels: persisted.hiddenLabels ?? baseState.hiddenLabels,
     knowledgeMap: persisted.knowledgeMap ?? baseState.knowledgeMap,
   };

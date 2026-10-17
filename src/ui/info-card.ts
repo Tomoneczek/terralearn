@@ -63,7 +63,7 @@ export class InfoCard {
 
   private bindStore(): void {
     this.unsubscribe = this.store.subscribe(
-      s => ({ selection: s.selection, mode: s.mode }),
+      s => ({ selection: s.selection, mode: s.mode, locale: s.locale }),
       ({ selection, mode }) => {
         if (!selection || mode === 'quiz') {
           this.element.classList.add('hidden');
@@ -87,6 +87,7 @@ export class InfoCard {
   private renderContent(id: string): void {
     this.element.innerHTML = '';
     const facts = this.factsCache?.[id];
+    const isEn = this.store.get().locale === 'en';
 
     // Card Header
     const header = document.createElement('header');
@@ -97,19 +98,35 @@ export class InfoCard {
 
     const kindBadge = document.createElement('span');
     kindBadge.className = 'tl-card-kind';
-    kindBadge.textContent = facts?.kind_pl ?? 'Obiekt';
+    kindBadge.textContent = isEn
+      ? facts?.kind
+        ? t(`quiz.categories.${facts.kind}` as never)
+        : 'Feature'
+      : (facts?.kind_pl ?? 'Obiekt');
+
+    const mainTitle = isEn
+      ? facts?.name_en || facts?.name_pl || id
+      : facts?.name_pl || facts?.name_en || id;
+
+    const subTitle = isEn
+      ? facts?.name_pl && facts.name_pl !== facts.name_en
+        ? facts.name_pl
+        : undefined
+      : facts?.name_en && facts.name_en !== facts.name_pl
+        ? facts.name_en
+        : undefined;
 
     const title = document.createElement('h2');
     title.className = 'tl-card-title';
-    title.textContent = facts?.name_pl ?? id;
+    title.textContent = mainTitle;
 
     titleGroup.appendChild(kindBadge);
     titleGroup.appendChild(title);
 
-    if (facts?.name_en && facts.name_en !== facts.name_pl) {
+    if (subTitle) {
       const subtitle = document.createElement('div');
       subtitle.className = 'tl-card-subtitle';
-      subtitle.textContent = facts.name_en;
+      subtitle.textContent = subTitle;
       titleGroup.appendChild(subtitle);
     }
 

@@ -174,13 +174,21 @@ export class SearchOverlay {
       dot.style.backgroundColor = color;
       dot.style.color = color;
 
+      const isEn = this.store.get().locale === 'en';
+
       const nameSpan = document.createElement('span');
       nameSpan.className = 'tl-search-item-name';
-      nameSpan.textContent = item.name_pl;
+      nameSpan.textContent = isEn ? item.name_en || item.name_pl : item.name_pl;
 
       const kindBadge = document.createElement('span');
       kindBadge.className = 'tl-search-item-kind';
-      kindBadge.textContent = item.name_en !== item.name_pl ? item.name_en : item.kind;
+      kindBadge.textContent = isEn
+        ? item.name_pl !== item.name_en
+          ? item.name_pl
+          : item.kind
+        : item.name_en !== item.name_pl
+          ? item.name_en
+          : item.kind;
 
       el.appendChild(dot);
       el.appendChild(nameSpan);
@@ -241,6 +249,11 @@ export class SearchOverlay {
     this.dropdown.innerHTML = '';
     this.currentResults = [];
     this.selectedIndex = -1;
+  }
+
+  public refresh(): void {
+    this.input.placeholder = t('app.searchPlaceholder');
+    this.input.setAttribute('aria-label', t('app.searchPlaceholder'));
   }
 
   public destroy(): void {

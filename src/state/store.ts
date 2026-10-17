@@ -11,6 +11,7 @@ export function createInitialState(): AppState {
     clouds: true,
     quality: 'auto',
     graticule: 'off',
+    locale: 'pl',
     hiddenLabels: false,
     hideSelectionLabel: false,
     knowledgeMap: false,

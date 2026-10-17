@@ -69,6 +69,7 @@ export class SidebarController {
   private qualitySelect!: HTMLSelectElement;
   private graticuleSelect!: HTMLSelectElement;
   private themeSelect!: HTMLSelectElement;
+  private languageSelect!: HTMLSelectElement;
   private learnToggle!: ToggleSwitch;
   private knowledgeMapToggle!: ToggleSwitch;
   private unsubscribe: (() => void) | null = null;
@@ -89,6 +90,17 @@ export class SidebarController {
   }
 
   private render(): void {
+    if (this.layerSliders.size > 0) {
+      for (const slider of this.layerSliders.values()) {
+        slider.destroy();
+      }
+      this.presetButtons.clear();
+      this.layerToggles.clear();
+      this.layerSliders.clear();
+      this.layerWrappers.clear();
+      this.layerCards.clear();
+    }
+
     this.container.innerHTML = '';
     const root = document.createElement('div');
     root.className = 'tl-sidebar';
@@ -151,6 +163,9 @@ export class SidebarController {
 
     // Cartographic Graticule selector
     modesSection.appendChild(this.createGraticuleRow());
+
+    // Language selector (PL / EN)
+    modesSection.appendChild(this.createLanguageRow());
 
     // Learn / Blind map toggle
     const learnCard = this.createModeRow(
@@ -643,6 +658,64 @@ export class SidebarController {
     return card;
   }
 
+  private createLanguageRow(): HTMLElement {
+    const card = document.createElement('div');
+    card.className = 'tl-layer-card';
+
+    const row = document.createElement('div');
+    row.className = 'tl-layer-row';
+
+    const info = document.createElement('div');
+    info.className = 'tl-layer-info';
+
+    const dot = document.createElement('span');
+    dot.className = 'tl-layer-dot';
+    dot.style.backgroundColor = 'hsl(212, 95%, 58%)';
+    dot.style.color = 'hsl(212, 95%, 58%)';
+
+    const label = document.createElement('label');
+    label.className = 'tl-layer-name';
+    label.htmlFor = 'select-language';
+    label.textContent = t('modes.language');
+
+    info.appendChild(dot);
+    info.appendChild(label);
+
+    const select = document.createElement('select');
+    select.className = 'tl-quality-select';
+    select.id = 'select-language';
+    select.setAttribute('aria-label', t('modes.language'));
+
+    const options: { value: 'pl' | 'en'; label: string }[] = [
+      { value: 'pl', label: t('modes.langPl') },
+      { value: 'en', label: t('modes.langEn') },
+    ];
+    for (const opt of options) {
+      const optEl = document.createElement('option');
+      optEl.value = opt.value;
+      optEl.textContent = opt.label;
+      if (this.store.get().locale === opt.value) {
+        optEl.selected = true;
+      }
+      select.appendChild(optEl);
+    }
+
+    select.addEventListener('change', () => {
+      this.store.set({
+        ...this.store.get(),
+        locale: select.value as 'pl' | 'en',
+      });
+    });
+
+    this.languageSelect = select;
+
+    row.appendChild(info);
+    row.appendChild(select);
+    card.appendChild(row);
+
+    return card;
+  }
+
   private createGraticuleRow(): HTMLElement {
     const card = document.createElement('div');
     card.className = 'tl-layer-card';
@@ -866,6 +939,7 @@ export class SidebarController {
         quality: s.quality,
         graticule: s.graticule,
         theme: s.theme,
+        locale: s.locale,
         hiddenLabels: s.hiddenLabels,
         knowledgeMap: s.knowledgeMap,
       }),
@@ -889,6 +963,11 @@ export class SidebarController {
         // Sync graticule
         if (this.graticuleSelect) {
           this.graticuleSelect.value = state.graticule ?? 'off';
+        }
+
+        // Sync language
+        if (this.languageSelect) {
+          this.languageSelect.value = state.locale ?? 'pl';
         }
 
         // Sync hiddenLabels
@@ -925,6 +1004,10 @@ export class SidebarController {
     for (const [id, btn] of this.presetButtons.entries()) {
       btn.classList.toggle('active', id === activePreset);
     }
+  }
+
+  public refresh(): void {
+    this.render();
   }
 
   public destroy(): void {

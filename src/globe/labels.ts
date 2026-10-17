@@ -22,8 +22,12 @@ export interface LabelSelectionOptions {
 /**
  * Formats label text according to geography category (Polish name, elevation or population suffix).
  */
-export function formatLabelText(feat: GeoFeature): string {
-  const name = feat.properties.name_pl || feat.properties.name_en || feat.properties.name || '';
+export function formatLabelText(feat: GeoFeature, locale: 'pl' | 'en' = 'pl'): string {
+  const fallbackId = feat.id !== undefined && feat.id !== null ? String(feat.id) : '';
+  const name =
+    locale === 'en'
+      ? feat.properties.name_en || feat.properties.name || feat.properties.name_pl || fallbackId
+      : feat.properties.name_pl || feat.properties.name_en || feat.properties.name || fallbackId;
   const kind = feat.properties.kind;
 
   const rawElevation = feat.properties.rank?.elevation ?? feat.properties.elevation;
