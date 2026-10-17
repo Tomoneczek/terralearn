@@ -14,6 +14,7 @@ export interface FeatureRef {
 export type AppMode = 'explore' | 'learn' | 'quiz';
 export type AppPreset = 'physical' | 'political' | 'custom';
 export type AppTheme = 'dark' | 'classic';
+export type QualityPreset = 'auto' | 'low' | 'medium' | 'high';
 
 export interface LayerState {
   enabled: boolean;
@@ -27,6 +28,7 @@ export interface AppState {
   theme: AppTheme;
   dayNight: boolean;
   clouds: boolean;
+  quality: QualityPreset;
   hiddenLabels: boolean;
   selection: FeatureRef | null;
   hovered: FeatureRef | null;

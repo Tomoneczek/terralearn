@@ -157,6 +157,16 @@ export class AtmosphereController {
     return this.mesh;
   }
 
+  public setVisible(visible: boolean): void {
+    if (this.mesh) {
+      this.mesh.visible = visible;
+    }
+  }
+
+  public isVisible(): boolean {
+    return this.mesh?.visible ?? false;
+  }
+
   public getMaterial(): ShaderMaterial {
     return this.material;
   }

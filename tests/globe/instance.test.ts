@@ -87,6 +87,7 @@ describe('Globe Instance Factory', () => {
     expect(context.dayNight).toBeDefined();
     expect(context.atmosphere).toBeDefined();
     expect(context.clouds).toBeDefined();
+    expect(context.quality).toBeDefined();
     expect(context.bloom).toBeDefined();
     expect(context.fpsMonitor).toBeDefined();
     expect(typeof context.destroy).toBe('function');

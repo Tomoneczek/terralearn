@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { savePersistedState, loadPersistedState, applyPersistedState } from './persistence';
+import {
+  savePersistedState,
+  loadPersistedState,
+  applyPersistedState,
+  clearPersistedState,
+} from './persistence';
 import { createInitialState } from './store';
 
 describe('State Persistence', () => {
@@ -11,6 +16,7 @@ describe('State Persistence', () => {
     const state = createInitialState();
     state.theme = 'classic';
     state.dayNight = false;
+    state.quality = 'low';
     state.layers.lakes.enabled = false;
 
     savePersistedState(state);
@@ -19,6 +25,7 @@ describe('State Persistence', () => {
     expect(loaded).not.toBeNull();
     expect(loaded?.theme).toBe('classic');
     expect(loaded?.dayNight).toBe(false);
+    expect(loaded?.quality).toBe('low');
     expect(loaded?.layers?.lakes?.enabled).toBe(false);
   });
 
@@ -45,6 +52,7 @@ describe('State Persistence', () => {
     const persisted = {
       theme: 'classic' as const,
       dayNight: false,
+      quality: 'medium' as const,
       layers: {
         lakes: { enabled: false, topN: 35 },
       },
@@ -53,9 +61,19 @@ describe('State Persistence', () => {
     const merged = applyPersistedState(base, persisted);
     expect(merged.theme).toBe('classic');
     expect(merged.dayNight).toBe(false);
+    expect(merged.quality).toBe('medium');
     expect(merged.layers.lakes.enabled).toBe(false);
     expect(merged.layers.lakes.topN).toBe(35);
     // Other layers remain untouched
     expect(merged.layers.borders.enabled).toBe(base.layers.borders.enabled);
+  });
+
+  it('clears persisted state correctly', () => {
+    const state = createInitialState();
+    savePersistedState(state);
+    expect(loadPersistedState()).not.toBeNull();
+
+    clearPersistedState();
+    expect(loadPersistedState()).toBeNull();
   });
 });

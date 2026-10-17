@@ -104,6 +104,10 @@ export class CloudsController {
     }
   }
 
+  public isVisible(): boolean {
+    return this.mesh?.visible ?? false;
+  }
+
   public tick(): void {
     if (!this.prefersReducedMotion && this.mesh && this.mesh.visible) {
       this.mesh.rotation.y += this.rotationSpeed;

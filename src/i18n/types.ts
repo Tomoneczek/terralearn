@@ -20,6 +20,11 @@ export interface Dictionary {
     political: string;
     dayNight: string;
     clouds: string;
+    quality: string;
+    qualityAuto: string;
+    qualityHigh: string;
+    qualityMedium: string;
+    qualityLow: string;
     learn: string;
   };
   layers: {

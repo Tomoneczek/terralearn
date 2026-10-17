@@ -119,4 +119,26 @@ describe('SidebarController', () => {
     expect(getLayerColor('capitals')).toBe('hsl(350, 85%, 62%)');
     expect(getLayerColor('megacities')).toBe('hsl(45, 100%, 62%)');
   });
+
+  it('updates quality preset in store and reflects store changes in select element', () => {
+    const store = createStore<AppState>(createInitialState());
+    const sidebar = new SidebarController({ container, store });
+
+    const qualitySelect = container.querySelector<HTMLSelectElement>('#select-quality');
+    expect(qualitySelect).not.toBeNull();
+    expect(qualitySelect?.value).toBe('auto');
+
+    // Change via UI
+    if (qualitySelect) {
+      qualitySelect.value = 'medium';
+      qualitySelect.dispatchEvent(new Event('change'));
+    }
+    expect(store.get().quality).toBe('medium');
+
+    // Change via store
+    store.set({ ...store.get(), quality: 'low' });
+    expect(qualitySelect?.value).toBe('low');
+
+    sidebar.destroy();
+  });
 });

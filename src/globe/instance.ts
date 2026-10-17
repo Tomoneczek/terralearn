@@ -8,7 +8,7 @@ import { DayNightController } from './day-night';
 import { BloomController } from './bloom';
 import { CloudsController } from './clouds';
 import { AtmosphereController } from './atmosphere';
-import { FPSMonitor } from './performance';
+import { FPSMonitor, QualityController } from './performance';
 
 import type { ArcItem } from '@/geo/spherical';
 
@@ -20,6 +20,7 @@ export interface GlobeContext {
   atmosphere: AtmosphereController;
   bloom: BloomController;
   clouds: CloudsController;
+  quality: QualityController;
   fpsMonitor: FPSMonitor;
   setArcs: (arcs: ArcItem[]) => void;
   destroy: () => void;
@@ -132,6 +133,24 @@ export function createGlobe(
     cloudsTextureUrl: resolveAssetUrl('/textures/clouds.png'),
   });
 
+  // Quality Controller managing presets and FPS degradation
+  const quality = new QualityController(
+    store,
+    {
+      bloom,
+      clouds,
+      atmosphere,
+      setPixelRatio: (ratio: number) => {
+        try {
+          globe.renderer()?.setPixelRatio(ratio);
+        } catch {
+          // Fallback in mock environment
+        }
+      },
+    },
+    fpsMonitor,
+  );
+
   // Events
   const detachEvents = attachGlobeEvents(globe as unknown as GlobeEventsDelegate, store, container);
 
@@ -155,6 +174,7 @@ export function createGlobe(
     atmosphere,
     bloom,
     clouds,
+    quality,
     fpsMonitor,
     setArcs: (arcs: ArcItem[]) => {
       try {
@@ -170,6 +190,7 @@ export function createGlobe(
       dayNight.destroy();
       atmosphere.destroy();
       clouds.destroy();
+      quality.destroy();
       fpsMonitor.stop();
       // Remove globe canvas
       const canvas = container.querySelector('canvas');

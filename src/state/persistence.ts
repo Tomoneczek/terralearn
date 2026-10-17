@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { AppState, LayerState } from './types';
 import type { LayerId } from '@/layers';
 
-const STORAGE_KEY = 'terralearn_state_v1';
+export const STORAGE_KEY = 'terralearn_state_v1';
 
 const LayerStateSchema = z.object({
   enabled: z.boolean(),
@@ -14,6 +14,7 @@ const PersistedStateSchema = z.object({
   theme: z.enum(['dark', 'classic']).optional(),
   dayNight: z.boolean().optional(),
   clouds: z.boolean().optional(),
+  quality: z.enum(['auto', 'low', 'medium', 'high']).optional(),
   hiddenLabels: z.boolean().optional(),
 });
 
@@ -54,6 +55,7 @@ export function savePersistedState(state: AppState): void {
       theme: state.theme,
       dayNight: state.dayNight,
       clouds: state.clouds,
+      quality: state.quality,
       hiddenLabels: state.hiddenLabels,
     };
 
@@ -85,6 +87,17 @@ export function applyPersistedState(
     theme: persisted.theme ?? baseState.theme,
     dayNight: persisted.dayNight ?? baseState.dayNight,
     clouds: persisted.clouds ?? baseState.clouds,
+    quality: persisted.quality ?? baseState.quality,
     hiddenLabels: persisted.hiddenLabels ?? baseState.hiddenLabels,
   };
+}
+
+export function clearPersistedState(): void {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch (err) {
+      console.warn('Failed to clear persisted state from localStorage:', err);
+    }
+  }
 }

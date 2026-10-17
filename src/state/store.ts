@@ -9,6 +9,7 @@ export function createInitialState(): AppState {
     theme: 'dark',
     dayNight: true,
     clouds: true,
+    quality: 'auto',
     hiddenLabels: false,
     selection: null,
     hovered: null,

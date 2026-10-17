@@ -1,4 +1,4 @@
-import type { Store, AppState } from '@/state/types';
+import type { Store, AppState, QualityPreset } from '@/state/types';
 import type { LayerDef, LayerId } from '@/layers/types';
 import { LAYER_DEFINITIONS } from '@/layers/registry';
 import { t } from '@/i18n';
@@ -48,6 +48,7 @@ export class SidebarController {
 
   private dayNightToggle!: ToggleSwitch;
   private cloudsToggle!: ToggleSwitch;
+  private qualitySelect!: HTMLSelectElement;
   private learnToggle!: ToggleSwitch;
   private unsubscribe: (() => void) | null = null;
 
@@ -114,6 +115,9 @@ export class SidebarController {
     );
     this.cloudsToggle = cloudsCard.toggle;
     modesSection.appendChild(cloudsCard.card);
+
+    // Quality selector
+    modesSection.appendChild(this.createQualityRow());
 
     // Learn / Blind map toggle
     const learnCard = this.createModeRow(
@@ -241,6 +245,66 @@ export class SidebarController {
     return { card, toggle };
   }
 
+  private createQualityRow(): HTMLElement {
+    const card = document.createElement('div');
+    card.className = 'tl-layer-card';
+
+    const row = document.createElement('div');
+    row.className = 'tl-layer-row';
+
+    const info = document.createElement('div');
+    info.className = 'tl-layer-info';
+
+    const dot = document.createElement('span');
+    dot.className = 'tl-layer-dot';
+    dot.style.backgroundColor = 'hsl(280, 80%, 65%)';
+    dot.style.color = 'hsl(280, 80%, 65%)';
+
+    const label = document.createElement('label');
+    label.className = 'tl-layer-name';
+    label.htmlFor = 'select-quality';
+    label.textContent = t('modes.quality');
+
+    info.appendChild(dot);
+    info.appendChild(label);
+
+    const select = document.createElement('select');
+    select.className = 'tl-quality-select';
+    select.id = 'select-quality';
+    select.setAttribute('aria-label', t('modes.quality'));
+
+    const options: { value: QualityPreset; label: string }[] = [
+      { value: 'auto', label: t('modes.qualityAuto') },
+      { value: 'high', label: t('modes.qualityHigh') },
+      { value: 'medium', label: t('modes.qualityMedium') },
+      { value: 'low', label: t('modes.qualityLow') },
+    ];
+    for (const opt of options) {
+      const optEl = document.createElement('option');
+      optEl.value = opt.value;
+      optEl.textContent = opt.label;
+      if (this.store.get().quality === opt.value) {
+        optEl.selected = true;
+      }
+      select.appendChild(optEl);
+    }
+
+    select.addEventListener('change', () => {
+      this.store.set({
+        ...this.store.get(),
+        quality: select.value as QualityPreset,
+      });
+    });
+
+    this.qualitySelect = select;
+
+    row.appendChild(info);
+    row.appendChild(select);
+    card.appendChild(row);
+
+    return card;
+  }
+
   private createLayerItem(layer: LayerDef): HTMLElement {
     const state = this.store.get();
     const layerState = state.layers[layer.id];
@@ -344,6 +408,7 @@ export class SidebarController {
         layers: s.layers,
         dayNight: s.dayNight,
         clouds: s.clouds,
+        quality: s.quality,
         hiddenLabels: s.hiddenLabels,
       }),
       state => {
@@ -352,6 +417,11 @@ export class SidebarController {
 
         // Sync clouds
         this.cloudsToggle.setChecked(state.clouds ?? true, false);
+
+        // Sync quality
+        if (this.qualitySelect) {
+          this.qualitySelect.value = state.quality ?? 'auto';
+        }
 
         // Sync hiddenLabels
         this.learnToggle.setChecked(state.hiddenLabels, false);

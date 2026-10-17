@@ -166,3 +166,29 @@
   justify-content: center;
   color: var(--c-accent-blue);
 }
+
+/* Quality preset selector */
+.tl-quality-select {
+  background: var(--bg-surface-2, rgba(255, 255, 255, 0.08));
+  color: var(--text-1);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-sm, 4px);
+  padding: 3px 8px;
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.tl-quality-select:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.tl-quality-select:focus {
+  border-color: var(--c-accent-blue);
+}

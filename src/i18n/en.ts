@@ -18,6 +18,11 @@ export const en: Dictionary = {
     political: 'Political',
     dayNight: 'Day & Night (Live sunlight)',
     clouds: '3D Clouds',
+    quality: 'Graphics Quality',
+    qualityAuto: 'Auto (FPS-based)',
+    qualityHigh: 'High (4K, Bloom)',
+    qualityMedium: 'Medium (Balanced)',
+    qualityLow: 'Low (Performance)',
     learn: 'Study mode (hide labels)',
   },
   layers: {
