@@ -27,6 +27,15 @@ async function download() {
     fs.writeFileSync(dest, buf);
     console.log('✓ Saved', item.name, `${(buf.length / 1024).toFixed(1)} KB`);
   }
+
+  const maskDest = path.join(outDir, 'water-mask.png');
+  if (!fs.existsSync(maskDest) || fs.statSync(maskDest).size === 0) {
+    console.log('⚙ Generating water-mask.png from Natural Earth polygons...');
+    const { generateWaterMask } = await import('./textures/generateWaterMask.js');
+    generateWaterMask({ outputPath: maskDest });
+  } else {
+    console.log('✓ Already cached: water-mask.png');
+  }
 }
 
 download().catch(err => {

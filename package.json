@@ -18,6 +18,8 @@
     "check:i18n": "tsx scripts/check-i18n.ts",
     "data:fetch": "tsx scripts/data/fetch.ts",
     "data:build": "tsx scripts/data/build.ts",
+    "textures:fetch": "tsx scripts/download-textures.ts",
+    "textures:build": "tsx scripts/textures/generateWaterMask.ts",
     "check": "npm run typecheck && npm run lint && npm run check:i18n && npm run test",
     "prepare": "husky"
   },
