@@ -156,21 +156,26 @@ describe('AtmosphereController', () => {
     // Reference implementation of the GLSL mix weight.
     const twilightWeight = (sunDot: number, facingDot: number): number => {
       const band = smoothstep(-0.12, 0.0, sunDot) * (1 - smoothstep(0.0, 0.12, sunDot));
-      const facing = smoothstep(
-        Number(TWILIGHT_FACING_MIN),
-        Number(TWILIGHT_FACING_MAX),
-        facingDot,
-      );
-      return band * facing * Number(TWILIGHT_STRENGTH);
+      const facing = smoothstep(TWILIGHT_FACING_MIN, TWILIGHT_FACING_MAX, facingDot);
+      return band * facing * TWILIGHT_STRENGTH;
     };
 
-    it('shader applies the facing fade and the reduced strength', () => {
+    it('shader applies the facing fade and the reduced strength via uniforms', () => {
       expect(ATMOSPHERE_FRAGMENT_SHADER).toContain('normalize(cameraPosition)');
       expect(ATMOSPHERE_FRAGMENT_SHADER).toContain(
-        `smoothstep(${TWILIGHT_FACING_MIN}, ${TWILIGHT_FACING_MAX}`,
+        'smoothstep(uTwilightFacingMin, uTwilightFacingMax',
       );
-      expect(ATMOSPHERE_FRAGMENT_SHADER).toContain(`twilight * facing * ${TWILIGHT_STRENGTH}`);
+      expect(ATMOSPHERE_FRAGMENT_SHADER).toContain('twilight * facing * uTwilightStrength');
       expect(ATMOSPHERE_FRAGMENT_SHADER).not.toContain('twilight * 0.85');
+    });
+
+    it('exposes the twilight tuning uniforms with the documented defaults', () => {
+      const atmosphere = new AtmosphereController(new Scene(), createStore(createInitialState()));
+      const uniforms = atmosphere.getMaterial().uniforms;
+      expect(uniforms.uTwilightStrength?.value).toBe(TWILIGHT_STRENGTH);
+      expect(uniforms.uTwilightFacingMin?.value).toBe(TWILIGHT_FACING_MIN);
+      expect(uniforms.uTwilightFacingMax?.value).toBe(TWILIGHT_FACING_MAX);
+      atmosphere.destroy();
     });
 
     it('is fully suppressed for shell points that do not face the camera', () => {
@@ -181,7 +186,7 @@ describe('AtmosphereController', () => {
     it('stays visible at the terminator when facing the camera, below full strength', () => {
       const w = twilightWeight(0.0, 0.9);
       expect(w).toBeGreaterThan(0.3);
-      expect(w).toBeLessThanOrEqual(Number(TWILIGHT_STRENGTH));
+      expect(w).toBeLessThanOrEqual(TWILIGHT_STRENGTH);
     });
 
     it('is zero away from the terminator regardless of facing', () => {

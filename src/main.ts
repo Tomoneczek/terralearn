@@ -18,6 +18,7 @@ import { getDistanceColor } from './geo/spherical';
 
 import { t, setLocale } from './i18n';
 import { initPwa } from '@/pwa';
+import { loadDevPanel } from '@/dev/load-dev-panel';
 
 export let globeContext: GlobeContext | null = null;
 export let sidebar: SidebarController | null = null;
@@ -222,6 +223,7 @@ export function bootstrap(): void {
         if (toolbar && globeContext.camera) {
           toolbar.setCamera(globeContext.camera);
         }
+        void loadDevPanel(window.location.search, root, globeContext);
       } catch (err) {
         console.warn('[TerraLearn] Globe initialization skipped (environment without WebGL):', err);
       }

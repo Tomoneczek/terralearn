@@ -32,10 +32,10 @@ export const ATMOSPHERE_VERTEX_SHADER = /* glsl */ `
 `;
 
 /** Peak mix weight of the twilight colour at the terminator. */
-export const TWILIGHT_STRENGTH = '0.45';
+export const TWILIGHT_STRENGTH = 0.45;
 /** Range of dot(shellPoint, cameraDir) over which the twilight band fades in. */
-export const TWILIGHT_FACING_MIN = '0.15';
-export const TWILIGHT_FACING_MAX = '0.55';
+export const TWILIGHT_FACING_MIN = 0.15;
+export const TWILIGHT_FACING_MAX = 0.55;
 
 export const ATMOSPHERE_FRAGMENT_SHADER = /* glsl */ `
   uniform vec3 uSunDirection;
@@ -43,6 +43,9 @@ export const ATMOSPHERE_FRAGMENT_SHADER = /* glsl */ `
   uniform vec3 uAtmosphereColor;
   uniform vec3 uTwilightColor;
   uniform vec3 uNightColor;
+  uniform float uTwilightStrength;
+  uniform float uTwilightFacingMin;
+  uniform float uTwilightFacingMax;
 
   varying vec3 vWorldPosition;
   varying vec3 vNormal;
@@ -71,8 +74,8 @@ export const ATMOSPHERE_FRAGMENT_SHADER = /* glsl */ `
     // horizon; fading the band by how much the shell point faces the camera keeps it tied to
     // the terminator visible on the surface instead of a far-side crescent.
     float twilight = smoothstep(-0.12, 0.0, sunDot) * (1.0 - smoothstep(0.0, 0.12, sunDot));
-    float facing = smoothstep(${TWILIGHT_FACING_MIN}, ${TWILIGHT_FACING_MAX}, dot(radialDir, normalize(cameraPosition)));
-    atmoColor = mix(atmoColor, uTwilightColor, twilight * facing * ${TWILIGHT_STRENGTH});
+    float facing = smoothstep(uTwilightFacingMin, uTwilightFacingMax, dot(radialDir, normalize(cameraPosition)));
+    atmoColor = mix(atmoColor, uTwilightColor, twilight * facing * uTwilightStrength);
 
     // When day/night mode is disabled, render uniform daylight halo
     if (uDayNight < 0.5) {
@@ -134,6 +137,9 @@ export class AtmosphereController {
         uAtmosphereColor: { value: dayColor },
         uTwilightColor: { value: twilightColor },
         uNightColor: { value: nightColor },
+        uTwilightStrength: { value: TWILIGHT_STRENGTH },
+        uTwilightFacingMin: { value: TWILIGHT_FACING_MIN },
+        uTwilightFacingMax: { value: TWILIGHT_FACING_MAX },
       },
       vertexShader: ATMOSPHERE_VERTEX_SHADER,
       fragmentShader: ATMOSPHERE_FRAGMENT_SHADER,
