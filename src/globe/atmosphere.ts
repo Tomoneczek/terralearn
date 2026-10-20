@@ -31,6 +31,12 @@ export const ATMOSPHERE_VERTEX_SHADER = /* glsl */ `
   }
 `;
 
+/** Peak mix weight of the twilight colour at the terminator. */
+export const TWILIGHT_STRENGTH = '0.45';
+/** Range of dot(shellPoint, cameraDir) over which the twilight band fades in. */
+export const TWILIGHT_FACING_MIN = '0.15';
+export const TWILIGHT_FACING_MAX = '0.55';
+
 export const ATMOSPHERE_FRAGMENT_SHADER = /* glsl */ `
   uniform vec3 uSunDirection;
   uniform float uDayNight;
@@ -60,9 +66,13 @@ export const ATMOSPHERE_FRAGMENT_SHADER = /* glsl */ `
     float dayFactor = smoothstep(-0.08, 0.08, sunDot);
     vec3 atmoColor = mix(uNightColor, uAtmosphereColor, dayFactor);
 
-    // Golden-amber sunset/sunrise atmospheric scattering at the terminator
+    // Golden-amber sunset/sunrise atmospheric scattering at the terminator.
+    // The shell is thick, so at the limb the camera sees shell points far behind the visible
+    // horizon; fading the band by how much the shell point faces the camera keeps it tied to
+    // the terminator visible on the surface instead of a far-side crescent.
     float twilight = smoothstep(-0.12, 0.0, sunDot) * (1.0 - smoothstep(0.0, 0.12, sunDot));
-    atmoColor = mix(atmoColor, uTwilightColor, twilight * 0.85);
+    float facing = smoothstep(${TWILIGHT_FACING_MIN}, ${TWILIGHT_FACING_MAX}, dot(radialDir, normalize(cameraPosition)));
+    atmoColor = mix(atmoColor, uTwilightColor, twilight * facing * ${TWILIGHT_STRENGTH});
 
     // When day/night mode is disabled, render uniform daylight halo
     if (uDayNight < 0.5) {

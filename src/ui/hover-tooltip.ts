@@ -1,5 +1,15 @@
 import type { Store, AppState } from '@/state/types';
+import { t, setLocale, getLocale } from '@/i18n';
+import type { I18nKey } from '@/i18n';
 import { getLayerColor } from './sidebar';
+
+/** Translated feature kind, or an empty string for kinds without a dictionary entry. */
+function getKindLabel(kind: string | undefined): string {
+  if (!kind) return '';
+  const key = `quiz.categories.${kind}` as I18nKey;
+  const label = t(key);
+  return label === key ? '' : label;
+}
 
 export interface HoverTooltipOptions {
   container: HTMLElement;
@@ -62,16 +72,21 @@ export class HoverTooltip {
 
   private bindStore(): void {
     this.unsubscribe = this.store.subscribe(
-      s => ({ hovered: s.hovered, mode: s.mode }),
-      ({ hovered, mode }) => {
+      s => ({ hovered: s.hovered, mode: s.mode, locale: s.locale }),
+      ({ hovered, mode, locale }) => {
         if (!hovered || mode === 'quiz') {
           this.element.classList.add('hidden');
         } else {
           const color = getLayerColor(hovered.layerId);
           this.dot.style.backgroundColor = color;
           this.dot.style.color = color;
-          this.label.textContent = hovered.name_pl ?? hovered.id;
-          this.kind.textContent = hovered.kind ?? '';
+          const activeLocale = locale ?? 'pl';
+          if (getLocale() !== activeLocale) {
+            setLocale(activeLocale);
+          }
+          const name = activeLocale === 'en' ? hovered.name_en : hovered.name_pl;
+          this.label.textContent = name ?? hovered.name_pl ?? hovered.name_en ?? hovered.id;
+          this.kind.textContent = getKindLabel(hovered.kind);
           this.updatePosition();
           this.element.classList.remove('hidden');
         }

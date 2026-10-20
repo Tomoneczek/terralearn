@@ -99,6 +99,25 @@ describe('TopNSlider', () => {
     expect(presetButtons[0]?.classList.contains('active')).toBe(false);
   });
 
+  // Regression: with a value matching no preset (e.g. 20) the pills must show no active state,
+  // and the active pill must be exposed to assistive tech via aria-pressed.
+  it('marks a preset pill active only when the value equals it', () => {
+    const slider = new TopNSlider({ min: 1, max: 50, value: 20, presets: [10, 25, 50] });
+    const pills = [...slider.element.querySelectorAll<HTMLButtonElement>('.tl-preset-pill')];
+
+    expect(pills.some(b => b.classList.contains('active'))).toBe(false);
+    expect(pills.every(b => b.getAttribute('aria-pressed') === 'false')).toBe(true);
+
+    slider.setValue(25);
+    expect(pills.filter(b => b.classList.contains('active')).map(b => b.textContent)).toEqual([
+      '25',
+    ]);
+    expect(pills.filter(b => b.getAttribute('aria-pressed') === 'true').length).toBe(1);
+
+    slider.setValue(30);
+    expect(pills.some(b => b.classList.contains('active'))).toBe(false);
+  });
+
   it('debounces input change from range slider', async () => {
     const onChange = vi.fn();
     const slider = new TopNSlider({

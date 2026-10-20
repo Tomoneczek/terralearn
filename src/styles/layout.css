@@ -146,6 +146,11 @@
   gap: var(--space-2);
 }
 
+.overlay-bottom-left {
+  bottom: var(--space-5);
+  left: var(--space-5);
+}
+
 .overlay-bottom-right {
   bottom: var(--space-5);
   right: var(--space-5);

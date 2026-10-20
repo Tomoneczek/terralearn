@@ -75,7 +75,7 @@ describe('Bloom Post-Processing and Performance Adaptation', () => {
     expect(monitor.getFps()).toBe(20);
   });
 
-  it('automatically degrades and disables bloom when FPS drops below threshold', () => {
+  it('automatically degrades and disables bloom on sustained FPS drop', () => {
     const mockComposer = {
       addPass: vi.fn(),
     } as unknown as EffectComposer;
@@ -83,13 +83,38 @@ describe('Bloom Post-Processing and Performance Adaptation', () => {
       postProcessingComposer: () => mockComposer,
     };
 
-    const monitor = new FPSMonitor({ minFps: 35 });
+    const monitor = new FPSMonitor({ minFps: 35, consecutiveDropsThreshold: 3 });
     const controller = new BloomController(mockTarget, { enabled: true }, monitor);
 
     expect(controller.isEnabled()).toBe(true);
 
-    // Simulate sustained FPS drop
     monitor.simulateFrameSample(25);
+    monitor.simulateFrameSample(25);
+    expect(controller.isEnabled()).toBe(true);
+
+    monitor.simulateFrameSample(25);
+    expect(controller.isEnabled()).toBe(false);
+  });
+
+  // Regression: the bloom hook used to wrap only simulateFrameSample, which the real
+  // rAF sampling loop never calls, so real FPS drops never disabled bloom.
+  it('disables bloom when the real sampling loop fires onDegrade', () => {
+    const monitor = new FPSMonitor();
+    const controller = new BloomController({ postProcessingComposer: () => null }, {}, monitor);
+
+    monitor.onDegrade?.();
+
+    expect(controller.isEnabled()).toBe(false);
+  });
+
+  it('chains a pre-existing onDegrade handler', () => {
+    const onDegrade = vi.fn();
+    const monitor = new FPSMonitor({ onDegrade });
+    const controller = new BloomController({ postProcessingComposer: () => null }, {}, monitor);
+
+    monitor.onDegrade?.();
+
+    expect(onDegrade).toHaveBeenCalledTimes(1);
     expect(controller.isEnabled()).toBe(false);
   });
 });

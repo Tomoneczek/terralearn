@@ -39,12 +39,12 @@ export class BloomController {
     }
 
     if (monitor) {
-      // Hook graceful degradation using monitor's configured minFps
-      const thresholdFps = monitor.minFps ?? 22;
-      const prevSimulate = monitor.simulateFrameSample.bind(monitor);
-      monitor.simulateFrameSample = (fps: number, opts?: { isWarmup?: boolean }) => {
-        prevSimulate(fps, opts);
-        if (fps < thresholdFps && this.isBloomEnabled && !opts?.isWarmup) {
+      // Hook graceful degradation into the monitor's real degrade signal (fired by the
+      // rAF sampling loop and by simulateFrameSample), chaining any existing handler.
+      const prevDegrade = monitor.onDegrade;
+      monitor.onDegrade = () => {
+        prevDegrade?.();
+        if (this.isBloomEnabled) {
           this.setEnabled(false);
         }
       };

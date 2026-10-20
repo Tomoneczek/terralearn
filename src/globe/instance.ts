@@ -146,7 +146,7 @@ export function createGlobe(
   });
   fpsMonitor.start();
 
-  const bloom = new BloomController(globe, { enabled: options.enableBloom ?? true });
+  const bloom = new BloomController(globe, { enabled: options.enableBloom ?? true }, fpsMonitor);
 
   // 3D Scene Objects (Clouds & Atmosphere)
   let globeScene = null;

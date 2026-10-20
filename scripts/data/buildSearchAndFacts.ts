@@ -195,7 +195,19 @@ function getKindPl(kind: string, subType?: string): string {
   }
 }
 
-function generateFacts(f: RawGeoFeature): ObjectFacts {
+/** Poland's total area, used as the reference for "x times Poland" comparisons. */
+const POLAND_AREA_KM2 = 312_696;
+const POLAND_ID = 'PL';
+
+/** Formats a number with a Polish decimal comma, e.g. 98.9 -> "98,9". */
+export function formatDecimalPl(value: number, digits = 1): string {
+  return value.toLocaleString('pl-PL', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+}
+
+export function generateFacts(f: RawGeoFeature): ObjectFacts {
   const p = f.properties;
   const stats: FactStat[] = [];
   let comparison: string | undefined;
@@ -208,11 +220,14 @@ function generateFacts(f: RawGeoFeature): ObjectFacts {
   if (p.kind === 'country') {
     if (area) {
       stats.push({ label: 'Powierzchnia', value: `${area.toLocaleString('pl-PL')} km²` });
-      const ratio = area / 312696;
-      if (ratio >= 1) {
-        comparison = `Powierzchnia równa ok. ${ratio.toFixed(1)}x terytorium Polski`;
+      const ratio = area / POLAND_AREA_KM2;
+      // Comparing Poland with itself is meaningless (and the dataset area differs slightly).
+      if (p.id === POLAND_ID) {
+        comparison = undefined;
+      } else if (ratio >= 1) {
+        comparison = `Powierzchnia równa ok. ${formatDecimalPl(ratio)}x terytorium Polski`;
       } else {
-        comparison = `Powierzchnia stanowi ok. ${(ratio * 100).toFixed(1)}% powierzchni Polski`;
+        comparison = `Powierzchnia stanowi ok. ${formatDecimalPl(ratio * 100)}% powierzchni Polski`;
       }
     }
     if (pop) {
@@ -234,7 +249,7 @@ function generateFacts(f: RawGeoFeature): ObjectFacts {
     if (len) {
       stats.push({ label: 'Długość', value: `${Math.round(len).toLocaleString('pl-PL')} km` });
       const wislaRatio = len / 1047;
-      comparison = `Długość równa ok. ${wislaRatio.toFixed(1)}x długości Wisły`;
+      comparison = `Długość równa ok. ${formatDecimalPl(wislaRatio)}x długości Wisły`;
     }
     if (p.rank?.order) {
       stats.push({ label: 'Ranking rzek', value: `#${p.rank.order} na świecie` });
@@ -243,7 +258,7 @@ function generateFacts(f: RawGeoFeature): ObjectFacts {
     if (elev) {
       stats.push({ label: 'Maks. wysokość', value: `${elev.toLocaleString('pl-PL')} m n.p.m.` });
       const rysyRatio = elev / 2499;
-      comparison = `Wysokość najwyższego szczytu: ok. ${rysyRatio.toFixed(1)}x Rysy`;
+      comparison = `Wysokość najwyższego szczytu: ok. ${formatDecimalPl(rysyRatio)}x Rysy`;
     }
     if (area) {
       stats.push({ label: 'Obszar', value: `${area.toLocaleString('pl-PL')} km²` });
@@ -251,17 +266,17 @@ function generateFacts(f: RawGeoFeature): ObjectFacts {
   } else if (p.kind === 'desert') {
     if (area) {
       stats.push({ label: 'Powierzchnia', value: `${area.toLocaleString('pl-PL')} km²` });
-      const ratio = area / 312696;
-      comparison = `Obszar równy ok. ${ratio.toFixed(1)}x terytorium Polski`;
+      const ratio = area / POLAND_AREA_KM2;
+      comparison = `Obszar równy ok. ${formatDecimalPl(ratio)}x terytorium Polski`;
     }
   } else if (p.kind === 'landform') {
     if (area) {
       stats.push({ label: 'Powierzchnia', value: `${area.toLocaleString('pl-PL')} km²` });
-      const ratio = area / 312696;
+      const ratio = area / POLAND_AREA_KM2;
       if (ratio >= 1) {
-        comparison = `Obszar równy ok. ${ratio.toFixed(1)}x terytorium Polski`;
+        comparison = `Obszar równy ok. ${formatDecimalPl(ratio)}x terytorium Polski`;
       } else {
-        comparison = `Obszar stanowi ok. ${(ratio * 100).toFixed(1)}% powierzchni Polski`;
+        comparison = `Obszar stanowi ok. ${formatDecimalPl(ratio * 100)}% powierzchni Polski`;
       }
     }
     if (p.rank?.order) {
@@ -272,9 +287,9 @@ function generateFacts(f: RawGeoFeature): ObjectFacts {
       stats.push({ label: 'Powierzchnia', value: `${area.toLocaleString('pl-PL')} km²` });
       const balticRatio = area / 377000;
       if (balticRatio >= 1) {
-        comparison = `Powierzchnia równa ok. ${balticRatio.toFixed(1)}x Morze Bałtyckie`;
+        comparison = `Powierzchnia równa ok. ${formatDecimalPl(balticRatio)}x Morze Bałtyckie`;
       } else {
-        comparison = `Powierzchnia stanowi ok. ${(balticRatio * 100).toFixed(1)}% Morza Bałtyckiego`;
+        comparison = `Powierzchnia stanowi ok. ${formatDecimalPl(balticRatio * 100)}% Morza Bałtyckiego`;
       }
     }
     if (p.rank?.order) {
@@ -284,7 +299,7 @@ function generateFacts(f: RawGeoFeature): ObjectFacts {
     if (pop) {
       stats.push({ label: 'Ludność', value: `${pop.toLocaleString('pl-PL')} mieszkańców` });
       const warsawRatio = pop / 1790000;
-      comparison = `Populacja równa ok. ${warsawRatio.toFixed(1)}x Warszawa`;
+      comparison = `Populacja równa ok. ${formatDecimalPl(warsawRatio)}x Warszawa`;
     }
     if (p.countryName) {
       stats.push({ label: 'Kraj', value: p.countryName });
@@ -293,7 +308,7 @@ function generateFacts(f: RawGeoFeature): ObjectFacts {
     if (elev) {
       stats.push({ label: 'Wysokość', value: `${elev.toLocaleString('pl-PL')} m n.p.m.` });
       const rysyRatio = elev / 2499;
-      comparison = `Wysokość równa ok. ${rysyRatio.toFixed(1)}x Rysy`;
+      comparison = `Wysokość równa ok. ${formatDecimalPl(rysyRatio)}x Rysy`;
     }
   }
 

@@ -126,12 +126,18 @@ export function initLayout(root: HTMLElement): LayoutSlots {
   toolbarContainer.id = 'toolbar-container';
   stage.appendChild(toolbarContainer);
 
-  const bottomContainer = document.createElement('div');
-  bottomContainer.className = 'overlay overlay-bottom-right';
+  // The legend lives bottom-left so it never stacks with the (tall) info card and collides
+  // with the toolbar at the top-right.
+  const legendOverlay = document.createElement('div');
+  legendOverlay.className = 'overlay overlay-bottom-left';
 
   const legendContainer = document.createElement('div');
   legendContainer.id = 'legend-container';
-  bottomContainer.appendChild(legendContainer);
+  legendOverlay.appendChild(legendContainer);
+  stage.appendChild(legendOverlay);
+
+  const bottomContainer = document.createElement('div');
+  bottomContainer.className = 'overlay overlay-bottom-right';
 
   const cardContainer = document.createElement('div');
   cardContainer.id = 'card-container';

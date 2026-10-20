@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initLayout } from '@/ui/layout';
 
@@ -77,5 +79,36 @@ describe('initLayout', () => {
     const secondBtn = railBtns[1];
     secondBtn?.click();
     expect(secondBtn?.classList.contains('active')).toBe(true);
+  });
+
+  // Regression: the legend was stacked above the info card in the bottom-right overlay, so a
+  // tall card pushed it up into the top-right toolbar.
+  describe('overlay collisions', () => {
+    const readCss = (rel: string): string =>
+      fs.readFileSync(path.resolve(process.cwd(), 'src/styles', rel), 'utf-8');
+
+    it('keeps the legend out of the overlay that holds the info card', () => {
+      const slots = initLayout(root);
+      const legendOverlay = slots.legendContainer.closest('.overlay');
+      const cardOverlay = slots.cardContainer.closest('.overlay');
+
+      expect(legendOverlay).not.toBeNull();
+      expect(legendOverlay).not.toBe(cardOverlay);
+      expect(legendOverlay?.classList.contains('overlay-bottom-left')).toBe(true);
+      expect(legendOverlay?.classList.contains('overlay-bottom-right')).toBe(false);
+    });
+
+    it('positions the legend overlay bottom-left and caps the info card height', () => {
+      const layoutCss = readCss('layout.css');
+      expect(layoutCss).toMatch(/\.overlay-bottom-left\s*\{[^}]*left:/);
+      expect(readCss('components/info-card.css')).toMatch(/max-height:\s*calc\(100vh/);
+    });
+
+    it('gives sidebar selects a fixed width so row labels are not truncated', () => {
+      const css = readCss('components/sidebar.css');
+      const rule = /\.tl-quality-select\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+      expect(rule).toMatch(/width:\s*10\.5rem/);
+      expect(rule).toMatch(/flex:\s*0 0 auto/);
+    });
   });
 });

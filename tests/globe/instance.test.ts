@@ -100,4 +100,20 @@ describe('Globe Instance Factory', () => {
     context.destroy();
     expect(container.querySelector('canvas')).toBeNull();
   });
+
+  // Regression: createGlobe stopped passing fpsMonitor to BloomController, so a sustained
+  // FPS drop under an explicit (non-auto) preset never disabled bloom.
+  it('wires fpsMonitor degradation to bloom', () => {
+    const container = document.createElement('div');
+    const store = createStore(createInitialState());
+    store.set({ quality: 'high' });
+
+    const context = createGlobe(container, store, {});
+    expect(context.bloom.isEnabled()).toBe(true);
+
+    context.fpsMonitor.onDegrade?.();
+
+    expect(context.bloom.isEnabled()).toBe(false);
+    context.destroy();
+  });
 });

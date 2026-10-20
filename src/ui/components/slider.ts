@@ -79,6 +79,7 @@ export class TopNSlider {
           btn.type = 'button';
           btn.className = `tl-preset-pill${preset === this.value ? ' active' : ''}`;
           btn.textContent = String(preset);
+          btn.setAttribute('aria-pressed', String(preset === this.value));
           btn.addEventListener('click', e => {
             e.stopPropagation();
             this.setValue(preset, true, false);
@@ -117,11 +118,9 @@ export class TopNSlider {
     this.updateProgressFill();
 
     for (const btn of this.presetButtons) {
-      if (Number(btn.textContent) === clamped) {
-        btn.classList.add('active');
-      } else {
-        btn.classList.remove('active');
-      }
+      const isActive = Number(btn.textContent) === clamped;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
     }
 
     if (emit && this.onChange) {

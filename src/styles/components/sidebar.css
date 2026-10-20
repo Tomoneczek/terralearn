@@ -169,6 +169,11 @@
 
 /* Quality preset selector */
 .tl-quality-select {
+  /* Fixed width so long option texts cannot squeeze the row label into an ellipsis */
+  flex: 0 0 auto;
+  width: 10.5rem;
+  max-width: 55%;
+  text-overflow: ellipsis;
   background-color: var(--bg-2);
   color: var(--text-1);
   border: 1px solid var(--border-default);

@@ -133,5 +133,50 @@ describe('UI Overlays', () => {
       expect(el.classList.contains('hidden')).toBe(true);
       tooltip.destroy();
     });
+
+    // Regression: the tooltip used to print the raw feature kind (e.g. "country").
+    it('shows a translated kind label instead of the raw kind', () => {
+      const store = createStore<AppState>(createInitialState());
+      const tooltip = new HoverTooltip({ container, store });
+      const el = container.querySelector('.tl-hover-tooltip')!;
+
+      store.set({
+        ...store.get(),
+        locale: 'pl',
+        hovered: { id: 'pl', layerId: 'countriesTopN', kind: 'country', name_pl: 'Polska' },
+      });
+      expect(el.querySelector('.tl-tooltip-kind')?.textContent).toBe('Kraj / Państwo');
+
+      store.set({
+        ...store.get(),
+        locale: 'en',
+        hovered: {
+          id: 'pl',
+          layerId: 'countriesTopN',
+          kind: 'country',
+          name_pl: 'Polska',
+          name_en: 'Poland',
+        },
+      });
+      expect(el.querySelector('.tl-tooltip-kind')?.textContent).toBe('Country / State');
+      expect(el.querySelector('.tl-tooltip-name')?.textContent).toBe('Poland');
+
+      tooltip.destroy();
+      store.set({ ...store.get(), locale: 'pl' });
+    });
+
+    it('shows no kind label for unknown kinds', () => {
+      const store = createStore<AppState>(createInitialState());
+      const tooltip = new HoverTooltip({ container, store });
+      const el = container.querySelector('.tl-hover-tooltip')!;
+
+      store.set({
+        ...store.get(),
+        hovered: { id: 'x', layerId: 'lakes', kind: 'mystery_kind', name_pl: 'X' },
+      });
+      expect(el.querySelector('.tl-tooltip-kind')?.textContent).toBe('');
+
+      tooltip.destroy();
+    });
   });
 });

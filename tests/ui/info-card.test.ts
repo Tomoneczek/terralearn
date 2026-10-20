@@ -71,6 +71,10 @@ describe('InfoCard', () => {
     const compText = cardEl.querySelector('.tl-card-comp-text');
     expect(compText?.textContent).toContain('Powierzchnia równa');
 
+    // Regression: the comparison box used a dollar-sign icon.
+    const iconPath = cardEl.querySelector('.tl-card-comp-icon path')?.getAttribute('d') ?? '';
+    expect(iconPath).not.toContain('M17 5H9.5');
+
     card.destroy();
   });
 

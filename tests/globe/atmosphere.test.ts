@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Scene, Vector3, Color, BackSide, AdditiveBlending, Mesh } from 'three';
-import { AtmosphereController } from '@/globe/atmosphere';
+import {
+  AtmosphereController,
+  ATMOSPHERE_FRAGMENT_SHADER,
+  TWILIGHT_FACING_MIN,
+  TWILIGHT_FACING_MAX,
+  TWILIGHT_STRENGTH,
+} from '@/globe/atmosphere';
 import { DayNightController } from '@/globe/day-night';
 import { createStore, createInitialState } from '@/state/store';
 
@@ -138,5 +144,49 @@ describe('AtmosphereController', () => {
     expect(() => {
       store.set({ dayNight: false });
     }).not.toThrow();
+  });
+
+  // Regression: the twilight band used to be drawn on shell points behind the visible horizon,
+  // producing orange crescents on the globe limb unrelated to the surface terminator.
+  describe('twilight band', () => {
+    const smoothstep = (a: number, b: number, x: number): number => {
+      const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+      return t * t * (3 - 2 * t);
+    };
+    // Reference implementation of the GLSL mix weight.
+    const twilightWeight = (sunDot: number, facingDot: number): number => {
+      const band = smoothstep(-0.12, 0.0, sunDot) * (1 - smoothstep(0.0, 0.12, sunDot));
+      const facing = smoothstep(
+        Number(TWILIGHT_FACING_MIN),
+        Number(TWILIGHT_FACING_MAX),
+        facingDot,
+      );
+      return band * facing * Number(TWILIGHT_STRENGTH);
+    };
+
+    it('shader applies the facing fade and the reduced strength', () => {
+      expect(ATMOSPHERE_FRAGMENT_SHADER).toContain('normalize(cameraPosition)');
+      expect(ATMOSPHERE_FRAGMENT_SHADER).toContain(
+        `smoothstep(${TWILIGHT_FACING_MIN}, ${TWILIGHT_FACING_MAX}`,
+      );
+      expect(ATMOSPHERE_FRAGMENT_SHADER).toContain(`twilight * facing * ${TWILIGHT_STRENGTH}`);
+      expect(ATMOSPHERE_FRAGMENT_SHADER).not.toContain('twilight * 0.85');
+    });
+
+    it('is fully suppressed for shell points that do not face the camera', () => {
+      expect(twilightWeight(0.0, -0.3)).toBe(0);
+      expect(twilightWeight(0.0, 0.0)).toBe(0);
+    });
+
+    it('stays visible at the terminator when facing the camera, below full strength', () => {
+      const w = twilightWeight(0.0, 0.9);
+      expect(w).toBeGreaterThan(0.3);
+      expect(w).toBeLessThanOrEqual(Number(TWILIGHT_STRENGTH));
+    });
+
+    it('is zero away from the terminator regardless of facing', () => {
+      expect(twilightWeight(0.5, 0.9)).toBe(0);
+      expect(twilightWeight(-0.5, 0.9)).toBe(0);
+    });
   });
 });
