@@ -17,14 +17,12 @@ describe('LayerCompositor - Selection Pulsing Halo (ringsData)', () => {
       polygonsData: vi.fn().mockReturnThis(),
       pathsData: vi.fn().mockReturnThis(),
       pointsData: vi.fn().mockReturnThis(),
-      labelsData: vi.fn().mockReturnThis(),
       ringsData: vi.fn((rings: RingItem[]) => {
         lastRingsPassed = rings;
         return mockGlobe;
       }),
 
       polygonsTransitionDuration: vi.fn().mockReturnThis(),
-      labelsTransitionDuration: vi.fn().mockReturnThis(),
       pathsTransitionDuration: vi.fn().mockReturnThis(),
       pathTransitionDuration: vi.fn().mockReturnThis(),
       pointsTransitionDuration: vi.fn().mockReturnThis(),
@@ -46,14 +44,6 @@ describe('LayerCompositor - Selection Pulsing Halo (ringsData)', () => {
       pointColor: vi.fn().mockReturnThis(),
       pointRadius: vi.fn().mockReturnThis(),
       pointAltitude: vi.fn().mockReturnThis(),
-
-      labelLat: vi.fn().mockReturnThis(),
-      labelLng: vi.fn().mockReturnThis(),
-      labelText: vi.fn().mockReturnThis(),
-      labelSize: vi.fn().mockReturnThis(),
-      labelDotRadius: vi.fn().mockReturnThis(),
-      labelAltitude: vi.fn().mockReturnThis(),
-      labelColor: vi.fn().mockReturnThis(),
 
       ringLat: vi.fn().mockReturnThis(),
       ringLng: vi.fn().mockReturnThis(),

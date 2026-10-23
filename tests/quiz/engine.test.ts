@@ -206,40 +206,6 @@ describe('QuizEngine', () => {
     engine.destroy();
   });
 
-  it('regression: selectVisibleLabels strictly suppresses selected label when hideSelectionLabel is true', async () => {
-    const { selectVisibleLabels } = await import('@/globe/labels');
-    const candidates = [
-      {
-        type: 'Feature' as const,
-        properties: {
-          id: 'PL',
-          name_pl: 'Polska',
-          name_en: 'Poland',
-          kind: 'country',
-          layerId: 'countriesTopN' as const,
-        },
-        geometry: { type: 'Point' as const, coordinates: [19, 52] },
-      },
-    ];
-
-    // During question phase: hiddenLabels=true AND hideSelectionLabel=true -> empty
-    const labelsInQuestion = selectVisibleLabels(candidates, {
-      hiddenLabels: true,
-      hideSelectionLabel: true,
-      selectedId: 'PL',
-    });
-    expect(labelsInQuestion).toEqual([]);
-
-    // During feedback phase: hiddenLabels=true AND hideSelectionLabel=false -> revealed
-    const labelsInFeedback = selectVisibleLabels(candidates, {
-      hiddenLabels: true,
-      hideSelectionLabel: false,
-      selectedId: 'PL',
-    });
-    expect(labelsInFeedback.length).toBe(1);
-    expect(labelsInFeedback[0]?.properties.id).toBe('PL');
-  });
-
   it('supports startWithConfig and carries config through to summary', () => {
     const store = createStore<AppState>(createInitialState());
     let finishedSummary: QuizRoundSummary | null = null;

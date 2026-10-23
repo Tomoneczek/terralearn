@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createRail } from '@/ui/rail';
+import { createRail, updateRailLabels } from '@/ui/rail';
 import { SVG_NAMESPACE } from '@/ui/dom';
 
 describe('createRail', () => {
@@ -45,5 +45,43 @@ describe('createRail', () => {
     expect(exploreBtn?.className).not.toContain('active');
     expect(layersBtn?.className).toContain('active');
     expect(onSelect).toHaveBeenCalledWith('layers');
+  });
+});
+
+describe('rail labels', () => {
+  const items = [
+    {
+      id: 'explore',
+      label: 'Explore',
+      iconSvg: '<svg width="20" height="20"><circle r="4"/></svg>',
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      iconSvg: '<svg width="20" height="20"><circle r="4"/></svg>',
+    },
+  ];
+
+  it('uses the given navigation and home labels and tags buttons by id', () => {
+    const rail = createRail(items, undefined, { navAria: 'Quick navigation', home: 'Home' });
+    expect(rail.getAttribute('aria-label')).toBe('Quick navigation');
+    expect(rail.querySelector('.rail-logo')?.getAttribute('aria-label')).toBe('Home');
+    expect(rail.querySelector('[data-rail-id="settings"]')).not.toBeNull();
+  });
+
+  // Regression: the rail labels were hard-coded Polish strings and never followed the language.
+  it('re-translates the labels in place', () => {
+    const rail = createRail(items, undefined, { navAria: 'Quick navigation', home: 'Home' });
+    updateRailLabels(rail, {
+      navAria: 'Szybka nawigacja',
+      home: 'Strona główna',
+      items: { explore: 'Eksploracja', settings: 'Ustawienia' },
+    });
+
+    expect(rail.getAttribute('aria-label')).toBe('Szybka nawigacja');
+    expect(rail.querySelector('.rail-logo')?.getAttribute('aria-label')).toBe('Strona główna');
+    const settings = rail.querySelector<HTMLButtonElement>('[data-rail-id="settings"]')!;
+    expect(settings.getAttribute('aria-label')).toBe('Ustawienia');
+    expect(settings.title).toBe('Ustawienia');
   });
 });

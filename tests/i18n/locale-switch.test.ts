@@ -2,9 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createStore, createInitialState } from '@/state/store';
 import { savePersistedState, loadPersistedState, applyPersistedState } from '@/state/persistence';
 import type { AppState } from '@/state/types';
-import { formatLabelText } from '@/globe/labels';
 import { t, setLocale, getLocale } from '@/i18n';
-import type { GeoFeature } from '@/globe/data-loader';
 
 describe('G11-02 Locale Switch Logic & Persistence', () => {
   beforeEach(() => {
@@ -69,80 +67,6 @@ describe('G11-02 Locale Switch Logic & Persistence', () => {
 
       const restored = applyPersistedState(createInitialState(), persisted!);
       expect(restored.locale).toBe('en');
-    });
-  });
-
-  describe('formatLabelText', () => {
-    function createTestFeature(
-      props: Partial<GeoFeature['properties']> & { id?: string | number },
-    ): GeoFeature {
-      const { id, ...rest } = props;
-      return {
-        type: 'Feature',
-        id: id ?? 'feat_1',
-        properties: {
-          id: String(id ?? 'feat_1'),
-          kind: 'country',
-          layerId: 'countriesTopN',
-          name_pl: '',
-          name_en: '',
-          ...rest,
-        },
-        geometry: { type: 'Point', coordinates: [0, 0] },
-      };
-    }
-
-    it('prefers name_pl when locale is pl', () => {
-      const feature = createTestFeature({
-        id: 'PL',
-        name_pl: 'Polska',
-        name_en: 'Poland',
-        name: 'Polska',
-      });
-
-      expect(formatLabelText(feature, 'pl')).toBe('Polska');
-    });
-
-    it('prefers name_en when locale is en', () => {
-      const feature = createTestFeature({
-        id: 'PL',
-        name_pl: 'Polska',
-        name_en: 'Poland',
-        name: 'Polska',
-      });
-
-      expect(formatLabelText(feature, 'en')).toBe('Poland');
-    });
-
-    it('falls back to name_pl when name_en is absent in en mode', () => {
-      const feature = createTestFeature({
-        id: 'lake_1',
-        name_pl: 'Jezioro Sniardwy',
-        name_en: '',
-      });
-
-      expect(formatLabelText(feature, 'en')).toBe('Jezioro Sniardwy');
-    });
-
-    it('falls back to name_en when name_pl is absent in pl mode', () => {
-      const feature = createTestFeature({
-        id: 'river_1',
-        name_pl: '',
-        name_en: 'Amazon River',
-      });
-
-      expect(formatLabelText(feature, 'pl')).toBe('Amazon River');
-    });
-
-    it('falls back to id when no name properties exist', () => {
-      const feature = createTestFeature({
-        id: 'feature_99',
-        name_pl: '',
-        name_en: '',
-      });
-
-      expect(formatLabelText(feature, 'pl')).toBe('feature_99');
-      expect(formatLabelText(feature, 'en')).toBe('feature_99');
     });
   });
 

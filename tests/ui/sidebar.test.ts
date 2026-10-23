@@ -21,7 +21,7 @@ describe('SidebarController', () => {
 
     // Modes
     const titles = container.querySelectorAll('.tl-section-title');
-    expect(titles.length).toBe(4);
+    expect(titles.length).toBe(5); // modes, physical, political, tools + settings
 
     // Physical & political layers
     const layerCards = container.querySelectorAll('.tl-layer-card');
@@ -355,5 +355,98 @@ describe('SidebarController', () => {
     sidebar.refresh();
 
     sidebar.destroy();
+  });
+
+  describe('map / settings views', () => {
+    const view = (): string | null =>
+      container.querySelector('.tl-sidebar')?.getAttribute('data-view') ?? null;
+
+    it('keeps app settings out of the map view', () => {
+      const store = createStore<AppState>(createInitialState());
+      const sidebar = new SidebarController({ container, store });
+
+      const settings = container.querySelector('.tl-settings-view')!;
+      const map = container.querySelector('.tl-map-view')!;
+      for (const id of ['select-theme', 'select-quality', 'select-graticule', 'select-language']) {
+        expect(settings.querySelector(`#${id}`)).not.toBeNull();
+        expect(map.querySelector(`#${id}`)).toBeNull();
+      }
+      // map toggles stay in the map view
+      expect(map.querySelector('.tl-toggle')).not.toBeNull();
+
+      sidebar.destroy();
+    });
+
+    it('starts on the map view and switches with the tabs', () => {
+      const store = createStore<AppState>(createInitialState());
+      const sidebar = new SidebarController({ container, store });
+      const tab = (name: string): HTMLButtonElement =>
+        container.querySelector<HTMLButtonElement>(`#tl-tab-${name}`)!;
+
+      expect(view()).toBe('map');
+      expect(tab('map').getAttribute('aria-selected')).toBe('true');
+      expect(tab('settings').getAttribute('aria-selected')).toBe('false');
+
+      tab('settings').click();
+      expect(view()).toBe('settings');
+      expect(sidebar.getView()).toBe('settings');
+      expect(tab('settings').getAttribute('aria-selected')).toBe('true');
+      expect(tab('settings').classList.contains('active')).toBe(true);
+
+      tab('map').click();
+      expect(view()).toBe('map');
+
+      sidebar.destroy();
+    });
+
+    it('follows the navigation rail and announces view changes', () => {
+      const store = createStore<AppState>(createInitialState());
+      const sidebar = new SidebarController({ container, store });
+      const changed = vi.fn();
+      window.addEventListener('tl-view-changed', changed);
+
+      window.dispatchEvent(new CustomEvent('tl-rail-select', { detail: { id: 'settings' } }));
+      expect(view()).toBe('settings');
+      expect((changed.mock.calls[0]![0] as CustomEvent).detail.view).toBe('settings');
+
+      window.dispatchEvent(new CustomEvent('tl-rail-select', { detail: { id: 'explore' } }));
+      expect(view()).toBe('map');
+
+      window.removeEventListener('tl-view-changed', changed);
+      sidebar.destroy();
+    });
+
+    it('stays on the settings view across a re-render (e.g. a language change)', () => {
+      const store = createStore<AppState>(createInitialState());
+      const sidebar = new SidebarController({ container, store });
+
+      sidebar.setView('settings');
+      sidebar.refresh();
+      expect(view()).toBe('settings');
+      expect(container.querySelector('#tl-tab-settings')?.getAttribute('aria-selected')).toBe(
+        'true',
+      );
+
+      sidebar.destroy();
+    });
+
+    it('shows no color dots on the settings rows (they encode nothing)', () => {
+      const store = createStore<AppState>(createInitialState());
+      const sidebar = new SidebarController({ container, store });
+
+      expect(container.querySelectorAll('.tl-settings-view .tl-layer-dot')).toHaveLength(0);
+      expect(container.querySelectorAll('.tl-map-view .tl-layer-dot').length).toBeGreaterThan(0);
+
+      sidebar.destroy();
+    });
+
+    it('stops listening to the rail after destroy', () => {
+      const store = createStore<AppState>(createInitialState());
+      const sidebar = new SidebarController({ container, store });
+      sidebar.destroy();
+      expect(() =>
+        window.dispatchEvent(new CustomEvent('tl-rail-select', { detail: { id: 'settings' } })),
+      ).not.toThrow();
+    });
   });
 });

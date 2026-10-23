@@ -72,7 +72,6 @@ export interface GlobeCompositorTarget {
   pointRadius(fn: (d: GeoFeature) => number): this;
   pointAltitude(fn: (d: GeoFeature) => number): this;
   pointsTransitionDuration?(ms: number): this;
-
   ringLat?(fn: (d: RingItem) => number): this;
   ringLng?(fn: (d: RingItem) => number): this;
   ringAltitude?(fn: (d: RingItem) => number): this;
@@ -242,7 +241,6 @@ export class LayerCompositor {
     });
     this.globe.pointAltitude(feat => getPointAltitude(feat));
   }
-
   private bindStore(): void {
     // 1. Data re-composition ONLY when layer activation or topN changes
     const unsubLayers = this.store.subscribe(
@@ -344,22 +342,18 @@ export class LayerCompositor {
     polygonsCount: number;
     pathsCount: number;
     pointsCount: number;
-    labelsCount: number;
     polygonsUpdated: boolean;
     pathsUpdated: boolean;
     pointsUpdated: boolean;
-    labelsUpdated: boolean;
   }> {
     if (this.isDestroyed) {
       return {
         polygonsCount: 0,
         pathsCount: 0,
         pointsCount: 0,
-        labelsCount: 0,
         polygonsUpdated: false,
         pathsUpdated: false,
         pointsUpdated: false,
-        labelsUpdated: false,
       };
     }
 
@@ -369,7 +363,7 @@ export class LayerCompositor {
     const mergedPolygons: GeoFeature[] = [];
     const mergedPaths: PathItem[] = [];
     const mergedPoints: GeoFeature[] = [];
-    const labelCandidates: GeoFeature[] = [];
+    const allFeatures: GeoFeature[] = [];
     let capitalFeatures: GeoFeature[] = [];
 
     // Load data for all enabled layers in parallel
@@ -463,20 +457,16 @@ export class LayerCompositor {
         }
       }
 
-      // Collect label candidates
-      labelCandidates.push(...filtered);
+      allFeatures.push(...filtered);
     }
 
-    this.lastLabelCandidates = labelCandidates;
-    this.featureIndex = new Map(labelCandidates.map(f => [f.properties.id, f]));
+    this.lastFeatures = allFeatures;
+    this.featureIndex = new Map(allFeatures.map(f => [f.properties.id, f]));
     this.syncCapitals(capitalFeatures);
-
-    const mergedLabels = this.selectLabels(labelCandidates);
 
     let polygonsUpdated = false;
     let pathsUpdated = false;
     let pointsUpdated = false;
-    let labelsUpdated = false;
 
     if (!this.areFeaturesIdentical(this.lastPolygons, mergedPolygons)) {
       this.globe.polygonsData(mergedPolygons);
@@ -496,23 +486,15 @@ export class LayerCompositor {
       pointsUpdated = true;
     }
 
-    if (!this.areFeaturesIdentical(this.lastLabels, mergedLabels)) {
-      this.globe.labelsData(mergedLabels);
-      this.lastLabels = mergedLabels;
-      labelsUpdated = true;
-    }
-
     this.onComposed?.();
 
     return {
       polygonsCount: mergedPolygons.length,
       pathsCount: mergedPaths.length,
       pointsCount: mergedPoints.length,
-      labelsCount: mergedLabels.length,
       polygonsUpdated,
       pathsUpdated,
       pointsUpdated,
-      labelsUpdated,
     };
   }
 
@@ -535,31 +517,12 @@ export class LayerCompositor {
       return;
     }
     const overrides: Record<string, string> = {};
-    for (const f of this.lastLabelCandidates) {
+    for (const f of this.lastFeatures) {
       if (f.properties.layerId !== 'capitals') continue;
       const color = getSrsColor(f.properties.id, this.srsState, 'point');
       if (color) overrides[f.properties.id] = color;
     }
     this.capitalsSink.setColors(overrides);
-  }
-
-  /**
-   * Label selection. Countries and capitals carry no on-globe text in the normal mode: the hover
-   * tooltip and the info card already name them, and 3D text there collides with markers and
-   * selection halos. The learning mode (`hiddenLabels`) still reveals the hovered/selected one.
-   */
-  private selectLabels(candidates: readonly GeoFeature[]): GeoFeature[] {
-    const state = this.store.get();
-    const eligible = state.hiddenLabels
-      ? candidates
-      : candidates.filter(f => !UNLABELED_KINDS.has(f.properties.kind));
-    return selectVisibleLabels(eligible, {
-      hiddenLabels: state.hiddenLabels,
-      hideSelectionLabel: state.hideSelectionLabel,
-      selectedId: state.selection?.id,
-      hoveredId: state.hovered?.id,
-      maxLabels: 25,
-    });
   }
 
   /** Feature of an enabled layer by id (for highlight geometry). */
@@ -601,7 +564,7 @@ export class LayerCompositor {
     this.lastPolygons = [];
     this.lastPaths = [];
     this.lastPoints = [];
-    this.lastLabels = [];
+    this.lastFeatures = [];
     this.globe.ringsData?.([]);
   }
 }

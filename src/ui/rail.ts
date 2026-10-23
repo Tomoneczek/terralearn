@@ -7,10 +7,35 @@ export interface RailItem {
   active?: boolean;
 }
 
-export function createRail(items: RailItem[], onSelect?: (id: string) => void): HTMLElement {
+export interface RailLabels {
+  navAria: string;
+  home: string;
+  /** Item labels by item id. */
+  items: Record<string, string>;
+}
+
+/** Updates the rail's accessible names in place, e.g. after a language change. */
+export function updateRailLabels(rail: HTMLElement, labels: RailLabels): void {
+  rail.setAttribute('aria-label', labels.navAria);
+  const home = rail.querySelector<HTMLElement>('.rail-logo');
+  home?.setAttribute('aria-label', labels.home);
+  rail.querySelectorAll<HTMLButtonElement>('.rail-btn[data-rail-id]').forEach(btn => {
+    const label = labels.items[btn.dataset.railId ?? ''];
+    if (label) {
+      btn.setAttribute('aria-label', label);
+      btn.title = label;
+    }
+  });
+}
+
+export function createRail(
+  items: RailItem[],
+  onSelect?: (id: string) => void,
+  labels?: Pick<RailLabels, 'navAria' | 'home'>,
+): HTMLElement {
   const rail = document.createElement('nav');
   rail.className = 'rail';
-  rail.setAttribute('aria-label', 'Quick Navigation');
+  rail.setAttribute('aria-label', labels?.navAria ?? 'Quick navigation');
 
   const topGroup = document.createElement('div');
   topGroup.className = 'rail-group';
@@ -19,7 +44,7 @@ export function createRail(items: RailItem[], onSelect?: (id: string) => void): 
   const logoBtn = document.createElement('button');
   logoBtn.type = 'button';
   logoBtn.className = 'rail-btn rail-logo';
-  logoBtn.setAttribute('aria-label', 'TerraLearn Home');
+  logoBtn.setAttribute('aria-label', labels?.home ?? 'TerraLearn home');
   logoBtn.appendChild(
     parseSvg(`
     <svg viewBox="0 0 100 100" width="28" height="28">
@@ -36,6 +61,7 @@ export function createRail(items: RailItem[], onSelect?: (id: string) => void): 
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = `rail-btn${item.active ? ' active' : ''}`;
+    btn.dataset.railId = item.id;
     btn.setAttribute('aria-label', item.label);
     btn.title = item.label;
     btn.appendChild(parseSvg(item.iconSvg));

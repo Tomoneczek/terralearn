@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { setLocale } from '@/i18n';
 import { initLayout } from '@/ui/layout';
 
 describe('initLayout', () => {
@@ -109,6 +110,49 @@ describe('initLayout', () => {
       const rule = /\.tl-quality-select\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
       expect(rule).toMatch(/width:\s*10\.5rem/);
       expect(rule).toMatch(/flex:\s*0 0 auto/);
+    });
+  });
+
+  describe('navigation rail', () => {
+    it('offers a settings entry and announces rail selections', () => {
+      initLayout(root);
+      const received = vi.fn();
+      window.addEventListener('tl-rail-select', received);
+
+      const settingsBtn = root.querySelector<HTMLButtonElement>('[data-rail-id="settings"]');
+      expect(settingsBtn).not.toBeNull();
+      settingsBtn!.click();
+
+      expect((received.mock.calls[0]![0] as CustomEvent).detail.id).toBe('settings');
+      window.removeEventListener('tl-rail-select', received);
+    });
+
+    it('syncs the active rail button with the panel view', () => {
+      initLayout(root);
+      const active = (): string | undefined =>
+        root.querySelector<HTMLElement>('.rail-btn.active')?.dataset.railId;
+
+      window.dispatchEvent(new CustomEvent('tl-view-changed', { detail: { view: 'settings' } }));
+      expect(active()).toBe('settings');
+      window.dispatchEvent(new CustomEvent('tl-view-changed', { detail: { view: 'map' } }));
+      expect(active()).toBe('explore');
+    });
+
+    // Regression: the rail labels were hard-coded Polish strings
+    it('translates the rail labels and follows the language', () => {
+      setLocale('en');
+      const slots = initLayout(root);
+      const label = (id: string): string | null =>
+        root.querySelector(`[data-rail-id="${id}"]`)?.getAttribute('aria-label') ?? null;
+
+      expect(label('explore')).toBe('Explore');
+      expect(label('settings')).toBe('Settings');
+
+      setLocale('pl');
+      slots.refreshRail();
+      expect(label('explore')).toBe('Eksploracja');
+      expect(label('settings')).toBe('Ustawienia');
+      setLocale('en');
     });
   });
 });

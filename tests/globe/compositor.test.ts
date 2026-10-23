@@ -22,10 +22,8 @@ describe('LayerCompositor', () => {
       polygonsData: vi.fn().mockReturnThis(),
       pathsData: vi.fn().mockReturnThis(),
       pointsData: vi.fn().mockReturnThis(),
-      labelsData: vi.fn().mockReturnThis(),
 
       polygonsTransitionDuration: vi.fn().mockReturnThis(),
-      labelsTransitionDuration: vi.fn().mockReturnThis(),
       pathsTransitionDuration: vi.fn().mockReturnThis(),
       pathTransitionDuration: vi.fn().mockReturnThis(),
       pointsTransitionDuration: vi.fn().mockReturnThis(),
@@ -66,14 +64,6 @@ describe('LayerCompositor', () => {
       pointColor: vi.fn().mockReturnThis(),
       pointRadius: vi.fn().mockReturnThis(),
       pointAltitude: vi.fn().mockReturnThis(),
-
-      labelLat: vi.fn().mockReturnThis(),
-      labelLng: vi.fn().mockReturnThis(),
-      labelText: vi.fn().mockReturnThis(),
-      labelSize: vi.fn().mockReturnThis(),
-      labelDotRadius: vi.fn().mockReturnThis(),
-      labelAltitude: vi.fn().mockReturnThis(),
-      labelColor: vi.fn().mockReturnThis(),
     };
   });
 
@@ -438,34 +428,26 @@ describe('LayerCompositor', () => {
       compositor.destroy();
     });
 
-    // Countries and capitals are named by the hover tooltip and the info card, so the globe
-    // carries no permanent text for them (it collided with markers and selection halos).
-    it('puts no on-globe labels on capitals, but keeps them for other kinds', async () => {
-      const { compositor } = await setup();
-      const labelIds = (): string[] => {
-        const calls = vi.mocked(mockGlobe.labelsData).mock.calls;
-        const last = (calls[calls.length - 1]?.[0] ?? []) as GeoFeature[];
-        return last.map(f => f.properties.id);
-      };
-
-      expect(labelIds()).not.toContain('cap-a');
-      expect(labelIds()).not.toContain('cap-b');
-      expect(labelIds()).toContain('mega-x'); // megacities are still labelled
-
-      compositor.destroy();
-    });
-
-    it('does not label a hovered or selected capital in the normal mode', async () => {
-      const { store, compositor } = await setup();
+    // The globe has no on-globe text layer any more: names come from the hover tooltip and the
+    // info card. The compositor must never touch the label API of the target.
+    it('never uses the globe label API', async () => {
+      const guarded = new Proxy(mockGlobe, {
+        get(target, prop, receiver) {
+          if (typeof prop === 'string' && /^label/i.test(prop)) {
+            throw new Error(`unexpected label API access: ${prop}`);
+          }
+          return Reflect.get(target, prop, receiver);
+        },
+      });
+      const { store } = await setup(true);
+      const compositor = new LayerCompositor(guarded, store);
+      await compositor.compose();
       store.set({
         hovered: { id: 'cap-a', layerId: 'capitals' as LayerId, kind: 'capital' },
         selection: { id: 'cap-b', layerId: 'capitals' as LayerId, kind: 'capital' },
+        hiddenLabels: true,
       });
-      const calls = vi.mocked(mockGlobe.labelsData).mock.calls;
-      const all = calls.flatMap(c => (c[0] as GeoFeature[]).map(f => f.properties.id));
-      expect(all).not.toContain('cap-a');
-      expect(all).not.toContain('cap-b');
-
+      compositor.refreshDynamicStyles();
       compositor.destroy();
     });
 
@@ -478,33 +460,6 @@ describe('LayerCompositor', () => {
 
       compositor.destroy();
     });
-  });
-
-  it('hides labels when hiddenLabels is true', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() =>
-        Promise.resolve({
-          ok: true,
-          json: async () => mockCountries,
-        }),
-      ),
-    );
-
-    const store = createStore<AppState>({
-      ...createInitialState(),
-      hiddenLabels: true,
-      layers: {
-        ...defaultLayersState(),
-        countriesTopN: { enabled: true, topN: 10 },
-      },
-    });
-
-    const compositor = new LayerCompositor(mockGlobe, store);
-    const summary = await compositor.compose();
-
-    expect(summary.labelsCount).toBe(0);
-    compositor.destroy();
   });
 
   it('handles MultiLineString paths in rivers layer', async () => {
@@ -577,7 +532,6 @@ describe('LayerCompositor', () => {
     const compositor = new LayerCompositor(mockGlobe, store);
 
     expect(mockGlobe.polygonsTransitionDuration).toHaveBeenCalledWith(400);
-    expect(mockGlobe.labelsTransitionDuration).toHaveBeenCalledWith(0);
     expect(mockGlobe.pathsTransitionDuration).toHaveBeenCalledWith(0);
     expect(mockGlobe.pathTransitionDuration).toHaveBeenCalledWith(400);
     expect(mockGlobe.pointsTransitionDuration).toHaveBeenCalledWith(400);
@@ -631,69 +585,7 @@ describe('LayerCompositor', () => {
     compositor.destroy();
   });
 
-  describe('hover/selection label handling and feature lookup', () => {
-    it('re-applies label colors only when a visible label is hovered or selected', async () => {
-      const lakes: GeoFeatureCollection = {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            id: 'lake-1',
-            properties: {
-              id: 'lake-1',
-              kind: 'lake',
-              layerId: 'lakes',
-              name_pl: 'Jezioro',
-              name_en: 'Lake',
-              labelLat: 1,
-              labelLng: 1,
-              rank: { order: 1 },
-            },
-            geometry: {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [0, 0],
-                  [0, 2],
-                  [2, 2],
-                  [2, 0],
-                  [0, 0],
-                ],
-              ],
-            },
-          },
-        ],
-      };
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() => Promise.resolve({ ok: true, json: async () => lakes })),
-      );
-      const layers = defaultLayersState();
-      for (const id of Object.keys(layers) as LayerId[]) {
-        layers[id] = { ...layers[id], enabled: id === 'lakes' };
-      }
-      const store = createStore<AppState>({ ...createInitialState(), layers });
-      const compositor = new LayerCompositor(mockGlobe, store);
-      await compositor.compose();
-      const before = vi.mocked(mockGlobe.labelColor).mock.calls.length;
-
-      // Hover a feature that has no visible label (countries/capitals carry none): no swap
-      store.set({
-        ...store.get(),
-        hovered: { id: 'c1', layerId: 'countriesTopN' as LayerId, kind: 'country' },
-      });
-      expect(vi.mocked(mockGlobe.labelColor).mock.calls.length).toBe(before);
-
-      // Hover a feature with a visible label: colors refreshed
-      store.set({
-        ...store.get(),
-        hovered: { id: 'lake-1', layerId: 'lakes' as LayerId, kind: 'lake' },
-      });
-      expect(vi.mocked(mockGlobe.labelColor).mock.calls.length).toBe(before + 1);
-
-      compositor.destroy();
-    });
-
+  describe('feature lookup', () => {
     it('resolves features of enabled layers by id and notifies after compose', async () => {
       vi.stubGlobal(
         'fetch',
@@ -959,7 +851,7 @@ describe('LayerCompositor', () => {
     compositor.destroy();
   });
 
-  it('evaluates accessors for rings, points, labels, and knowledgeMap', () => {
+  it('evaluates accessors for rings, points, and knowledgeMap', () => {
     let capturedRingAlt: ((d: Record<string, unknown>) => number) | undefined;
     let capturedRingColor: ((d: Record<string, unknown>) => string) | undefined;
     let capturedRingRadius: ((d: Record<string, unknown>) => number) | undefined;
@@ -967,9 +859,6 @@ describe('LayerCompositor', () => {
     let capturedRingPeriod: ((d: Record<string, unknown>) => number) | undefined;
     let capturedPointLat: ((d: GeoFeature) => number) | undefined;
     let capturedPointLng: ((d: GeoFeature) => number) | undefined;
-    let capturedLabelLat: ((d: GeoFeature) => number) | undefined;
-    let capturedLabelLng: ((d: GeoFeature) => number) | undefined;
-    let capturedLabelColor: ((d: GeoFeature) => string) | undefined;
     let capturedPointColor: ((d: GeoFeature) => string) | undefined;
     let capturedPathColor:
       ((d: { id: string; feature: GeoFeature; points: [number, number][] }) => string) | undefined;
@@ -1000,18 +889,6 @@ describe('LayerCompositor', () => {
     });
     mockGlobe.pointLng = vi.fn(fn => {
       capturedPointLng = fn;
-      return mockGlobe;
-    });
-    mockGlobe.labelLat = vi.fn(fn => {
-      capturedLabelLat = fn;
-      return mockGlobe;
-    });
-    mockGlobe.labelLng = vi.fn(fn => {
-      capturedLabelLng = fn;
-      return mockGlobe;
-    });
-    mockGlobe.labelColor = vi.fn(fn => {
-      capturedLabelColor = fn;
       return mockGlobe;
     });
     mockGlobe.pointColor = vi.fn(fn => {
@@ -1061,57 +938,6 @@ describe('LayerCompositor', () => {
     expect(capturedPointLat?.(ptEmptyCoords)).toBe(0);
     expect(capturedPointLng?.(ptWithCoords)).toBe(10);
     expect(capturedPointLng?.(ptEmptyCoords)).toBe(0);
-
-    // Label coordinate accessors (explicit labelLat/Lng vs coordinates vs fallback)
-    const labelExplicit: GeoFeature = {
-      type: 'Feature',
-      id: 'l1',
-      properties: {
-        id: 'l1',
-        kind: 'capital',
-        layerId: 'capitals',
-        name_pl: 'L',
-        name_en: 'L',
-        labelLat: 45,
-        labelLng: 30,
-      },
-      geometry: { type: 'Point', coordinates: [10, 20] },
-    };
-    expect(capturedLabelLat?.(labelExplicit)).toBe(45);
-    expect(capturedLabelLat?.(ptWithCoords)).toBe(20);
-    expect(capturedLabelLat?.(ptEmptyCoords)).toBe(0);
-    expect(capturedLabelLng?.(labelExplicit)).toBe(30);
-    expect(capturedLabelLng?.(ptWithCoords)).toBe(10);
-    expect(capturedLabelLng?.(ptEmptyCoords)).toBe(0);
-
-    // Label color accessor
-    const selFeat: GeoFeature = {
-      type: 'Feature',
-      id: 'selected-1',
-      properties: {
-        id: 'selected-1',
-        kind: 'country',
-        layerId: 'countriesTopN',
-        name_pl: 'S',
-        name_en: 'S',
-      },
-      geometry: { type: 'Point', coordinates: [0, 0] },
-    };
-    const hovFeat: GeoFeature = {
-      type: 'Feature',
-      id: 'hovered-1',
-      properties: {
-        id: 'hovered-1',
-        kind: 'country',
-        layerId: 'countriesTopN',
-        name_pl: 'H',
-        name_en: 'H',
-      },
-      geometry: { type: 'Point', coordinates: [0, 0] },
-    };
-    expect(capturedLabelColor?.(selFeat)).toBe('rgba(255, 220, 100, 1)');
-    expect(capturedLabelColor?.(hovFeat)).toBe('rgba(180, 240, 255, 1)');
-    expect(capturedLabelColor?.(ptWithCoords)).toBe('rgba(255, 255, 255, 0.95)');
 
     // Point & path color accessors with knowledgeMap active
     const testPointFeat: GeoFeature = {

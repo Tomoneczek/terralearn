@@ -58,6 +58,7 @@ export function bootstrap(): void {
       setLocale(locale);
       document.documentElement.setAttribute('lang', locale);
       document.title = t('app.title');
+      slots.refreshRail();
       sidebar?.refresh();
       searchOverlay?.refresh();
       toolbar?.refresh();

@@ -72,9 +72,10 @@ export class HoverTooltip {
 
   private bindStore(): void {
     this.unsubscribe = this.store.subscribe(
-      s => ({ hovered: s.hovered, mode: s.mode, locale: s.locale }),
-      ({ hovered, mode, locale }) => {
-        if (!hovered || mode === 'quiz') {
+      s => ({ hovered: s.hovered, mode: s.mode, locale: s.locale, learning: s.hiddenLabels }),
+      ({ hovered, mode, locale, learning }) => {
+        // Learning mode ("hide names") and quizzes must not give the name away on hover
+        if (!hovered || mode === 'quiz' || learning) {
           this.element.classList.add('hidden');
         } else {
           const color = getLayerColor(hovered.layerId);

@@ -11,6 +11,20 @@ export const en: Dictionary = {
     physical: 'PHYSICAL GEOGRAPHY',
     political: 'POLITICAL GEOGRAPHY',
     tools: 'TOOLS & QUIZ',
+    settings: 'SETTINGS',
+  },
+  rail: {
+    navAria: 'Quick navigation',
+    home: 'TerraLearn home',
+    explore: 'Explore',
+    layers: 'Layers',
+    quiz: 'Quiz',
+    settings: 'Settings',
+  },
+  sidebarTabs: {
+    aria: 'Panel view',
+    map: 'Map',
+    settings: 'Settings',
   },
   modes: {
     all: 'All',
@@ -38,7 +52,7 @@ export const en: Dictionary = {
   },
   layers: {
     borders: 'Country borders',
-    countriesTopN: 'Countries (Top 10 / 50 / 100)',
+    countriesTopN: 'Countries',
     capitals: 'Capitals',
     megacities: 'Megacities (>10M)',
     lakes: 'Largest lakes',

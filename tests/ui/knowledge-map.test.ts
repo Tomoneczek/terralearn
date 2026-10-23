@@ -185,14 +185,6 @@ describe('Knowledge Map UI & Integration', () => {
         pointColor: vi.fn().mockReturnThis(),
         pointRadius: vi.fn().mockReturnThis(),
         pointAltitude: vi.fn().mockReturnThis(),
-        labelsData: vi.fn(),
-        labelLat: vi.fn().mockReturnThis(),
-        labelLng: vi.fn().mockReturnThis(),
-        labelText: vi.fn().mockReturnThis(),
-        labelSize: vi.fn().mockReturnThis(),
-        labelColor: vi.fn().mockReturnThis(),
-        labelDotRadius: vi.fn().mockReturnThis(),
-        labelAltitude: vi.fn().mockReturnThis(),
         ringsData: vi.fn().mockReturnThis(),
       };
 

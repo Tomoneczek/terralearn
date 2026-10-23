@@ -1,9 +1,29 @@
 import type { Store, AppState } from '@/state/types';
-import { LAYER_DEFINITIONS } from '@/layers/registry';
+import { LAYER_DEFINITIONS, type LayerDef } from '@/layers';
 import { SRS_STATUS_COLORS } from '@/layers/styles';
 import { loadSrsState } from '@/quiz/srs';
 import { t, type I18nKey } from '@/i18n';
 import { getLayerColor } from './sidebar';
+
+/** Remembers whether the legend is collapsed (a per-viewer convenience, so storage may fail). */
+export const LEGEND_COLLAPSED_KEY = 'terralearn_legend_collapsed';
+
+function readCollapsed(): boolean {
+  try {
+    // Collapsed by default: the legend is a reference, not part of the first impression
+    return window.localStorage.getItem(LEGEND_COLLAPSED_KEY) !== '0';
+  } catch {
+    return true;
+  }
+}
+
+function writeCollapsed(collapsed: boolean): void {
+  try {
+    window.localStorage.setItem(LEGEND_COLLAPSED_KEY, collapsed ? '1' : '0');
+  } catch {
+    // Storage unavailable (private mode, blocked): the choice just is not remembered
+  }
+}
 
 export interface LegendOverlayOptions {
   container: HTMLElement;
@@ -16,7 +36,7 @@ export class LegendOverlay {
   private readonly itemsContainer: HTMLElement;
   private readonly titleEl: HTMLElement;
   private readonly unsubs: (() => void)[] = [];
-  private isCollapsed = false;
+  private isCollapsed = readCollapsed();
 
   constructor(options: LegendOverlayOptions) {
     this.store = options.store;
@@ -24,6 +44,7 @@ export class LegendOverlay {
     this.element = document.createElement('div');
     this.element.className = 'tl-legend-card';
     this.element.setAttribute('aria-label', t('legend.title'));
+    this.element.classList.toggle('collapsed', this.isCollapsed);
 
     const header = document.createElement('div');
     header.className = 'tl-legend-header';
@@ -39,9 +60,12 @@ export class LegendOverlay {
     toggleBtn.setAttribute('aria-label', t('legend.toggle'));
     toggleBtn.innerHTML =
       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+    toggleBtn.setAttribute('aria-expanded', String(!this.isCollapsed));
     toggleBtn.addEventListener('click', () => {
       this.isCollapsed = !this.isCollapsed;
       this.element.classList.toggle('collapsed', this.isCollapsed);
+      toggleBtn.setAttribute('aria-expanded', String(!this.isCollapsed));
+      writeCollapsed(this.isCollapsed);
     });
 
     header.appendChild(title);
@@ -88,6 +112,30 @@ export class LegendOverlay {
       window.addEventListener('tl-srs-updated', handleSrsUpdated);
       this.unsubs.push(() => window.removeEventListener('tl-srs-updated', handleSrsUpdated));
     }
+  }
+
+  /** One legend row: color dot, layer name and (for Top-N layers) the current N. */
+  private createLayerRow(def: LayerDef, state: AppState): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'tl-legend-row';
+
+    const dot = document.createElement('span');
+    dot.className = 'tl-layer-dot';
+    const color = getLayerColor(def.id);
+    dot.style.backgroundColor = color;
+    dot.style.color = color;
+
+    const topN = def.topN ? state.layers[def.id]?.topN : undefined;
+    const label = document.createElement('span');
+    label.className = 'tl-legend-label';
+    label.textContent =
+      topN !== undefined
+        ? `${t(def.labelKey)} · ${t('sliders.topPrefix')} ${topN}`
+        : t(def.labelKey);
+
+    row.appendChild(dot);
+    row.appendChild(label);
+    return row;
   }
 
   private renderItems(): void {
@@ -151,22 +199,7 @@ export class LegendOverlay {
         this.itemsContainer.appendChild(divider);
 
         for (const def of activeLayers) {
-          const row = document.createElement('div');
-          row.className = 'tl-legend-row';
-
-          const dot = document.createElement('span');
-          dot.className = 'tl-layer-dot';
-          const color = getLayerColor(def.id);
-          dot.style.backgroundColor = color;
-          dot.style.color = color;
-
-          const label = document.createElement('span');
-          label.className = 'tl-legend-label';
-          label.textContent = t(def.labelKey);
-
-          row.appendChild(dot);
-          row.appendChild(label);
-          this.itemsContainer.appendChild(row);
+          this.itemsContainer.appendChild(this.createLayerRow(def, state));
         }
       }
       return;
@@ -180,22 +213,7 @@ export class LegendOverlay {
     this.element.classList.remove('empty');
 
     for (const def of activeLayers) {
-      const row = document.createElement('div');
-      row.className = 'tl-legend-row';
-
-      const dot = document.createElement('span');
-      dot.className = 'tl-layer-dot';
-      const color = getLayerColor(def.id);
-      dot.style.backgroundColor = color;
-      dot.style.color = color;
-
-      const label = document.createElement('span');
-      label.className = 'tl-legend-label';
-      label.textContent = t(def.labelKey);
-
-      row.appendChild(dot);
-      row.appendChild(label);
-      this.itemsContainer.appendChild(row);
+      this.itemsContainer.appendChild(this.createLayerRow(def, state));
     }
   }
 

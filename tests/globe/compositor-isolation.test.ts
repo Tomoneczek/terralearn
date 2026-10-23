@@ -146,10 +146,8 @@ describe('LayerCompositor - Animation & Layer Isolation Regression Tests', () =>
         return mockGlobe;
       }),
       pointsData: vi.fn().mockReturnThis(),
-      labelsData: vi.fn().mockReturnThis(),
 
       polygonsTransitionDuration: vi.fn().mockReturnThis(),
-      labelsTransitionDuration: vi.fn().mockReturnThis(),
       pathsTransitionDuration: vi.fn().mockReturnThis(),
       pathTransitionDuration: vi.fn().mockReturnThis(),
       pointsTransitionDuration: vi.fn().mockReturnThis(),
@@ -174,14 +172,6 @@ describe('LayerCompositor - Animation & Layer Isolation Regression Tests', () =>
       pointColor: vi.fn().mockReturnThis(),
       pointRadius: vi.fn().mockReturnThis(),
       pointAltitude: vi.fn().mockReturnThis(),
-
-      labelLat: vi.fn().mockReturnThis(),
-      labelLng: vi.fn().mockReturnThis(),
-      labelText: vi.fn().mockReturnThis(),
-      labelSize: vi.fn().mockReturnThis(),
-      labelDotRadius: vi.fn().mockReturnThis(),
-      labelAltitude: vi.fn().mockReturnThis(),
-      labelColor: vi.fn().mockReturnThis(),
     };
 
     vi.stubGlobal(

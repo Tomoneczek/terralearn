@@ -53,6 +53,8 @@ export function getLayerColor(id: LayerId): string {
   }
 }
 
+export type SidebarView = 'map' | 'settings';
+
 export class SidebarController {
   private readonly container: HTMLElement;
   private readonly store: Store<AppState>;
@@ -74,6 +76,14 @@ export class SidebarController {
   private knowledgeMapToggle!: ToggleSwitch;
   private unsubscribe: (() => void) | null = null;
 
+  private view: SidebarView = 'map';
+  private rootEl: HTMLElement | null = null;
+  private readonly tabButtons = new Map<SidebarView, HTMLButtonElement>();
+  private readonly onRailSelect = (event: Event): void => {
+    const id = (event as CustomEvent<{ id: string }>).detail?.id;
+    this.setView(id === 'settings' ? 'settings' : 'map');
+  };
+
   private confirmModal!: ImportConfirmModal;
   private pendingImportPayload: ProgressExportPayload | null = null;
   private readonly modalContainer: HTMLElement;
@@ -87,6 +97,57 @@ export class SidebarController {
     this.initConfirmModal();
     this.render();
     this.bindStore();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('tl-rail-select', this.onRailSelect);
+    }
+  }
+
+  public getView(): SidebarView {
+    return this.view;
+  }
+
+  /** Switches between the map controls and the app settings (theme, quality, grid, language). */
+  public setView(view: SidebarView): void {
+    this.view = view;
+    this.applyView();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tl-view-changed', { detail: { view } }));
+    }
+  }
+
+  private applyView(): void {
+    this.rootEl?.setAttribute('data-view', this.view);
+    for (const [view, btn] of this.tabButtons) {
+      const active = view === this.view;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', String(active));
+      btn.tabIndex = active ? 0 : -1;
+    }
+  }
+
+  private createTabs(): HTMLElement {
+    const tabs = document.createElement('div');
+    tabs.className = 'tl-sidebar-tabs';
+    tabs.setAttribute('role', 'tablist');
+    tabs.setAttribute('aria-label', t('sidebarTabs.aria'));
+
+    const items: Array<{ view: SidebarView; label: string }> = [
+      { view: 'map', label: t('sidebarTabs.map') },
+      { view: 'settings', label: t('sidebarTabs.settings') },
+    ];
+    this.tabButtons.clear();
+    for (const item of items) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'tl-sidebar-tab';
+      btn.setAttribute('role', 'tab');
+      btn.id = `tl-tab-${item.view}`;
+      btn.textContent = item.label;
+      btn.addEventListener('click', () => this.setView(item.view));
+      this.tabButtons.set(item.view, btn);
+      tabs.appendChild(btn);
+    }
+    return tabs;
   }
 
   private render(): void {
@@ -104,6 +165,18 @@ export class SidebarController {
     this.container.innerHTML = '';
     const root = document.createElement('div');
     root.className = 'tl-sidebar';
+    this.rootEl = root;
+    root.appendChild(this.createTabs());
+
+    // Map view: presets, map modes, layers and tools. Settings view: app preferences.
+    const mapView = document.createElement('div');
+    mapView.className = 'tl-map-view';
+    mapView.setAttribute('role', 'tabpanel');
+    mapView.setAttribute('aria-labelledby', 'tl-tab-map');
+    const settingsView = document.createElement('div');
+    settingsView.className = 'tl-settings-view';
+    settingsView.setAttribute('role', 'tabpanel');
+    settingsView.setAttribute('aria-labelledby', 'tl-tab-settings');
 
     // 1. Presets bar
     const presetsBar = document.createElement('div');
@@ -120,7 +193,7 @@ export class SidebarController {
       this.presetButtons.set(preset.id, btn);
       presetsBar.appendChild(btn);
     }
-    root.appendChild(presetsBar);
+    mapView.appendChild(presetsBar);
 
     // 2. Map Modes section
     const modesSection = document.createElement('div');
@@ -155,18 +228,6 @@ export class SidebarController {
     this.cloudsToggle = cloudsCard.toggle;
     modesSection.appendChild(cloudsCard.card);
 
-    // Map Theme selector (Satellite Dark vs School Atlas Light)
-    modesSection.appendChild(this.createThemeRow());
-
-    // Quality selector
-    modesSection.appendChild(this.createQualityRow());
-
-    // Cartographic Graticule selector
-    modesSection.appendChild(this.createGraticuleRow());
-
-    // Language selector (PL / EN)
-    modesSection.appendChild(this.createLanguageRow());
-
     // Learn / Blind map toggle
     const learnCard = this.createModeRow(
       t('modes.learn'),
@@ -191,7 +252,7 @@ export class SidebarController {
     this.knowledgeMapToggle = knowledgeMapCard.toggle;
     modesSection.appendChild(knowledgeMapCard.card);
 
-    root.appendChild(modesSection);
+    mapView.appendChild(modesSection);
 
     // 3. Physical Geography section
     const physicalSection = document.createElement('div');
@@ -206,7 +267,7 @@ export class SidebarController {
     for (const layer of physicalLayers) {
       physicalSection.appendChild(this.createLayerItem(layer));
     }
-    root.appendChild(physicalSection);
+    mapView.appendChild(physicalSection);
 
     // 4. Political Geography section
     const politicalSection = document.createElement('div');
@@ -221,7 +282,7 @@ export class SidebarController {
     for (const layer of politicalLayers) {
       politicalSection.appendChild(this.createLayerItem(layer));
     }
-    root.appendChild(politicalSection);
+    mapView.appendChild(politicalSection);
 
     // 5. Tools & Quiz section
     const toolsSection = document.createElement('div');
@@ -532,9 +593,26 @@ export class SidebarController {
     toolsSection.appendChild(importBtn);
     toolsSection.appendChild(fileInput);
 
-    root.appendChild(toolsSection);
+    mapView.appendChild(toolsSection);
+
+    // Settings view
+    const settingsSection = document.createElement('div');
+    settingsSection.className = 'tl-section';
+    const settingsTitle = document.createElement('h2');
+    settingsTitle.className = 'tl-section-title';
+    settingsTitle.textContent = t('sections.settings');
+    settingsSection.appendChild(settingsTitle);
+    settingsSection.appendChild(this.createThemeRow());
+    settingsSection.appendChild(this.createQualityRow());
+    settingsSection.appendChild(this.createGraticuleRow());
+    settingsSection.appendChild(this.createLanguageRow());
+    settingsView.appendChild(settingsSection);
+
+    root.appendChild(mapView);
+    root.appendChild(settingsView);
 
     this.container.appendChild(root);
+    this.applyView();
     this.syncActivePreset();
   }
 
@@ -608,17 +686,11 @@ export class SidebarController {
     const info = document.createElement('div');
     info.className = 'tl-layer-info';
 
-    const dot = document.createElement('span');
-    dot.className = 'tl-layer-dot';
-    dot.style.backgroundColor = 'hsl(280, 80%, 65%)';
-    dot.style.color = 'hsl(280, 80%, 65%)';
-
     const label = document.createElement('label');
     label.className = 'tl-layer-name';
     label.htmlFor = 'select-quality';
     label.textContent = t('modes.quality');
 
-    info.appendChild(dot);
     info.appendChild(label);
 
     const select = document.createElement('select');
@@ -668,17 +740,11 @@ export class SidebarController {
     const info = document.createElement('div');
     info.className = 'tl-layer-info';
 
-    const dot = document.createElement('span');
-    dot.className = 'tl-layer-dot';
-    dot.style.backgroundColor = 'hsl(212, 95%, 58%)';
-    dot.style.color = 'hsl(212, 95%, 58%)';
-
     const label = document.createElement('label');
     label.className = 'tl-layer-name';
     label.htmlFor = 'select-language';
     label.textContent = t('modes.language');
 
-    info.appendChild(dot);
     info.appendChild(label);
 
     const select = document.createElement('select');
@@ -726,17 +792,11 @@ export class SidebarController {
     const info = document.createElement('div');
     info.className = 'tl-layer-info';
 
-    const dot = document.createElement('span');
-    dot.className = 'tl-layer-dot';
-    dot.style.backgroundColor = 'hsl(185, 100%, 60%)';
-    dot.style.color = 'hsl(185, 100%, 60%)';
-
     const label = document.createElement('label');
     label.className = 'tl-layer-name';
     label.htmlFor = 'select-graticule';
     label.textContent = t('modes.graticule');
 
-    info.appendChild(dot);
     info.appendChild(label);
 
     const select = document.createElement('select');
@@ -785,17 +845,11 @@ export class SidebarController {
     const info = document.createElement('div');
     info.className = 'tl-layer-info';
 
-    const dot = document.createElement('span');
-    dot.className = 'tl-layer-dot';
-    dot.style.backgroundColor = 'hsl(212, 95%, 58%)';
-    dot.style.color = 'hsl(212, 95%, 58%)';
-
     const label = document.createElement('label');
     label.className = 'tl-layer-name';
     label.htmlFor = 'select-theme';
     label.textContent = t('modes.theme');
 
-    info.appendChild(dot);
     info.appendChild(label);
 
     const select = document.createElement('select');
@@ -1011,6 +1065,9 @@ export class SidebarController {
   }
 
   public destroy(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('tl-rail-select', this.onRailSelect);
+    }
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;

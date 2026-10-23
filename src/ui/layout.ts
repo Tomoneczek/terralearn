@@ -1,4 +1,4 @@
-import { createRail, type RailItem } from './rail';
+import { createRail, updateRailLabels, type RailItem, type RailLabels } from './rail';
 import { BottomSheetController } from './bottom-sheet';
 import { parseSvg } from './dom';
 import { t } from '@/i18n';
@@ -12,6 +12,21 @@ export interface LayoutSlots {
   cardContainer: HTMLElement;
   togglePanel: () => void;
   bottomSheet: BottomSheetController;
+  /** Re-applies translated rail labels (call after a language change). */
+  refreshRail: () => void;
+}
+
+function railLabels(): RailLabels {
+  return {
+    navAria: t('rail.navAria'),
+    home: t('rail.home'),
+    items: {
+      explore: t('rail.explore'),
+      layers: t('rail.layers'),
+      quiz: t('rail.quiz'),
+      settings: t('rail.settings'),
+    },
+  };
 }
 
 export function initLayout(root: HTMLElement): LayoutSlots {
@@ -22,26 +37,45 @@ export function initLayout(root: HTMLElement): LayoutSlots {
   const railItems: RailItem[] = [
     {
       id: 'explore',
-      label: 'Eksploracja',
+      label: t('rail.explore'),
       active: true,
       iconSvg:
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>',
     },
     {
       id: 'layers',
-      label: 'Warstwy',
+      label: t('rail.layers'),
       iconSvg:
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
     },
     {
       id: 'quiz',
-      label: 'Quiz',
+      label: t('rail.quiz'),
       iconSvg:
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>',
     },
+    {
+      id: 'settings',
+      label: t('rail.settings'),
+      iconSvg:
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>',
+    },
   ];
 
-  const rail = createRail(railItems);
+  // The sidebar listens for rail selections (it is created after the layout)
+  const rail = createRail(
+    railItems,
+    id => window.dispatchEvent(new CustomEvent('tl-rail-select', { detail: { id } })),
+    railLabels(),
+  );
+  // Keep the active rail button in sync when the view is switched from the sidebar tabs
+  window.addEventListener('tl-view-changed', (event: Event) => {
+    const view = (event as CustomEvent<{ view: string }>).detail?.view;
+    const activeId = view === 'settings' ? 'settings' : 'explore';
+    rail.querySelectorAll<HTMLButtonElement>('.rail-btn[data-rail-id]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.railId === activeId);
+    });
+  });
   root.appendChild(rail);
 
   // Sidebar Panel (Desktop sidebar + Mobile Bottom Sheet)
@@ -179,5 +213,6 @@ export function initLayout(root: HTMLElement): LayoutSlots {
     cardContainer,
     togglePanel,
     bottomSheet,
+    refreshRail: () => updateRailLabels(rail, railLabels()),
   };
 }

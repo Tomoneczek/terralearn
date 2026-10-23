@@ -12,13 +12,6 @@ import {
   getPointRadius,
   getPointAltitude,
 } from '@/layers/styles';
-import {
-  formatLabelText,
-  getLabelSize,
-  getLabelDotRadius,
-  getLabelAltitude,
-  selectVisibleLabels,
-} from '@/globe/labels';
 import { getLayer } from '@/layers/registry';
 import type { GeoFeature } from '@/globe/data-loader';
 
@@ -173,13 +166,24 @@ describe('Layer Styling and Altitude Layering', () => {
       expect(countryAlt).toBeLessThan(mountainAlt);
     });
 
-    it('scales mountain altitude proportionally by elevation', () => {
+    // Mountains used to be extruded by elevation into orange blocks (and hid the rivers inside
+    // them from the pointer). They are now a flat outline layer.
+    it('keeps mountain ranges flat, between the country caps and the paths', () => {
       const everestAlt = getPolygonAltitude(mockEverest, false, false, getLayer('mountains'));
       const alpsAlt = getPolygonAltitude(mockAlps, false, false, getLayer('mountains'));
+      const countryAlt = getPolygonAltitude(mockCountry, false, false, getLayer('countriesTopN'));
 
-      expect(everestAlt).toBeGreaterThan(alpsAlt);
-      expect(everestAlt).toBeCloseTo(0.048, 2);
-      expect(alpsAlt).toBeCloseTo(0.033, 2);
+      expect(everestAlt).toBe(alpsAlt);
+      expect(everestAlt).toBeGreaterThan(countryAlt);
+      expect(everestAlt).toBeLessThan(getPathAltitude());
+    });
+
+    it('draws mountains as a delicate outline: faint fill, no sides, muted stroke', () => {
+      const def = getLayer('mountains');
+      expect(getPolygonSideColor(mockEverest, false, false, def)).toBe('transparent');
+      const alpha = (color: string): number => Number(/,\s*([\d.]+)\)$/.exec(color)?.[1] ?? 1);
+      expect(alpha(getPolygonCapColor(mockEverest, false, false, def))).toBeLessThanOrEqual(0.15);
+      expect(alpha(getPolygonStrokeColor(mockEverest, false, false, def))).toBeLessThan(1);
     });
 
     it('elevates polygon on selection and hover', () => {
@@ -324,126 +328,6 @@ describe('Layer Styling and Altitude Layering', () => {
       expect(idle).toContain('hsl(45, 100%, 62%)');
       expect(hovered).toBe('hsl(180, 100%, 80%)');
       expect(selected).toBe('hsl(50, 100%, 70%)');
-    });
-  });
-
-  describe('Label Formatting and Decluttering', () => {
-    it('formats names with altitude suffix for mountains and peaks', () => {
-      // English is the default locale; Polish names are used when asked for explicitly
-      expect(formatLabelText(mockEverest)).toBe('Himalayas (8848 m)');
-      expect(formatLabelText(mockEverest, 'pl')).toBe('Himalaje (8848 m)');
-      expect(formatLabelText(mockPeak)).toBe('Mount Everest (8848 m)');
-    });
-
-    it('formats population in millions for megacities', () => {
-      expect(formatLabelText(mockTokyo)).toBe('Tokyo (37.4M)');
-      expect(formatLabelText(mockTokyo, 'pl')).toBe('Tokio (37.4M)');
-      expect(formatLabelText(mockWarsaw, 'pl')).toBe('Warszawa');
-    });
-
-    it('returns typography scale and dot sizes based on feature kind', () => {
-      expect(getLabelSize(mockCountry)).toBe(0.45);
-      expect(getLabelSize(mockWarsaw)).toBe(0.38);
-      expect(getLabelDotRadius(mockCountry)).toBe(0); // No dot for country polygons
-      // Capitals draw their own marker (CapitalsLayer), so the label carries no dot
-      expect(getLabelDotRadius(mockWarsaw)).toBe(0);
-      expect(getLabelDotRadius(mockTokyo)).toBeGreaterThan(0); // megacities keep the dot
-      expect(getLabelAltitude(mockPeak)).toBe(0.03);
-    });
-
-    it('prioritizes labels by category and rank order', () => {
-      const candidates = [mockPeak, mockTokyo, mockCountry, mockWarsaw, mockEverest];
-      const visible = selectVisibleLabels(candidates, { hiddenLabels: false, maxLabels: 3 });
-
-      expect(visible.length).toBe(3);
-      // Priority: country (1) -> capital (2) -> megacity (3)
-      expect(visible[0]?.properties.kind).toBe('country');
-      expect(visible[1]?.properties.kind).toBe('capital');
-      expect(visible[2]?.properties.kind).toBe('megacity');
-    });
-
-    it('hides labels in quiz/study mode unless selected or hovered', () => {
-      const candidates = [mockCountry, mockWarsaw, mockTokyo];
-
-      // Idle study mode -> 0 labels shown
-      const hiddenIdle = selectVisibleLabels(candidates, { hiddenLabels: true });
-      expect(hiddenIdle).toHaveLength(0);
-
-      // Selected item -> revealed
-      const revealedSelected = selectVisibleLabels(candidates, {
-        hiddenLabels: true,
-        selectedId: 'c1',
-      });
-      expect(revealedSelected).toHaveLength(1);
-      expect(revealedSelected[0]?.properties.id).toBe('c1');
-
-      // Hovered item -> revealed
-      const revealedHovered = selectVisibleLabels(candidates, {
-        hiddenLabels: true,
-        hoveredId: 'city-2',
-      });
-      expect(revealedHovered).toHaveLength(1);
-      expect(revealedHovered[0]?.properties.id).toBe('city-2');
-    });
-
-    it('ensures selected item is included even if it falls beyond maxLabels slice', () => {
-      const manyCountries: GeoFeature[] = Array.from({ length: 60 }, (_, idx) => ({
-        type: 'Feature',
-        properties: {
-          id: `country-${idx}`,
-          layerId: 'countriesTopN',
-          kind: 'country',
-          name_pl: `Kraj ${idx}`,
-          name_en: `Country ${idx}`,
-          rank: { order: idx + 1 },
-        },
-        geometry: { type: 'Polygon', coordinates: [] },
-      }));
-
-      const visible = selectVisibleLabels(manyCountries, {
-        hiddenLabels: false,
-        maxLabels: 10,
-        selectedId: 'country-55',
-      });
-
-      expect(visible.some(f => f.properties.id === 'country-55')).toBe(true);
-    });
-
-    it('avoids colliding labels that are geographically adjacent', () => {
-      // Two cities located very close to each other (e.g. 1 degree apart)
-      const cityA: GeoFeature = {
-        type: 'Feature',
-        properties: {
-          id: 'city-a',
-          layerId: 'capitals',
-          kind: 'capital',
-          name_pl: 'Miasto A',
-          name_en: 'City A',
-          rank: { order: 1 },
-        },
-        geometry: { type: 'Point', coordinates: [21.0, 52.0] },
-      };
-      const cityB: GeoFeature = {
-        type: 'Feature',
-        properties: {
-          id: 'city-b',
-          layerId: 'capitals',
-          kind: 'capital',
-          name_pl: 'Miasto B',
-          name_en: 'City B',
-          rank: { order: 2 },
-        },
-        geometry: { type: 'Point', coordinates: [21.5, 52.3] }, // Only ~0.6 deg apart
-      };
-
-      const result = selectVisibleLabels([cityA, cityB], {
-        hiddenLabels: false,
-        maxLabels: 10,
-      });
-
-      // City A (higher rank) is accepted, City B is suppressed to avoid text overlap
-      expect(result).toHaveLength(1);
-      expect(result[0]?.properties.id).toBe('city-a');
     });
   });
 });

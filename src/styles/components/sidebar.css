@@ -203,3 +203,50 @@
   background-color: var(--bg-1);
   color: var(--text-1);
 }
+
+/* Panel views: map controls vs app settings */
+.tl-sidebar-tabs {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  margin-bottom: var(--space-3);
+  background-color: var(--bg-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.tl-sidebar-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  color: var(--text-2);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 8px;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.tl-sidebar-tab:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-1);
+}
+
+.tl-sidebar-tab.active {
+  background-color: var(--bg-active);
+  color: var(--text-1);
+}
+
+.tl-sidebar-tab:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}
+
+.tl-sidebar[data-view='settings'] .tl-map-view,
+.tl-sidebar:not([data-view='settings']) .tl-settings-view {
+  display: none;
+}

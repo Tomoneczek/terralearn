@@ -13,6 +13,20 @@ export interface Dictionary {
     physical: string;
     political: string;
     tools: string;
+    settings: string;
+  };
+  rail: {
+    navAria: string;
+    home: string;
+    explore: string;
+    layers: string;
+    quiz: string;
+    settings: string;
+  };
+  sidebarTabs: {
+    aria: string;
+    map: string;
+    settings: string;
   };
   modes: {
     all: string;

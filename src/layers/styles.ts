@@ -4,8 +4,8 @@ import type { SrsState, SrsItem } from '@/quiz/srs/types';
 import { getItemStatus } from '@/quiz/srs/leitner';
 
 /**
- * Calculates 3D polygon altitude for Globe.gl to prevent Z-fighting and provide
- * physical elevation for mountains and highlights for selected/hovered items.
+ * Calculates 3D polygon altitude for Globe.gl to prevent Z-fighting; layers are stacked
+ * border < desert < lake < country < mountain < path.
  */
 export function getPolygonAltitude(
   feat: GeoFeature,
@@ -19,11 +19,9 @@ export function getPolygonAltitude(
   let baseAltitude: number;
 
   if (kind === 'mountain') {
-    // Dynamic elevation extrusion: 8848m (Everest) maps to ~0.048, 2000m to ~0.023
-    const rawElevation = feat.properties.rank?.elevation ?? feat.properties.elevation;
-    const elevation = typeof rawElevation === 'number' ? rawElevation : 3000;
-    const clampedElevation = Math.max(500, Math.min(8848, elevation));
-    baseAltitude = 0.015 + (clampedElevation / 8848) * 0.033;
+    // Flat outline layer instead of extruded blocks: just above the country caps (so ranges stay
+    // pickable inside a country) and below paths (so rivers stay pickable inside a range).
+    baseAltitude = 0.013;
   } else if (layerId === 'marine') {
     baseAltitude = 0.003;
   } else if (layerId === 'borders') {

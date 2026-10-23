@@ -56,11 +56,12 @@ export const LAYER_DEFINITIONS: readonly LayerDef[] = [
       default: 15,
       rankBy: 'elevation',
     },
+    // Delicate outline of the range: faint fill, no sides, muted ochre stroke
     style: {
-      capColor: 'hsla(28, 100%, 58%, 0.65)',
-      sideColor: 'hsla(24, 90%, 40%, 0.45)',
-      strokeColor: 'hsl(28, 100%, 70%)',
-      altitude: 0.02,
+      capColor: 'hsla(28, 70%, 52%, 0.10)',
+      sideColor: 'transparent',
+      strokeColor: 'hsla(28, 75%, 62%, 0.6)',
+      altitude: 0.013,
     },
   },
   {

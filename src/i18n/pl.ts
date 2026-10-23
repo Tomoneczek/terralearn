@@ -11,6 +11,20 @@ export const pl: Dictionary = {
     physical: 'GEOGRAFIA FIZYCZNA',
     political: 'GEOGRAFIA POLITYCZNA',
     tools: 'NARZĘDZIA & GRY',
+    settings: 'USTAWIENIA',
+  },
+  rail: {
+    navAria: 'Szybka nawigacja',
+    home: 'TerraLearn – strona główna',
+    explore: 'Eksploracja',
+    layers: 'Warstwy',
+    quiz: 'Quiz',
+    settings: 'Ustawienia',
+  },
+  sidebarTabs: {
+    aria: 'Widok panelu',
+    map: 'Mapa',
+    settings: 'Ustawienia',
   },
   modes: {
     all: 'Wszystkie',
@@ -38,7 +52,7 @@ export const pl: Dictionary = {
   },
   layers: {
     borders: 'Granice państw',
-    countriesTopN: 'Państwa (Top 10 / 50 / 100)',
+    countriesTopN: 'Państwa',
     capitals: 'Stolice',
     megacities: 'Metropolie (>10 mln)',
     lakes: 'Największe jeziora',
