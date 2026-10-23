@@ -44,15 +44,19 @@ describe('SidebarController', () => {
     const lakesToggle = lakesCard?.querySelector<HTMLButtonElement>('.tl-toggle');
     expect(lakesToggle).not.toBeNull();
 
-    // Toggle lakes off
-    lakesToggle?.click();
+    // Lakes (a Top-N layer) are off by default
     expect(store.get().layers.lakes.enabled).toBe(false);
     expect(lakesCard?.classList.contains('active')).toBe(false);
 
-    // Toggle lakes back on
+    // Toggle lakes on
     lakesToggle?.click();
     expect(store.get().layers.lakes.enabled).toBe(true);
     expect(lakesCard?.classList.contains('active')).toBe(true);
+
+    // Toggle lakes back off
+    lakesToggle?.click();
+    expect(store.get().layers.lakes.enabled).toBe(false);
+    expect(lakesCard?.classList.contains('active')).toBe(false);
 
     sidebar.destroy();
   });

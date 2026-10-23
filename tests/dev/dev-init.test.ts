@@ -1,16 +1,36 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Scene } from 'three';
 import { AtmosphereController } from '@/globe/atmosphere';
+import { CapitalsLayer } from '@/globe/capitals-layer';
+import { HoverArbiter } from '@/globe/hover-arbiter';
+import { CAPITALS_SPOTLIGHT_DEFAULTS } from '@/globe/capitals-spotlight';
 import { createStore, createInitialState } from '@/state/store';
 import type { GlobeContext } from '@/globe';
-import { initDevPanel } from '@/dev';
+import { initDevPanel, registerCapitalsDevParams, registerRenderDevParams } from '@/dev';
+import { SpotlightDebugOverlay } from '@/dev/spotlight-debug';
 import { loadDevPanel } from '@/dev/load-dev-panel';
-import { clearDevParams, listDevParams, setDevParam } from '@/dev/dev-params';
+import { clearDevParams, listDevParams, resetAllDevParams, setDevParam } from '@/dev/dev-params';
 
-function fakeContext(): { context: GlobeContext; atmosphere: AtmosphereController } {
-  const atmosphere = new AtmosphereController(new Scene(), createStore(createInitialState()));
+function fakeContext(): {
+  context: GlobeContext;
+  atmosphere: AtmosphereController;
+  capitals: CapitalsLayer;
+  container: HTMLElement;
+} {
+  const store = createStore(createInitialState());
+  const atmosphere = new AtmosphereController(new Scene(), store);
+  const container = document.createElement('div');
+  container.getBoundingClientRect = () => ({ width: 1000, height: 600 }) as DOMRect;
+  const capitals = new CapitalsLayer({
+    scene: null,
+    store,
+    arbiter: new HoverArbiter(store),
+    container,
+    getCamera: () => null,
+  });
   const context = {
     atmosphere,
+    capitals,
     fpsMonitor: { getFps: () => 60 },
     quality: { getActiveTier: () => 'high' },
     camera: { getPointOfView: () => ({ lat: 0, lng: 0, altitude: 2 }) },
@@ -20,7 +40,7 @@ function fakeContext(): { context: GlobeContext; atmosphere: AtmosphereControlle
       },
     },
   } as unknown as GlobeContext;
-  return { context, atmosphere };
+  return { context, atmosphere, capitals, container };
 }
 
 describe('initDevPanel', () => {
@@ -33,11 +53,16 @@ describe('initDevPanel', () => {
     const { context, atmosphere } = fakeContext();
     const panel = initDevPanel(document.body, context);
 
-    expect(listDevParams().map(p => p.id)).toEqual([
-      'atmosphere.twilightStrength',
-      'atmosphere.facingMin',
-      'atmosphere.facingMax',
-    ]);
+    expect(listDevParams().map(p => p.id)).toEqual(
+      expect.arrayContaining([
+        'atmosphere.twilightStrength',
+        'atmosphere.facingMin',
+        'atmosphere.facingMax',
+        'render.pointerPicking',
+        'render.pixelRatio',
+        'capitals.fullRadius',
+      ]),
+    );
     setDevParam('atmosphere.twilightStrength', 0.9);
     expect(atmosphere.getMaterial().uniforms.uTwilightStrength?.value).toBe(0.9);
     expect(document.querySelector('.tl-dev-stats')?.textContent).toContain('draw calls n/a');
@@ -45,6 +70,147 @@ describe('initDevPanel', () => {
     panel.destroy();
     expect(listDevParams()).toHaveLength(0);
     atmosphere.destroy();
+  });
+});
+
+describe('capitals spotlight params', () => {
+  beforeEach(() => clearDevParams());
+
+  it('exposes every spotlight parameter and writes through to the layer', () => {
+    const { context, capitals } = fakeContext();
+    const unregister = registerCapitalsDevParams(context);
+
+    for (const key of Object.keys(CAPITALS_SPOTLIGHT_DEFAULTS)) {
+      expect(listDevParams().some(p => p.id === `capitals.${key}`)).toBe(true);
+    }
+    setDevParam('capitals.fadeRadius', 0.5);
+    setDevParam('capitals.hitRadiusPx', 20);
+    expect(capitals.params.fadeRadius).toBe(0.5);
+    expect(capitals.params.hitRadiusPx).toBe(20);
+
+    // values are clamped to the slider range
+    setDevParam('capitals.fullRadius', 99);
+    expect(capitals.params.fullRadius).toBe(0.6);
+
+    resetAllDevParams();
+    expect(capitals.params.fadeRadius).toBe(CAPITALS_SPOTLIGHT_DEFAULTS.fadeRadius);
+
+    unregister();
+    expect(listDevParams()).toHaveLength(0);
+    capitals.destroy();
+  });
+
+  it('recomputes rank scales when their range changes', () => {
+    const { context, capitals } = fakeContext();
+    const unregister = registerCapitalsDevParams(context);
+    capitals.setFeatures([
+      {
+        type: 'Feature',
+        properties: {
+          id: 'big',
+          kind: 'capital',
+          layerId: 'capitals',
+          name_pl: 'big',
+          name_en: 'big',
+          rank: { population: 30_000_000 },
+        },
+        geometry: { type: 'Point', coordinates: [0, 0] },
+      },
+    ]);
+    const rank = capitals.getMesh().geometry.getAttribute('aRank');
+    expect(rank.getX(0)).toBeCloseTo(CAPITALS_SPOTLIGHT_DEFAULTS.rankScaleMax, 5);
+
+    setDevParam('capitals.rankScaleMax', 2.5);
+    expect(rank.getX(0)).toBeCloseTo(2.5, 5);
+
+    unregister();
+    capitals.destroy();
+  });
+
+  it('toggles the on-screen radii preview and removes it on cleanup', () => {
+    const { context, capitals, container } = fakeContext();
+    const unregister = registerCapitalsDevParams(context);
+    const overlay = container.querySelector<HTMLElement>('.tl-dev-spotlight')!;
+    expect(overlay.style.display).toBe('none');
+
+    setDevParam('capitals.showCircles', 1);
+    expect(overlay.style.display).toBe('block');
+    setDevParam('capitals.showCircles', 0);
+    expect(overlay.style.display).toBe('none');
+
+    unregister();
+    expect(container.querySelector('.tl-dev-spotlight')).toBeNull();
+    capitals.destroy();
+  });
+});
+
+describe('SpotlightDebugOverlay', () => {
+  it('sizes both circles from the container and the parameters', () => {
+    const container = document.createElement('div');
+    container.getBoundingClientRect = () => ({ width: 1000, height: 600 }) as DOMRect;
+    const params = { ...CAPITALS_SPOTLIGHT_DEFAULTS, fullRadius: 0.1, fadeRadius: 0.4 };
+    const overlay = new SpotlightDebugOverlay(container, params);
+
+    overlay.setVisible(true);
+    const [full, fade] = [...overlay.element.children] as HTMLElement[];
+    // diameter = 2 × radius × min(width, height)
+    expect(full!.style.width).toBe('120px');
+    expect(fade!.style.width).toBe('480px');
+
+    params.fadeRadius = 0.5;
+    overlay.update();
+    expect(fade!.style.width).toBe('600px');
+
+    overlay.destroy();
+    expect(container.contains(overlay.element)).toBe(false);
+  });
+});
+
+describe('render bisect params', () => {
+  beforeEach(() => clearDevParams());
+
+  function renderContext() {
+    let picking = true;
+    let ratio = 2;
+    const setPixelRatio = vi.fn((v: number) => {
+      ratio = v;
+    });
+    const context = {
+      globe: {
+        enablePointerInteraction: vi.fn((v?: boolean) => {
+          if (v === undefined) return picking;
+          picking = v;
+          return undefined;
+        }),
+        renderer: () => ({ getPixelRatio: () => ratio, setPixelRatio }),
+      },
+    } as unknown as GlobeContext;
+    return { context, setPixelRatio, state: () => ({ picking, ratio }) };
+  }
+
+  it('toggles pointer picking and render resolution on the globe', () => {
+    const { context, setPixelRatio, state } = renderContext();
+    const unregister = registerRenderDevParams(context);
+
+    setDevParam('render.pointerPicking', 0);
+    expect(state().picking).toBe(false);
+    setDevParam('render.pointerPicking', 1);
+    expect(state().picking).toBe(true);
+
+    setDevParam('render.pixelRatio', 1);
+    expect(setPixelRatio).toHaveBeenCalledWith(1);
+
+    unregister();
+    expect(listDevParams()).toHaveLength(0);
+  });
+
+  it('reads current values as the reset defaults', () => {
+    const { context, state } = renderContext();
+    registerRenderDevParams(context);
+    setDevParam('render.pointerPicking', 0);
+    setDevParam('render.pixelRatio', 0.5);
+    resetAllDevParams();
+    expect(state()).toEqual({ picking: true, ratio: 2 });
   });
 });
 

@@ -20,7 +20,7 @@ export const en: Dictionary = {
     clouds: '3D Clouds',
     quality: 'Graphics Quality',
     qualityAuto: 'Auto (FPS-based)',
-    qualityHigh: 'High (4K, Bloom)',
+    qualityHigh: 'High (4K)',
     qualityMedium: 'Medium (Balanced)',
     qualityLow: 'Low (Performance)',
     graticule: 'Cartographic Grid',

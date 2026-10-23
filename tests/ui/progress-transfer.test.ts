@@ -1,9 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { setLocale } from '@/i18n';
 import { SidebarController } from '@/ui/sidebar';
 import { store } from '@/state';
 import { showToast } from '@/ui/toast';
 import { ImportConfirmModal } from '@/ui/import-confirm-modal';
 import * as transferModule from '@/quiz/srs/transfer';
+
+// The app defaults to English; these tests assert Polish copy, so pin the locale explicitly.
+beforeEach(() => setLocale('pl'));
 
 describe('Progress Transfer UI Integration', () => {
   let sidebarContainer: HTMLElement;

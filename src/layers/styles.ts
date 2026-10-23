@@ -261,10 +261,12 @@ export function getPathStroke(feat: GeoFeature, def?: LayerDef): number {
 }
 
 /**
- * Path altitude slightly above borders and lakes to prevent clipping.
+ * Path altitude above every flat polygon layer (countries are the highest at 0.012). globe.gl
+ * picks the object nearest to the camera, so paths below a country cap could never be hovered
+ * or clicked.
  */
 export function getPathAltitude(): number {
-  return 0.008;
+  return 0.014;
 }
 
 /**

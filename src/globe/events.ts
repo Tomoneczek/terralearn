@@ -1,6 +1,7 @@
 import type { Store, AppState, FeatureRef } from '@/state/types';
 import type { LayerId } from '@/layers';
 import type { GeoFeature } from './data-loader';
+import type { HoverArbiter } from './hover-arbiter';
 
 export interface GlobeEventsDelegate {
   onPolygonClick?(
@@ -60,30 +61,42 @@ export function toFeatureRef(
   };
 }
 
+/**
+ * globe.gl hands path callbacks the PathItem wrapper ({ id, feature, points }), while polygon
+ * and point callbacks receive the GeoFeature itself. Returns the GeoFeature in both cases.
+ */
+export function resolveFeature(obj: object): GeoFeature | null {
+  const wrapped = (obj as { feature?: GeoFeature }).feature;
+  const feat = wrapped?.properties ? wrapped : (obj as GeoFeature);
+  return feat?.properties?.id ? feat : null;
+}
+
 export function attachGlobeEvents(
   globe: GlobeEventsDelegate,
   store: Store<AppState>,
   container?: HTMLElement,
+  arbiter?: HoverArbiter,
 ): () => void {
   const handleFeatureClick = (obj: object, coords?: { lat: number; lng: number }) => {
-    const feat = obj as GeoFeature;
-    if (feat?.properties?.id) {
+    // The capitals layer handles clicks on its own markers
+    if (arbiter?.isCapitalClaimed()) return;
+    const feat = resolveFeature(obj);
+    if (feat) {
       store.set({ selection: toFeatureRef(feat, coords) });
     }
   };
 
   const handleFeatureHover = (obj: object | null) => {
+    const feat = obj ? resolveFeature(obj) : null;
+    if (arbiter) {
+      // The arbiter owns `hovered` and the cursor (a capital marker may take precedence)
+      arbiter.setGlobeHover(feat ? toFeatureRef(feat) : null);
+      return;
+    }
     if (container) {
       container.style.cursor = obj ? 'pointer' : 'default';
     }
-    if (obj) {
-      const feat = obj as GeoFeature;
-      if (feat?.properties?.id) {
-        store.set({ hovered: toFeatureRef(feat) });
-        return;
-      }
-    }
-    store.set({ hovered: null });
+    store.set({ hovered: feat ? toFeatureRef(feat) : null });
   };
 
   globe.onPolygonClick?.((obj, _event, coords) => handleFeatureClick(obj, coords));
@@ -96,6 +109,7 @@ export function attachGlobeEvents(
   globe.onPointHover?.(obj => handleFeatureHover(obj));
 
   globe.onGlobeClick?.(coords => {
+    if (arbiter?.isCapitalClaimed()) return;
     store.set({
       globeClick: { lat: coords.lat, lng: coords.lng },
       selection: null,

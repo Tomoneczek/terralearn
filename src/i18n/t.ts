@@ -4,7 +4,7 @@ import type { Dictionary, I18nKey } from './types';
 
 export type Locale = 'pl' | 'en';
 
-let currentLocale: Locale = 'pl';
+let currentLocale: Locale = 'en';
 
 const dictionaries: Record<Locale, Dictionary> = {
   pl,

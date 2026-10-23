@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { setLocale } from '@/i18n';
 import { createStore, createInitialState } from '@/state/store';
 import type { AppState } from '@/state/types';
 import { InfoCard } from '@/ui/info-card';
 import type { ObjectFacts } from '../../scripts/data/buildSearchAndFacts';
+
+// The app defaults to English; these tests assert Polish copy, so pin the locale explicitly.
+beforeEach(() => setLocale('pl'));
+const plState = () => ({ ...createInitialState(), locale: 'pl' as const });
 
 describe('Geographic Relations in InfoCard (G11-04)', () => {
   let container: HTMLElement;
@@ -115,7 +120,7 @@ describe('Geographic Relations in InfoCard (G11-04)', () => {
   });
 
   it('renders capital and neighboring country chips for a country', async () => {
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const card = new InfoCard({ container, store });
     await new Promise(r => setTimeout(r, 20));
 
@@ -151,7 +156,7 @@ describe('Geographic Relations in InfoCard (G11-04)', () => {
 
   it('navigates and updates store selection when a relation chip is clicked', async () => {
     const onFlyTo = vi.fn();
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const card = new InfoCard({ container, store, onFlyTo });
     await new Promise(r => setTimeout(r, 20));
 
@@ -180,7 +185,7 @@ describe('Geographic Relations in InfoCard (G11-04)', () => {
   });
 
   it('renders flowsThrough label for rivers and locatedIn for peaks/mountains', async () => {
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const card = new InfoCard({ container, store });
     await new Promise(r => setTimeout(r, 20));
 
@@ -212,7 +217,7 @@ describe('Geographic Relations in InfoCard (G11-04)', () => {
 
   it('respects active English locale in relation group headers and chip names', async () => {
     const store = createStore<AppState>({
-      ...createInitialState(),
+      ...plState(),
       locale: 'en',
     });
     const card = new InfoCard({ container, store });

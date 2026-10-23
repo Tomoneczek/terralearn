@@ -80,7 +80,7 @@ export class HoverTooltip {
           const color = getLayerColor(hovered.layerId);
           this.dot.style.backgroundColor = color;
           this.dot.style.color = color;
-          const activeLocale = locale ?? 'pl';
+          const activeLocale = locale ?? 'en';
           if (getLocale() !== activeLocale) {
             setLocale(activeLocale);
           }

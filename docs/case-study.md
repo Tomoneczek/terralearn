@@ -23,7 +23,7 @@ graph TD
 
   Compositor --> ThreeGlobe[Globe.gl / ThreeGlobe]
   ThreeGlobe --> Scene[Three.js WebGL Scene]
-  Scene --> Renderer[WebGLRenderer + UnrealBloomPass]
+  Scene --> Renderer[WebGLRenderer]
 
   Search --> SearchIndex[(search-index.json)]
   Compositor --> GeoData[(TopoJSON / GeoJSON Assets)]
@@ -87,7 +87,7 @@ A custom GLSL fragment shader smoothly blends daylight albedo textures with high
 | Dimension                   | Challenge                           | Solution                                                                     | Result                                            |
 | --------------------------- | ----------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------- |
 | **Data Footprint**          | Natural Earth vectors exceed 45 MB  | TopoJSON quantization, Douglas-Peucker simplification, river network merging | Total data size **< 2.4 MB** (94.7% reduction)    |
-| **Frame Stability**         | Heavy polygon re-renders drop FPS   | Cached Three.js materials, decoupled hover states, adaptive Bloom fallback   | Consistent **60 FPS** on standard integrated GPUs |
+| **Frame Stability**         | Heavy polygon re-renders drop FPS   | Cached Three.js materials, decoupled hover states, adaptive quality tiers    | Consistent **60 FPS** on standard integrated GPUs |
 | **Bundle Splitting**        | Three.js & Globe.gl are heavyweight | `rollupOptions.output.manualChunks` split into `three-vendor` and `vendor`   | Core application bundle **67 KB (18.8 KB gzip)**  |
 | **Zero Diacritics Leakage** | Mixed-language pollution in code    | Custom AST scanner `scripts/check-i18n.ts` in pre-commit and CI              | 100% strict separation of code & i18n             |
 

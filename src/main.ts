@@ -66,7 +66,7 @@ export function bootstrap(): void {
         window.dispatchEvent(new CustomEvent('tl-locale-updated', { detail: { locale } }));
       }
     };
-    syncLocale(store.get().locale ?? 'pl');
+    syncLocale(store.get().locale ?? 'en');
     store.subscribe(s => s.locale, syncLocale);
 
     // Initialize Quiz Engine & UI

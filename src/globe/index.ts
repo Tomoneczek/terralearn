@@ -5,7 +5,6 @@ export * from './events';
 export * from './instance';
 export * from './labels';
 export * from './day-night';
-export * from './bloom';
 export * from './performance';
 export * from './route-layer';
 export * from './size-comparison-layer';

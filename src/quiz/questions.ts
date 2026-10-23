@@ -260,7 +260,7 @@ export function generateQuizQuestions(
  */
 export function getAutocompleteSuggestions(
   pool: readonly QuizQuestion[] = DEFAULT_QUESTIONS_POOL,
-  locale: 'pl' | 'en' = 'pl',
+  locale: 'pl' | 'en' = 'en',
 ): string[] {
   const set = new Set<string>();
   for (const q of pool) {

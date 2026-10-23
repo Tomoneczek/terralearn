@@ -15,7 +15,8 @@ describe('G11-03 Web App Manifest & PWA Assets', () => {
   it('contains all required PWA manifest fields', () => {
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
 
-    expect(manifest.name).toBe('TerraLearn – Interaktywny Globus 3D');
+    expect(manifest.name).toBe('TerraLearn – Interactive 3D Globe');
+    expect(manifest.lang).toBe('en');
     expect(manifest.short_name).toBe('TerraLearn');
     expect(manifest.display).toBe('standalone');
     expect(manifest.start_url).toBe('./');

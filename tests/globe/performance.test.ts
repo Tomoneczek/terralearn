@@ -145,9 +145,17 @@ describe('performance module', () => {
     });
   });
 
+  describe('quality profiles', () => {
+    // Regression guard for the bloom removal: no profile may carry a bloom switch any more.
+    it('has no bloom switch in any tier', () => {
+      for (const profile of Object.values(QUALITY_PROFILES)) {
+        expect('enableBloom' in profile).toBe(false);
+      }
+    });
+  });
+
   describe('QualityController', () => {
     let mockTargets: {
-      bloom: { setEnabled: ReturnType<typeof vi.fn>; isEnabled: ReturnType<typeof vi.fn> };
       clouds: { setVisible: ReturnType<typeof vi.fn>; isVisible: ReturnType<typeof vi.fn> };
       atmosphere: { setVisible: ReturnType<typeof vi.fn>; isVisible: ReturnType<typeof vi.fn> };
       setPixelRatio: ReturnType<typeof vi.fn>;
@@ -155,7 +163,6 @@ describe('performance module', () => {
 
     beforeEach(() => {
       mockTargets = {
-        bloom: { setEnabled: vi.fn(), isEnabled: vi.fn().mockReturnValue(true) },
         clouds: { setVisible: vi.fn(), isVisible: vi.fn().mockReturnValue(true) },
         atmosphere: { setVisible: vi.fn(), isVisible: vi.fn().mockReturnValue(true) },
         setPixelRatio: vi.fn(),
@@ -174,20 +181,17 @@ describe('performance module', () => {
       // 1. High preset
       store.set({ ...store.get(), quality: 'high', clouds: true });
       expect(controller.getActiveTier()).toBe('high');
-      expect(mockTargets.bloom.setEnabled).toHaveBeenCalledWith(true);
       expect(mockTargets.clouds.setVisible).toHaveBeenCalledWith(true);
       expect(mockTargets.atmosphere.setVisible).toHaveBeenCalledWith(true);
 
       // 2. Medium preset
       store.set({ ...store.get(), quality: 'medium', clouds: true });
       expect(controller.getActiveTier()).toBe('medium');
-      expect(mockTargets.bloom.setEnabled).toHaveBeenCalledWith(false);
       expect(mockTargets.clouds.setVisible).toHaveBeenCalledWith(true);
 
       // 3. Low preset
       store.set({ ...store.get(), quality: 'low', clouds: true });
       expect(controller.getActiveTier()).toBe('low');
-      expect(mockTargets.bloom.setEnabled).toHaveBeenCalledWith(false);
       expect(mockTargets.clouds.setVisible).toHaveBeenCalledWith(false);
 
       controller.destroy();
@@ -227,7 +231,6 @@ describe('performance module', () => {
       // Trigger 1st FPS degradation -> medium
       controller.handleFpsDegrade();
       expect(controller.getActiveTier()).toBe('medium');
-      expect(mockTargets.bloom.setEnabled).toHaveBeenCalledWith(false);
 
       // Trigger 2nd FPS degradation -> low
       controller.handleFpsDegrade();
@@ -261,10 +264,9 @@ describe('performance module', () => {
       expect(controller.getActiveTier()).toBe('medium');
       expect(mockTargets.clouds.setVisible).toHaveBeenCalledWith(true);
 
-      // Upgrade 2: medium -> high (bloom restored!)
+      // Upgrade 2: medium -> high
       controller.handleFpsUpgrade();
       expect(controller.getActiveTier()).toBe('high');
-      expect(mockTargets.bloom.setEnabled).toHaveBeenCalledWith(true);
 
       controller.destroy();
     });
@@ -283,7 +285,7 @@ describe('performance module', () => {
       // FPS drop should be ignored because quality is explicitly 'high'
       controller.handleFpsDegrade();
       expect(controller.getActiveTier()).toBe('high');
-      expect(mockTargets.bloom.setEnabled).toHaveBeenLastCalledWith(true);
+      expect(mockTargets.clouds.setVisible).toHaveBeenLastCalledWith(true);
 
       controller.destroy();
     });
@@ -303,7 +305,7 @@ describe('performance module', () => {
       controller.destroy();
     });
 
-    it('maintains high quality tier with bloom and clouds active at 28-30 FPS', () => {
+    it('maintains high quality tier with clouds active at 28-30 FPS', () => {
       const store = createStore<AppState>({ ...createInitialState(), quality: 'auto' });
       const fpsMonitor = new FPSMonitor();
       const controller = new QualityController(
@@ -313,7 +315,6 @@ describe('performance module', () => {
       );
 
       expect(controller.getActiveTier()).toBe('high');
-      expect(mockTargets.bloom.setEnabled).toHaveBeenCalledWith(true);
       expect(mockTargets.clouds.setVisible).toHaveBeenCalledWith(true);
 
       // Simulate 10 samples of standard 28 FPS WebGL rendering
@@ -321,7 +322,7 @@ describe('performance module', () => {
         fpsMonitor.simulateFrameSample(28);
       }
 
-      // Remains high, bloom and clouds remain untouched
+      // Remains high, clouds remain untouched
       expect(controller.getActiveTier()).toBe('high');
 
       controller.destroy();

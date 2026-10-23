@@ -44,6 +44,7 @@
 }
 
 .tl-dev-stats {
+  white-space: pre-line;
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
 }

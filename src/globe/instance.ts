@@ -5,7 +5,10 @@ import { CameraController } from './camera';
 import { LayerCompositor, type GlobeCompositorTarget } from './compositor';
 import { attachGlobeEvents, type GlobeEventsDelegate } from './events';
 import { DayNightController } from './day-night';
-import { BloomController } from './bloom';
+import { HighlightOverlay } from './highlight-overlay';
+import { installPathHitTolerance } from './path-picking';
+import { CapitalsLayer } from './capitals-layer';
+import { HoverArbiter } from './hover-arbiter';
 import { CloudsController } from './clouds';
 import { AtmosphereController } from './atmosphere';
 import { FPSMonitor, QualityController } from './performance';
@@ -26,7 +29,8 @@ export interface GlobeContext {
   compositor: LayerCompositor;
   dayNight: DayNightController;
   atmosphere: AtmosphereController;
-  bloom: BloomController;
+  highlight: HighlightOverlay;
+  capitals: CapitalsLayer;
   clouds: CloudsController;
   quality: QualityController;
   routes: RouteLayerController;
@@ -45,7 +49,6 @@ export interface GlobeInitOptions {
   atmosphereColor?: string;
   atmosphereAltitude?: number;
   enableAtmosphere?: boolean;
-  enableBloom?: boolean;
   enableClouds?: boolean;
 }
 
@@ -139,14 +142,12 @@ export function createGlobe(
   const compositor = new LayerCompositor(globe as unknown as GlobeCompositorTarget, store);
   void compositor.compose();
 
-  // Performance Monitor & Bloom Post-Processing
+  // Performance Monitor
   const fpsMonitor = new FPSMonitor({
     minFps: 22,
     consecutiveDropsThreshold: 6,
   });
   fpsMonitor.start();
-
-  const bloom = new BloomController(globe, { enabled: options.enableBloom ?? true }, fpsMonitor);
 
   // 3D Scene Objects (Clouds & Atmosphere)
   let globeScene = null;
@@ -163,6 +164,30 @@ export function createGlobe(
     dayColor: atmosphereColor,
   });
 
+  // Rivers are thin screen-space lines: give them a comfortable pointer hit area
+  installPathHitTolerance();
+
+  // Hover/selection highlight drawn on a dedicated overlay (see HighlightOverlay)
+  const highlight = new HighlightOverlay(globeScene, store, id => compositor.getFeatureById(id));
+  compositor.onComposed = () => highlight.sync();
+
+  // Capitals: one shader point cloud with a screen-center spotlight instead of a mesh per city
+  const hoverArbiter = new HoverArbiter(store, container);
+  const capitals = new CapitalsLayer({
+    scene: globeScene,
+    store,
+    arbiter: hoverArbiter,
+    container,
+    getCamera: () => {
+      try {
+        return globe.camera();
+      } catch {
+        return null;
+      }
+    },
+  });
+  compositor.capitalsSink = capitals;
+
   const clouds = new CloudsController(globeScene, store, {
     enabled: options.enableClouds ?? true,
     cloudsTextureUrl: '/textures/clouds.png',
@@ -172,7 +197,6 @@ export function createGlobe(
   const quality = new QualityController(
     store,
     {
-      bloom,
       clouds,
       atmosphere,
       setPixelRatio: (ratio: number) => {
@@ -187,7 +211,12 @@ export function createGlobe(
   );
 
   // Events
-  const detachEvents = attachGlobeEvents(globe as unknown as GlobeEventsDelegate, store, container);
+  const detachEvents = attachGlobeEvents(
+    globe as unknown as GlobeEventsDelegate,
+    store,
+    container,
+    hoverArbiter,
+  );
 
   // Spherical Route Layer Controller (Orthodrome vs Loxodrome)
   const routes = new RouteLayerController(globe as unknown as GlobeRouteDelegate, store);
@@ -222,7 +251,8 @@ export function createGlobe(
     compositor,
     dayNight,
     atmosphere,
-    bloom,
+    highlight,
+    capitals,
     clouds,
     quality,
     routes,
@@ -241,6 +271,8 @@ export function createGlobe(
       resizeObserver.disconnect();
       detachEvents();
       compositor.destroy();
+      highlight.destroy();
+      capitals.destroy();
       dayNight.destroy();
       atmosphere.destroy();
       clouds.destroy();

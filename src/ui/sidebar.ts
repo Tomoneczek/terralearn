@@ -967,7 +967,7 @@ export class SidebarController {
 
         // Sync language
         if (this.languageSelect) {
-          this.languageSelect.value = state.locale ?? 'pl';
+          this.languageSelect.value = state.locale ?? 'en';
         }
 
         // Sync hiddenLabels

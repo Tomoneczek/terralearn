@@ -57,8 +57,20 @@ describe('Layer Registry', () => {
   it('generates the default layer states correctly', () => {
     const state = defaultLayersState();
     expect(state.borders.enabled).toBe(true);
-    expect(state.lakes.enabled).toBe(true);
+    expect(state.capitals.enabled).toBe(true);
     expect(state.lakes.topN).toBe(20);
     expect(state.rivers.enabled).toBe(false);
+  });
+
+  // The Top-N layers (largest lakes, mountain ranges, countries) are opt-in: they add hundreds of
+  // draw calls and the user's choice is remembered in localStorage anyway.
+  it('keeps the Top-N layers off by default but retains their default N', () => {
+    const state = defaultLayersState();
+    expect(state.lakes.enabled).toBe(false);
+    expect(state.mountains.enabled).toBe(false);
+    expect(state.countriesTopN.enabled).toBe(false);
+    expect(state.lakes.topN).toBe(20);
+    expect(state.mountains.topN).toBe(15);
+    expect(state.countriesTopN.topN).toBe(20);
   });
 });

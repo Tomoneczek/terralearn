@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { setLocale } from '@/i18n';
 import { createStore, createInitialState } from '@/state/store';
 import type { AppState } from '@/state/types';
 import { SidebarController } from '@/ui/sidebar';
@@ -7,6 +8,10 @@ import { LayerCompositor, type GlobeCompositorTarget } from '@/globe/compositor'
 import { saveSrsState, clearSrsState, type SrsState } from '@/quiz/srs';
 import { SRS_STATUS_COLORS } from '@/layers/styles';
 import type { GeoFeature } from '@/globe/data-loader';
+
+// The app defaults to English; these tests assert Polish copy, so pin the locale explicitly.
+beforeEach(() => setLocale('pl'));
+const plState = () => ({ ...createInitialState(), locale: 'pl' as const });
 
 describe('Knowledge Map UI & Integration', () => {
   let container: HTMLElement;
@@ -27,7 +32,7 @@ describe('Knowledge Map UI & Integration', () => {
 
   describe('SidebarController Knowledge Map Toggle', () => {
     it('initializes with knowledgeMap unchecked and toggles store on click', () => {
-      const store = createStore<AppState>(createInitialState());
+      const store = createStore<AppState>(plState());
       const sidebar = new SidebarController({ container, store });
 
       expect(store.get().knowledgeMap).toBe(false);
@@ -79,7 +84,7 @@ describe('Knowledge Map UI & Integration', () => {
       saveSrsState(mockSrs);
 
       const store = createStore<AppState>({
-        ...createInitialState(),
+        ...plState(),
         knowledgeMap: false,
       });
 
@@ -119,7 +124,7 @@ describe('Knowledge Map UI & Integration', () => {
   });
 
   describe('LayerCompositor Knowledge Map Styling', () => {
-    it('applies SRS colors when knowledgeMap is true and respects selection/hover precedence', () => {
+    it('applies SRS colors when knowledgeMap is true and keeps them under the highlight overlay', () => {
       const baseTime = 1700000000000;
       const mockSrs: SrsState = {
         PL: {
@@ -144,7 +149,7 @@ describe('Knowledge Map UI & Integration', () => {
       saveSrsState(mockSrs);
 
       const store = createStore<AppState>({
-        ...createInitialState(),
+        ...plState(),
         knowledgeMap: false,
       });
 
@@ -234,7 +239,8 @@ describe('Knowledge Map UI & Integration', () => {
       const srsRiver = pathColorFn({ feature: riverAmazonFeature, points: [] });
       expect(srsRiver).toBe(SRS_STATUS_COLORS.difficult.path);
 
-      // 3. Selection highlight takes precedence over SRS color
+      // 3. Selection no longer overrides the main layer: the highlight is drawn by the overlay
+      // on top, so the SRS color stays (regression for restyling the whole layer on selection).
       store.set({
         ...store.get(),
         selection: {
@@ -243,9 +249,8 @@ describe('Knowledge Map UI & Integration', () => {
           kind: 'country',
         },
       });
-      const selectedCap = capColorFn(polandFeature);
-      expect(selectedCap).not.toBe(SRS_STATUS_COLORS.mastered.fill);
-      expect(selectedCap).toContain('hsla(180');
+      expect(capColorFn(polandFeature)).toBe(SRS_STATUS_COLORS.mastered.fill);
+      expect(strokeColorFn(polandFeature)).toBe(SRS_STATUS_COLORS.mastered.stroke);
 
       compositor.destroy();
     });

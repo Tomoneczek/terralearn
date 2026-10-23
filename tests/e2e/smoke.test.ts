@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { setLocale } from '@/i18n';
 import { bootstrap, globeContext, searchOverlay } from '@/main';
 import { store } from '@/state';
+
+// The app defaults to English; these tests assert Polish copy, so pin the locale explicitly.
+beforeEach(() => setLocale('pl'));
 
 // Mock Globe to prevent WebGL/canvas creation errors in happy-dom
 vi.mock('globe.gl', () => {
@@ -157,8 +161,8 @@ describe('E2E Smoke Tests (T-01)', () => {
     const presetButtons = document.querySelectorAll<HTMLButtonElement>('.tl-preset-btn');
     expect(presetButtons.length).toBeGreaterThanOrEqual(3);
 
-    const physicalBtn = Array.from(presetButtons).find(b => b.textContent?.includes('Fizyczna'));
-    const politicalBtn = Array.from(presetButtons).find(b => b.textContent?.includes('Polityczna'));
+    const physicalBtn = Array.from(presetButtons).find(b => b.textContent?.includes('Physical'));
+    const politicalBtn = Array.from(presetButtons).find(b => b.textContent?.includes('Political'));
 
     expect(physicalBtn).toBeDefined();
     expect(politicalBtn).toBeDefined();

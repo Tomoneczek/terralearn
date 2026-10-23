@@ -29,7 +29,7 @@ Traditional web maps rely almost universally on cylindrical projections (such as
 - 🌗 **Real-Time Day/Night Illumination:**
   - Astronomical subsolar calculation using the **Meeus Solar Algorithm** (solar declination $\delta$ and equation of time).
   - Custom GLSL terminator shader seamlessly blending daytime albedo with nighttime city light emissions across the twilight band.
-  - Atmospheric glow powered by a selective **UnrealBloomPass** with automated frame rate degradation protection.
+  - Sun-dependent Fresnel atmosphere shell with a warm twilight band, plus adaptive quality tiers that degrade automatically when the frame rate drops.
 - 🎯 **Blind Map Challenge ("Ślepa mapa"):**
   - Gamified spatial quiz prompting players to pinpoint countries, peaks, rivers, and lakes on an unlabelled globe.
   - Precise **Haversine great-circle distance** calculation between click and target coordinates.
@@ -63,7 +63,7 @@ graph TD
 
   Compositor --> ThreeGlobe[Globe.gl Instance]
   ThreeGlobe --> ThreeScene[Three.js 3D Scene]
-  ThreeScene --> Shader[Terminator Shader & Bloom]
+  ThreeScene --> Shader[Terminator Shader & Atmosphere]
   Shader --> Canvas[WebGL Canvas]
 
   SearchEngine --> SearchData[(search-index.json)]

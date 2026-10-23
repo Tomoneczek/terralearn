@@ -60,6 +60,22 @@ describe('DevPanel', () => {
     panel.destroy();
   });
 
+  it('shows the rolling frame-time summary when provided', () => {
+    const panel = new DevPanel({
+      container,
+      stats: () => ({ ...STATS, frame: { avgMs: 16.7, p95Ms: 21.3, maxMs: 80, frames: 300 } }),
+    });
+    const text = container.querySelector('.tl-dev-stats')?.textContent ?? '';
+    expect(text).toContain('frame avg 16.7 / p95 21.3 / max 80.0 ms');
+    panel.destroy();
+  });
+
+  it('omits the frame summary when not sampled', () => {
+    const panel = new DevPanel({ container, stats: () => STATS });
+    expect(container.querySelector('.tl-dev-stats')?.textContent).not.toContain('frame avg');
+    panel.destroy();
+  });
+
   it('shows n/a when a stat is unavailable', () => {
     const panel = new DevPanel({
       container,

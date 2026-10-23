@@ -11,6 +11,8 @@ describe('LayerCompositor', () => {
   let polygonCapColorFn: (d: GeoFeature) => string;
   let polygonStrokeColorFn: (d: GeoFeature) => string;
   let polygonAltitudeFn: (d: GeoFeature) => number;
+  let polygonSideColorFn: (d: GeoFeature) => string;
+  let polygonCapMaterialFn: (d: GeoFeature) => { visible: boolean } | undefined;
 
   beforeEach(() => {
     clearGeoDataCache();
@@ -32,7 +34,14 @@ describe('LayerCompositor', () => {
         polygonCapColorFn = fn;
         return mockGlobe;
       }),
-      polygonSideColor: vi.fn().mockReturnThis(),
+      polygonSideColor: vi.fn((fn: (d: GeoFeature) => string) => {
+        polygonSideColorFn = fn;
+        return mockGlobe;
+      }),
+      polygonCapMaterial: vi.fn((fn: (d: GeoFeature) => { visible: boolean } | undefined) => {
+        polygonCapMaterialFn = fn;
+        return mockGlobe;
+      }),
       polygonStrokeColor: vi.fn((fn: (d: GeoFeature) => string) => {
         polygonStrokeColorFn = fn;
         return mockGlobe;
@@ -245,7 +254,7 @@ describe('LayerCompositor', () => {
     compositor.destroy();
   });
 
-  it('style accessors return highlighted colors on selection and hover', () => {
+  it('style accessors ignore selection and hover (highlight is drawn by the overlay)', () => {
     const store = createStore<AppState>({
       ...createInitialState(),
       selection: { id: 'c1', layerId: 'countriesTopN' as LayerId, kind: 'country' },
@@ -288,17 +297,187 @@ describe('LayerCompositor', () => {
       geometry: { type: 'Point', coordinates: [0, 0] },
     };
 
-    expect(polygonCapColorFn(featSelected)).toContain('hsla(180, 100%, 70%');
-    expect(polygonCapColorFn(featHovered)).toContain('hsla(180, 100%, 80%');
-    expect(polygonCapColorFn(featNormal)).toBeDefined();
+    // Regression: hover/selection used to restyle the main polygon layer (color, stroke, altitude).
+    const normalCap = polygonCapColorFn(featNormal);
+    expect(polygonCapColorFn(featSelected)).toBe(normalCap);
+    expect(polygonCapColorFn(featHovered)).toBe(normalCap);
 
-    expect(polygonStrokeColorFn(featSelected)).toBe('hsl(50, 100%, 65%)');
-    expect(polygonStrokeColorFn(featHovered)).toBe('hsl(180, 100%, 80%)');
+    const normalStroke = polygonStrokeColorFn(featNormal);
+    expect(polygonStrokeColorFn(featSelected)).toBe(normalStroke);
+    expect(polygonStrokeColorFn(featHovered)).toBe(normalStroke);
 
-    expect(polygonAltitudeFn(featSelected)).toBeGreaterThan(polygonAltitudeFn(featNormal));
-    expect(polygonAltitudeFn(featHovered)).toBeGreaterThan(polygonAltitudeFn(featNormal));
+    const normalAltitude = polygonAltitudeFn(featNormal);
+    expect(polygonAltitudeFn(featSelected)).toBe(normalAltitude);
+    expect(polygonAltitudeFn(featHovered)).toBe(normalAltitude);
 
     compositor.destroy();
+  });
+
+  // Regression: fully transparent polygon parts (the borders layer) used to cost three draw calls
+  // per polygon part. Transparent sides/strokes are now skipped (empty color) and the transparent
+  // cap keeps a non-rendered material so it stays pickable.
+  describe('cheap transparent polygon parts', () => {
+    const feature = (layerId: string, kind = 'country'): GeoFeature => ({
+      type: 'Feature',
+      properties: { id: `${layerId}-1`, kind, layerId, name_pl: 'x', name_en: 'x' },
+      geometry: { type: 'Polygon', coordinates: [] },
+    });
+
+    it('hides side and stroke and uses an invisible cap material for borders', () => {
+      const store = createStore<AppState>(createInitialState());
+      const compositor = new LayerCompositor(mockGlobe, store);
+      const border = feature('borders');
+
+      expect(polygonSideColorFn(border)).toBe('');
+      expect(polygonCapMaterialFn(border)?.visible).toBe(false);
+      // The stroke of borders is a real (semi-transparent) color and must stay
+      expect(polygonStrokeColorFn(border)).not.toBe('');
+      expect(polygonStrokeColorFn(border)).not.toBe('transparent');
+
+      compositor.destroy();
+    });
+
+    it('keeps normal cap/side colors for colored layers', () => {
+      const store = createStore<AppState>(createInitialState());
+      const compositor = new LayerCompositor(mockGlobe, store);
+      const lake = feature('lakes', 'lake');
+
+      expect(polygonCapMaterialFn(lake)).toBeUndefined();
+      expect(polygonSideColorFn(lake)).not.toBe('');
+      expect(polygonCapColorFn(lake)).not.toBe('transparent');
+
+      compositor.destroy();
+    });
+  });
+
+  describe('capitals sink', () => {
+    const capitalFeature = (id: string, lng: number, lat: number): GeoFeature => ({
+      type: 'Feature',
+      id,
+      properties: {
+        id,
+        kind: 'capital',
+        layerId: 'political-capitals',
+        name_pl: id,
+        name_en: id,
+        rank: { population: 1_000_000 },
+      },
+      geometry: { type: 'Point', coordinates: [lng, lat] },
+    });
+    const places: GeoFeatureCollection = {
+      type: 'FeatureCollection',
+      features: [
+        capitalFeature('cap-a', 21, 52),
+        capitalFeature('cap-b', 13, 52),
+        {
+          ...capitalFeature('mega-x', 139, 35),
+          properties: {
+            id: 'mega-x',
+            kind: 'megacity',
+            layerId: 'political-capitals',
+            name_pl: 'mega-x',
+            name_en: 'mega-x',
+            rank: { population: 20_000_000 },
+          },
+        },
+      ],
+    };
+
+    const setup = async (withSink = true) => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.resolve({ ok: true, json: async () => places })),
+      );
+      const layers = defaultLayersState();
+      for (const id of Object.keys(layers) as LayerId[]) {
+        layers[id] = { ...layers[id], enabled: id === 'capitals' || id === 'megacities' };
+      }
+      const store = createStore<AppState>({ ...createInitialState(), layers });
+      const compositor = new LayerCompositor(mockGlobe, store);
+      const sink = { setFeatures: vi.fn(), setColors: vi.fn() };
+      if (withSink) compositor.capitalsSink = sink;
+      await compositor.compose();
+      return { store, compositor, sink };
+    };
+
+    // Regression: capitals used to be one globe.gl mesh each (hundreds of draw calls).
+    it('sends capitals to the sink instead of globe.gl points', async () => {
+      const { compositor, sink } = await setup();
+
+      expect(sink.setFeatures).toHaveBeenCalledTimes(1);
+      const sent = sink.setFeatures.mock.calls[0]![0] as GeoFeature[];
+      expect(sent.map(f => f.properties.id)).toEqual(['cap-a', 'cap-b']);
+      expect(sent.every(f => f.properties.layerId === 'capitals')).toBe(true);
+      expect(mockGlobe.pointsData).not.toHaveBeenCalledWith(
+        expect.arrayContaining([expect.objectContaining({ id: 'cap-a' })]),
+      );
+
+      compositor.destroy();
+    });
+
+    it('falls back to regular points when no sink is attached', async () => {
+      const { compositor } = await setup(false);
+      expect(mockGlobe.pointsData).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.objectContaining({ id: 'cap-a' })]),
+      );
+      compositor.destroy();
+    });
+
+    it('does not resend unchanged capitals and empties the sink when the layer is disabled', async () => {
+      const { store, compositor, sink } = await setup();
+      await compositor.compose();
+      expect(sink.setFeatures).toHaveBeenCalledTimes(1);
+
+      store.set({
+        layers: { ...store.get().layers, capitals: { enabled: false } },
+      });
+      await compositor.compose();
+      expect(sink.setFeatures).toHaveBeenCalledTimes(2);
+      expect(sink.setFeatures.mock.calls[1]![0]).toEqual([]);
+
+      compositor.destroy();
+    });
+
+    // Countries and capitals are named by the hover tooltip and the info card, so the globe
+    // carries no permanent text for them (it collided with markers and selection halos).
+    it('puts no on-globe labels on capitals, but keeps them for other kinds', async () => {
+      const { compositor } = await setup();
+      const labelIds = (): string[] => {
+        const calls = vi.mocked(mockGlobe.labelsData).mock.calls;
+        const last = (calls[calls.length - 1]?.[0] ?? []) as GeoFeature[];
+        return last.map(f => f.properties.id);
+      };
+
+      expect(labelIds()).not.toContain('cap-a');
+      expect(labelIds()).not.toContain('cap-b');
+      expect(labelIds()).toContain('mega-x'); // megacities are still labelled
+
+      compositor.destroy();
+    });
+
+    it('does not label a hovered or selected capital in the normal mode', async () => {
+      const { store, compositor } = await setup();
+      store.set({
+        hovered: { id: 'cap-a', layerId: 'capitals' as LayerId, kind: 'capital' },
+        selection: { id: 'cap-b', layerId: 'capitals' as LayerId, kind: 'capital' },
+      });
+      const calls = vi.mocked(mockGlobe.labelsData).mock.calls;
+      const all = calls.flatMap(c => (c[0] as GeoFeature[]).map(f => f.properties.id));
+      expect(all).not.toContain('cap-a');
+      expect(all).not.toContain('cap-b');
+
+      compositor.destroy();
+    });
+
+    it('lets knowledge-map colors reach the sink', async () => {
+      const { store, compositor, sink } = await setup();
+      expect(sink.setColors).toHaveBeenLastCalledWith(null);
+
+      store.set({ knowledgeMap: true });
+      expect(sink.setColors).toHaveBeenLastCalledWith(expect.any(Object));
+
+      compositor.destroy();
+    });
   });
 
   it('hides labels when hiddenLabels is true', async () => {
@@ -439,11 +618,105 @@ describe('LayerCompositor', () => {
     // Wait a brief moment for any scheduled timers
     await new Promise(r => setTimeout(r, 80));
 
-    // polygonsData should NOT be re-called on hover - dynamic styles refresh instead!
+    // polygonsData should NOT be re-called on hover, and (regression) the main layers must not
+    // be restyled either: only the accessors set at construction are applied.
     expect(mockGlobe.polygonsData).toHaveBeenCalledTimes(1);
-    expect(mockGlobe.polygonCapColor).toHaveBeenCalledTimes(2);
+    expect(mockGlobe.polygonCapColor).toHaveBeenCalledTimes(1);
+    expect(mockGlobe.polygonSideColor).toHaveBeenCalledTimes(1);
+    expect(mockGlobe.polygonStrokeColor).toHaveBeenCalledTimes(1);
+    expect(mockGlobe.polygonAltitude).toHaveBeenCalledTimes(1);
+    expect(mockGlobe.pathColor).toHaveBeenCalledTimes(1);
+    expect(mockGlobe.pointColor).toHaveBeenCalledTimes(1);
 
     compositor.destroy();
+  });
+
+  describe('hover/selection label handling and feature lookup', () => {
+    it('re-applies label colors only when a visible label is hovered or selected', async () => {
+      const lakes: GeoFeatureCollection = {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            id: 'lake-1',
+            properties: {
+              id: 'lake-1',
+              kind: 'lake',
+              layerId: 'lakes',
+              name_pl: 'Jezioro',
+              name_en: 'Lake',
+              labelLat: 1,
+              labelLng: 1,
+              rank: { order: 1 },
+            },
+            geometry: {
+              type: 'Polygon',
+              coordinates: [
+                [
+                  [0, 0],
+                  [0, 2],
+                  [2, 2],
+                  [2, 0],
+                  [0, 0],
+                ],
+              ],
+            },
+          },
+        ],
+      };
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.resolve({ ok: true, json: async () => lakes })),
+      );
+      const layers = defaultLayersState();
+      for (const id of Object.keys(layers) as LayerId[]) {
+        layers[id] = { ...layers[id], enabled: id === 'lakes' };
+      }
+      const store = createStore<AppState>({ ...createInitialState(), layers });
+      const compositor = new LayerCompositor(mockGlobe, store);
+      await compositor.compose();
+      const before = vi.mocked(mockGlobe.labelColor).mock.calls.length;
+
+      // Hover a feature that has no visible label (countries/capitals carry none): no swap
+      store.set({
+        ...store.get(),
+        hovered: { id: 'c1', layerId: 'countriesTopN' as LayerId, kind: 'country' },
+      });
+      expect(vi.mocked(mockGlobe.labelColor).mock.calls.length).toBe(before);
+
+      // Hover a feature with a visible label: colors refreshed
+      store.set({
+        ...store.get(),
+        hovered: { id: 'lake-1', layerId: 'lakes' as LayerId, kind: 'lake' },
+      });
+      expect(vi.mocked(mockGlobe.labelColor).mock.calls.length).toBe(before + 1);
+
+      compositor.destroy();
+    });
+
+    it('resolves features of enabled layers by id and notifies after compose', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.resolve({ ok: true, json: async () => mockCountries })),
+      );
+      const store = createStore<AppState>({
+        ...createInitialState(),
+        layers: { ...defaultLayersState(), countriesTopN: { enabled: true, topN: 10 } },
+      });
+      const compositor = new LayerCompositor(mockGlobe, store);
+      const onComposed = vi.fn();
+      compositor.onComposed = onComposed;
+
+      expect(compositor.getFeatureById('c1')).toBeUndefined();
+      await compositor.compose();
+
+      expect(onComposed).toHaveBeenCalledTimes(1);
+      expect(compositor.getFeatureById('c1')?.properties.layerId).toBe('countriesTopN');
+      expect(compositor.getFeatureById('missing')).toBeUndefined();
+
+      compositor.destroy();
+      expect(compositor.getFeatureById('c1')).toBeUndefined();
+    });
   });
 
   it('handles MultiLineString and LineString path caching across multiple compose calls', async () => {

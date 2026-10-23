@@ -89,7 +89,6 @@ describe('Globe Instance Factory', () => {
     expect(context.atmosphere).toBeDefined();
     expect(context.clouds).toBeDefined();
     expect(context.quality).toBeDefined();
-    expect(context.bloom).toBeDefined();
     expect(context.graticule).toBeDefined();
     expect(context.fpsMonitor).toBeDefined();
     expect(typeof context.destroy).toBe('function');
@@ -101,19 +100,16 @@ describe('Globe Instance Factory', () => {
     expect(container.querySelector('canvas')).toBeNull();
   });
 
-  // Regression: createGlobe stopped passing fpsMonitor to BloomController, so a sustained
-  // FPS drop under an explicit (non-auto) preset never disabled bloom.
-  it('wires fpsMonitor degradation to bloom', () => {
+  // Bloom was removed (full-screen post-processing cost with no visible benefit): the globe must
+  // not expose a bloom controller or request the post-processing composer.
+  it('does not set up bloom post-processing', () => {
     const container = document.createElement('div');
     const store = createStore(createInitialState());
-    store.set({ quality: 'high' });
 
     const context = createGlobe(container, store, {});
-    expect(context.bloom.isEnabled()).toBe(true);
 
-    context.fpsMonitor.onDegrade?.();
-
-    expect(context.bloom.isEnabled()).toBe(false);
+    expect('bloom' in context).toBe(false);
+    expect(mockGlobeInstance.postProcessingComposer).not.toHaveBeenCalled();
     context.destroy();
   });
 });

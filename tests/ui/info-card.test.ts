@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { setLocale } from '@/i18n';
 import { createStore, createInitialState } from '@/state/store';
 import type { AppState } from '@/state/types';
 import { InfoCard } from '@/ui/info-card';
 import type { ObjectFacts } from '../../scripts/data/buildSearchAndFacts';
+
+// The app defaults to English; these tests assert Polish copy, so pin the locale explicitly.
+beforeEach(() => setLocale('pl'));
+const plState = () => ({ ...createInitialState(), locale: 'pl' as const });
 
 describe('InfoCard', () => {
   let container: HTMLElement;
@@ -37,7 +42,7 @@ describe('InfoCard', () => {
   });
 
   it('remains hidden when no feature is selected', () => {
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const card = new InfoCard({ container, store });
 
     const cardEl = container.querySelector('.tl-info-card');
@@ -47,7 +52,7 @@ describe('InfoCard', () => {
   });
 
   it('renders title, stats, and comparison when feature is selected in store', async () => {
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const card = new InfoCard({ container, store });
     await new Promise(r => setTimeout(r, 20));
 
@@ -80,7 +85,7 @@ describe('InfoCard', () => {
 
   it('clears selection when close button is clicked or Escape key pressed', async () => {
     const store = createStore<AppState>({
-      ...createInitialState(),
+      ...plState(),
       selection: { id: 'PL', layerId: 'countriesTopN', kind: 'country' },
     });
     const card = new InfoCard({ container, store });

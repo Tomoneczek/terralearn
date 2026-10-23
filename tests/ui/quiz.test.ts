@@ -1,10 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { setLocale } from '@/i18n';
 import { createStore, createInitialState } from '@/state/store';
 import type { AppState } from '@/state/types';
 import { QuizEngine } from '@/quiz/engine';
 import { QuizHud } from '@/ui/quiz/quiz-hud';
 import { QuizSummaryModal } from '@/ui/quiz/quiz-summary';
 import type { QuizRoundSummary } from '@/quiz/types';
+
+// The app defaults to English; these tests assert Polish copy, so pin the locale explicitly.
+beforeEach(() => setLocale('pl'));
+const plState = () => ({ ...createInitialState(), locale: 'pl' as const });
 
 describe('Quiz UI Components', () => {
   let container: HTMLElement;
@@ -13,7 +18,7 @@ describe('Quiz UI Components', () => {
   beforeEach(() => {
     container = document.createElement('div');
     document.body.appendChild(container);
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     engine = new QuizEngine(store);
   });
 

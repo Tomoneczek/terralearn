@@ -22,7 +22,7 @@ export interface LabelSelectionOptions {
 /**
  * Formats label text according to geography category (Polish name, elevation or population suffix).
  */
-export function formatLabelText(feat: GeoFeature, locale: 'pl' | 'en' = 'pl'): string {
+export function formatLabelText(feat: GeoFeature, locale: 'pl' | 'en' = 'en'): string {
   const fallbackId = feat.id !== undefined && feat.id !== null ? String(feat.id) : '';
   const name =
     locale === 'en'
@@ -107,7 +107,7 @@ export function getLabelDotRadius(feat: GeoFeature): number {
     case 'desert':
       return 0.0;
     case 'capital':
-      return 0.12;
+      return 0.0; // the capitals layer draws its own marker
     case 'megacity':
       return 0.15;
     case 'peak':

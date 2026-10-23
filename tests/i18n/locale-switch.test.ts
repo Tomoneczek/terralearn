@@ -13,9 +13,9 @@ describe('G11-02 Locale Switch Logic & Persistence', () => {
   });
 
   describe('AppState & Store', () => {
-    it('initializes with default locale pl', () => {
+    it('initializes with the English default locale', () => {
       const state = createInitialState();
-      expect(state.locale).toBe('pl');
+      expect(state.locale).toBe('en');
     });
 
     it('updates locale in store and notifies subscriber', () => {
@@ -31,11 +31,11 @@ describe('G11-02 Locale Switch Logic & Persistence', () => {
 
       store.set({
         ...store.get(),
-        locale: 'en',
+        locale: 'pl',
       });
 
-      expect(store.get().locale).toBe('en');
-      expect(notifiedLocale).toBe('en');
+      expect(store.get().locale).toBe('pl');
+      expect(notifiedLocale).toBe('pl');
     });
   });
 
@@ -54,7 +54,7 @@ describe('G11-02 Locale Switch Logic & Persistence', () => {
       expect(restored.locale).toBe('en');
     });
 
-    it('defaults to pl if stored state has no locale', () => {
+    it('defaults to en if stored state has no locale', () => {
       const raw = {
         version: 1,
         theme: 'dark',
@@ -68,7 +68,7 @@ describe('G11-02 Locale Switch Logic & Persistence', () => {
       expect(persisted?.locale).toBeUndefined();
 
       const restored = applyPersistedState(createInitialState(), persisted!);
-      expect(restored.locale).toBe('pl');
+      expect(restored.locale).toBe('en');
     });
   });
 

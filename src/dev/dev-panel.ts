@@ -1,4 +1,5 @@
 import './dev-panel.css';
+import type { FrameSummary } from './frame-stats';
 import {
   exportDevParams,
   listDevParams,
@@ -12,6 +13,10 @@ export interface DevStats {
   tier: string;
   drawCalls: number | null;
   altitude: number | null;
+  /** Rolling frame-time summary; omitted when not sampled. */
+  frame?: FrameSummary | null;
+  /** Draw calls per globe object type, e.g. `polygon 912 · path 342`. */
+  drawCallBreakdown?: string;
 }
 
 export interface DevPanelOptions {
@@ -138,7 +143,11 @@ export class DevPanel {
   private refreshStats(): void {
     const s = this.stats();
     const fmt = (n: number | null, digits = 0): string => (n === null ? 'n/a' : n.toFixed(digits));
-    this.statsEl.textContent = `FPS ${s.fps} · tier ${s.tier} · draw calls ${fmt(s.drawCalls)} · alt ${fmt(s.altitude, 2)}`;
+    const frame = s.frame
+      ? ` · frame avg ${s.frame.avgMs.toFixed(1)} / p95 ${s.frame.p95Ms.toFixed(1)} / max ${s.frame.maxMs.toFixed(1)} ms`
+      : '';
+    const breakdown = s.drawCallBreakdown ? `\n${s.drawCallBreakdown}` : '';
+    this.statsEl.textContent = `FPS ${s.fps} · tier ${s.tier} · draw calls ${fmt(s.drawCalls)} · alt ${fmt(s.altitude, 2)}${frame}${breakdown}`;
   }
 
   private reset(): void {

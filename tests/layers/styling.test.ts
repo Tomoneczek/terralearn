@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { setLocale } from '@/i18n';
 import {
   getPolygonAltitude,
   getPolygonCapColor,
@@ -20,6 +21,9 @@ import {
 } from '@/globe/labels';
 import { getLayer } from '@/layers/registry';
 import type { GeoFeature } from '@/globe/data-loader';
+
+// The app defaults to English; these tests assert Polish copy, so pin the locale explicitly.
+beforeEach(() => setLocale('pl'));
 
 describe('Layer Styling and Altitude Layering', () => {
   const mockCountry: GeoFeature = {
@@ -229,7 +233,20 @@ describe('Layer Styling and Altitude Layering', () => {
 
     it('returns stroke width and elevated altitude', () => {
       expect(getPathStroke(mockRiver, getLayer('rivers'))).toBe(1.5);
-      expect(getPathAltitude()).toBe(0.008);
+      expect(getPathAltitude()).toBe(0.014);
+
+      // Regression: rivers sat below the country caps, so the caps won every pointer pick.
+      for (const layerId of [
+        'countriesTopN',
+        'borders',
+        'lakes',
+        'landforms',
+        'deserts',
+        'marine',
+      ]) {
+        const feat = { ...mockCountry, properties: { ...mockCountry.properties, layerId } };
+        expect(getPathAltitude()).toBeGreaterThan(getPolygonAltitude(feat, false, false));
+      }
     });
 
     it('scales river stroke width and color brightness by length rank', () => {
@@ -312,20 +329,25 @@ describe('Layer Styling and Altitude Layering', () => {
 
   describe('Label Formatting and Decluttering', () => {
     it('formats names with altitude suffix for mountains and peaks', () => {
-      expect(formatLabelText(mockEverest)).toBe('Himalaje (8848 m)');
+      // English is the default locale; Polish names are used when asked for explicitly
+      expect(formatLabelText(mockEverest)).toBe('Himalayas (8848 m)');
+      expect(formatLabelText(mockEverest, 'pl')).toBe('Himalaje (8848 m)');
       expect(formatLabelText(mockPeak)).toBe('Mount Everest (8848 m)');
     });
 
     it('formats population in millions for megacities', () => {
-      expect(formatLabelText(mockTokyo)).toBe('Tokio (37.4M)');
-      expect(formatLabelText(mockWarsaw)).toBe('Warszawa');
+      expect(formatLabelText(mockTokyo)).toBe('Tokyo (37.4M)');
+      expect(formatLabelText(mockTokyo, 'pl')).toBe('Tokio (37.4M)');
+      expect(formatLabelText(mockWarsaw, 'pl')).toBe('Warszawa');
     });
 
     it('returns typography scale and dot sizes based on feature kind', () => {
       expect(getLabelSize(mockCountry)).toBe(0.45);
       expect(getLabelSize(mockWarsaw)).toBe(0.38);
       expect(getLabelDotRadius(mockCountry)).toBe(0); // No dot for country polygons
-      expect(getLabelDotRadius(mockWarsaw)).toBe(0.12); // Dot for cities
+      // Capitals draw their own marker (CapitalsLayer), so the label carries no dot
+      expect(getLabelDotRadius(mockWarsaw)).toBe(0);
+      expect(getLabelDotRadius(mockTokyo)).toBeGreaterThan(0); // megacities keep the dot
       expect(getLabelAltitude(mockPeak)).toBe(0.03);
     });
 

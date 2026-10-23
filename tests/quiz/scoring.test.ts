@@ -1,5 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { setLocale } from '@/i18n';
 import { calculatePoints, getBadgeForScore } from '@/quiz/scoring';
+
+// The app defaults to English; these tests assert Polish copy, so pin the locale explicitly.
+beforeEach(() => setLocale('pl'));
 
 describe('Quiz Scoring', () => {
   it('awards 1200 points for a perfect hit within 50 km', () => {

@@ -45,13 +45,13 @@ describe('G11-02 UI Locale Switch Components', () => {
 
       const select = container.querySelector<HTMLSelectElement>('#select-language');
       expect(select).not.toBeNull();
-      expect(select?.value).toBe('pl');
+      expect(select?.value).toBe('en');
 
-      // Change to English
-      select!.value = 'en';
+      // Change to Polish
+      select!.value = 'pl';
       select!.dispatchEvent(new Event('change'));
 
-      expect(store.get().locale).toBe('en');
+      expect(store.get().locale).toBe('pl');
 
       sidebar.destroy();
     });

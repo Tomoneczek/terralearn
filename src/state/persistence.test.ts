@@ -84,4 +84,19 @@ describe('State Persistence', () => {
     clearPersistedState();
     expect(loadPersistedState()).toBeNull();
   });
+
+  it('lets a saved layer choice override the (now off) Top-N defaults', () => {
+    const base = createInitialState();
+    expect(base.layers.lakes.enabled).toBe(false);
+
+    const merged = applyPersistedState(base, {
+      layers: { lakes: { enabled: true, topN: 35 }, borders: { enabled: false } },
+    });
+
+    expect(merged.layers.lakes).toEqual({ enabled: true, topN: 35 });
+    expect(merged.layers.borders.enabled).toBe(false);
+    // Layers the user never touched keep their defaults
+    expect(merged.layers.mountains.enabled).toBe(false);
+    expect(merged.layers.capitals.enabled).toBe(true);
+  });
 });

@@ -20,7 +20,7 @@ export const pl: Dictionary = {
     clouds: 'Chmury 3D',
     quality: 'Jakość grafiki',
     qualityAuto: 'Automatyczna (FPS)',
-    qualityHigh: 'Wysoka (4K, Bloom)',
+    qualityHigh: 'Wysoka (4K)',
     qualityMedium: 'Średnia (Zrównoważona)',
     qualityLow: 'Niska (Wydajność)',
     graticule: 'Siatka kartograficzna',

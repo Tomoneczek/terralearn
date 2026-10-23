@@ -86,7 +86,7 @@ export class InfoCard {
   }
 
   private renderContent(id: string): void {
-    const locale = this.store.get().locale ?? 'pl';
+    const locale = this.store.get().locale ?? 'en';
     if (getLocale() !== locale) {
       setLocale(locale);
     }

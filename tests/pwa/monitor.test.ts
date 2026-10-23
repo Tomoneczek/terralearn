@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { setLocale } from '@/i18n';
 import { initOfflineMonitor } from '@/pwa/monitor';
 import * as toastModule from '@/ui/toast';
+
+// The app defaults to English; these tests assert Polish copy, so pin the locale explicitly.
+beforeEach(() => setLocale('pl'));
 
 describe('G11-03 PWA Offline Monitor', () => {
   beforeEach(() => {

@@ -1,3 +1,4 @@
+import { DoubleSide, MeshBasicMaterial, type Material } from 'three';
 import type { Store, AppState } from '@/state/types';
 import {
   LAYER_DEFINITIONS,
@@ -17,13 +18,6 @@ import {
 } from '@/layers';
 import { loadSrsState, type SrsState } from '@/quiz/srs';
 import { loadGeoData, type GeoFeature } from './data-loader';
-import {
-  formatLabelText,
-  getLabelSize,
-  getLabelDotRadius,
-  getLabelAltitude,
-  selectVisibleLabels,
-} from './labels';
 
 export interface PathItem {
   id: string;
@@ -41,15 +35,21 @@ export interface RingItem {
   color?: string | ((t: number) => string);
 }
 
+/** Receives the capitals instead of globe.gl's per-point meshes (see CapitalsLayer). */
+export interface CapitalsSink {
+  setFeatures(features: readonly GeoFeature[]): void;
+  setColors(overrides: Record<string, string> | null): void;
+}
+
 export interface GlobeCompositorTarget {
   polygonsData(data: GeoFeature[]): this;
   pathsData(data: PathItem[]): this;
   pointsData(data: GeoFeature[]): this;
-  labelsData(data: GeoFeature[]): this;
   ringsData?(data: RingItem[]): this;
 
   polygonCapColor(fn: (d: GeoFeature) => string): this;
   polygonSideColor(fn: (d: GeoFeature) => string): this;
+  polygonCapMaterial?(fn: (d: GeoFeature) => Material | undefined): this;
   polygonStrokeColor(fn: (d: GeoFeature) => string): this;
   polygonAltitude(fn: (d: GeoFeature) => number): this;
   polygonsTransitionDuration?(ms: number): this;
@@ -73,15 +73,6 @@ export interface GlobeCompositorTarget {
   pointAltitude(fn: (d: GeoFeature) => number): this;
   pointsTransitionDuration?(ms: number): this;
 
-  labelLat(fn: (d: GeoFeature) => number): this;
-  labelLng(fn: (d: GeoFeature) => number): this;
-  labelText(fn: (d: GeoFeature) => string): this;
-  labelSize(fn: (d: GeoFeature) => number): this;
-  labelDotRadius(fn: (d: GeoFeature) => number): this;
-  labelAltitude(fn: (d: GeoFeature) => number): this;
-  labelColor(fn: (d: GeoFeature) => string): this;
-  labelsTransitionDuration?(ms: number): this;
-
   ringLat?(fn: (d: RingItem) => number): this;
   ringLng?(fn: (d: RingItem) => number): this;
   ringAltitude?(fn: (d: RingItem) => number): this;
@@ -98,94 +89,91 @@ export class LayerCompositor {
   private readonly unsubs: (() => void)[] = [];
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private isDestroyed = false;
-  private lastLabelCandidates: GeoFeature[] = [];
+  private lastFeatures: GeoFeature[] = [];
 
   // Path item instance cache by key, ensuring stable identity and preserving __threeObjPath
   private readonly pathItemCache = new Map<string, PathItem>();
   private lastPolygons: GeoFeature[] = [];
   private lastPaths: PathItem[] = [];
   private lastPoints: GeoFeature[] = [];
-  private lastLabels: GeoFeature[] = [];
   private srsState: SrsState = {};
+  // Features of all enabled layers by id, used to resolve hover/selection geometry
+  private featureIndex = new Map<string, GeoFeature>();
+  /** Invoked after every compose so dependents can re-resolve features. */
+  public onComposed: (() => void) | null = null;
+  /** Where capitals are rendered; without a sink they fall back to regular globe points. */
+  public capitalsSink: CapitalsSink | null = null;
+  private lastCapitalKey = '\u0000';
 
   // Stable accessor references so they can be re-applied on hover without recreating data
+  // Hover/selection highlighting is drawn by HighlightOverlay, so the accessors below depend only
+  // on layer style and knowledge-map state; pointer moves never re-evaluate them.
   private readonly polygonCapColorAccessor = (feat: GeoFeature): string => {
     const state = this.store.get();
-    const isSelected = state.selection?.id === feat.properties.id;
-    const isHovered = state.hovered?.id === feat.properties.id;
     const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
 
-    if (state.knowledgeMap && !isSelected && !isHovered) {
+    if (state.knowledgeMap) {
       const srsColor = getSrsColor(feat.properties.id, this.srsState, 'fill');
       if (srsColor) return srsColor;
     }
-    return getPolygonCapColor(feat, isSelected, isHovered, def);
+    return getPolygonCapColor(feat, false, false, def);
   };
 
+  // Fully transparent parts are expensive for nothing: globe.gl builds side geometry and draws
+  // an (invisible) stroke for any truthy color string. An empty string skips them entirely.
   private readonly polygonSideColorAccessor = (feat: GeoFeature): string => {
-    const state = this.store.get();
-    const isSelected = state.selection?.id === feat.properties.id;
-    const isHovered = state.hovered?.id === feat.properties.id;
     const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
-    return getPolygonSideColor(feat, isSelected, isHovered, def);
+    const color = getPolygonSideColor(feat, false, false, def);
+    return color === 'transparent' ? '' : color;
   };
+
+  // Transparent caps stay in the scene for pointer picking, but with a non-rendered material:
+  // three.js skips `material.visible === false` when drawing yet still raycasts the mesh.
+  // DoubleSide like globe.gl's default cap material: raycasting skips back faces otherwise.
+  private readonly invisibleCapMaterial = new MeshBasicMaterial({
+    visible: false,
+    side: DoubleSide,
+  });
+  private readonly polygonCapMaterialAccessor = (feat: GeoFeature): Material | undefined =>
+    this.polygonCapColorAccessor(feat) === 'transparent' ? this.invisibleCapMaterial : undefined;
 
   private readonly polygonStrokeColorAccessor = (feat: GeoFeature): string => {
     const state = this.store.get();
-    const isSelected = state.selection?.id === feat.properties.id;
-    const isHovered = state.hovered?.id === feat.properties.id;
     const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
 
-    if (state.knowledgeMap && !isSelected && !isHovered) {
+    if (state.knowledgeMap) {
       const srsStroke = getSrsColor(feat.properties.id, this.srsState, 'stroke');
       if (srsStroke) return srsStroke;
     }
-    return getPolygonStrokeColor(feat, isSelected, isHovered, def);
+    const color = getPolygonStrokeColor(feat, false, false, def);
+    return color === 'transparent' ? '' : color;
   };
 
   private readonly polygonAltitudeAccessor = (feat: GeoFeature): number => {
-    const state = this.store.get();
-    const isSelected = state.selection?.id === feat.properties.id;
-    const isHovered = state.hovered?.id === feat.properties.id;
     const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
-    return getPolygonAltitude(feat, isSelected, isHovered, def);
+    return getPolygonAltitude(feat, false, false, def);
   };
 
   private readonly pathColorAccessor = (item: PathItem): string => {
     const state = this.store.get();
-    const isSelected = state.selection?.id === item.feature.properties.id;
-    const isHovered = state.hovered?.id === item.feature.properties.id;
     const def = this.layerDefsMap.get(item.feature.properties.layerId as LayerId);
 
-    if (state.knowledgeMap && !isSelected && !isHovered) {
+    if (state.knowledgeMap) {
       const srsPath = getSrsColor(item.feature.properties.id, this.srsState, 'path');
       if (srsPath) return srsPath;
     }
-    return getPathColor(item.feature, isSelected, isHovered, def);
+    return getPathColor(item.feature, false, false, def);
   };
 
   private readonly pointColorAccessor = (feat: GeoFeature): string => {
     const state = this.store.get();
-    const isSelected = state.selection?.id === feat.properties.id;
-    const isHovered = state.hovered?.id === feat.properties.id;
     const def = this.layerDefsMap.get(feat.properties.layerId as LayerId);
 
-    if (state.knowledgeMap && !isSelected && !isHovered) {
+    if (state.knowledgeMap) {
       const srsPoint = getSrsColor(feat.properties.id, this.srsState, 'point');
       if (srsPoint) return srsPoint;
     }
-    return getPointColor(feat, isSelected, isHovered, def);
-  };
-
-  private readonly labelColorAccessor = (feat: GeoFeature): string => {
-    const state = this.store.get();
-    if (state.selection?.id === feat.properties.id) {
-      return 'rgba(255, 220, 100, 1)';
-    }
-    if (state.hovered?.id === feat.properties.id) {
-      return 'rgba(180, 240, 255, 1)';
-    }
-    return 'rgba(255, 255, 255, 0.95)';
+    return getPointColor(feat, false, false, def);
   };
 
   constructor(globe: GlobeCompositorTarget, store: Store<AppState>) {
@@ -204,7 +192,6 @@ export class LayerCompositor {
   private configureAccessors(): void {
     // Smooth entry transitions for newly added items (cached items do not re-animate)
     this.globe.polygonsTransitionDuration?.(400);
-    this.globe.labelsTransitionDuration?.(0);
     this.globe.pathsTransitionDuration?.(0);
     this.globe.pathTransitionDuration?.(400);
     this.globe.pointsTransitionDuration?.(400);
@@ -220,6 +207,7 @@ export class LayerCompositor {
 
     // Polygons
     this.globe.polygonCapColor(this.polygonCapColorAccessor);
+    this.globe.polygonCapMaterial?.(this.polygonCapMaterialAccessor);
     this.globe.polygonSideColor(this.polygonSideColorAccessor);
     this.globe.polygonStrokeColor(this.polygonStrokeColorAccessor);
     this.globe.polygonAltitude(this.polygonAltitudeAccessor);
@@ -253,37 +241,16 @@ export class LayerCompositor {
       return getPointRadius(feat, def);
     });
     this.globe.pointAltitude(feat => getPointAltitude(feat));
-
-    // Labels
-    this.globe.labelLat(feat => {
-      if (typeof feat.properties.labelLat === 'number') return feat.properties.labelLat;
-      const coords = feat.geometry.coordinates as number[];
-      return Number(coords[1] ?? 0);
-    });
-    this.globe.labelLng(feat => {
-      if (typeof feat.properties.labelLng === 'number') return feat.properties.labelLng;
-      const coords = feat.geometry.coordinates as number[];
-      return Number(coords[0] ?? 0);
-    });
-    this.globe.labelText(feat => formatLabelText(feat, this.store.get().locale));
-    this.globe.labelSize(feat => getLabelSize(feat));
-    this.globe.labelDotRadius(feat => getLabelDotRadius(feat));
-    this.globe.labelAltitude(feat => getLabelAltitude(feat));
-    this.globe.labelColor(this.labelColorAccessor);
   }
 
   private bindStore(): void {
     // 1. Data re-composition ONLY when layer activation or topN changes
     const unsubLayers = this.store.subscribe(
-      s => ({
-        layers: s.layers,
-        hiddenLabels: s.hiddenLabels,
-      }),
+      s => ({ layers: s.layers }),
       () => {
         this.scheduleCompose();
       },
       (a, b) => {
-        if (a.hiddenLabels !== b.hiddenLabels) return false;
         const keysA = Object.keys(a.layers) as LayerId[];
         const keysB = Object.keys(b.layers) as LayerId[];
         if (keysA.length !== keysB.length) return false;
@@ -296,23 +263,12 @@ export class LayerCompositor {
     );
     this.unsubs.push(unsubLayers);
 
-    // 2. Dynamic style refresh (hover/select) and selection halo without re-loading data
+    // 2. Selection halo. Hover/select highlighting of the polygon/path/point itself is drawn by
+    // HighlightOverlay, so the main layers are never restyled here.
     const unsubInteractions = this.store.subscribe(
-      s => ({
-        sel: s.selection,
-        hov: s.hovered?.id,
-        hideSelectionLabel: s.hideSelectionLabel,
-      }),
-      () => {
-        this.refreshDynamicStyles();
-        this.updateSelectionHalo();
-      },
-      (a, b) =>
-        a.sel?.id === b.sel?.id &&
-        a.sel?.lat === b.sel?.lat &&
-        a.sel?.lng === b.sel?.lng &&
-        a.hov === b.hov &&
-        a.hideSelectionLabel === b.hideSelectionLabel,
+      s => s.selection,
+      () => this.updateSelectionHalo(),
+      (a, b) => a?.id === b?.id && a?.lat === b?.lat && a?.lng === b?.lng,
     );
     this.unsubs.push(unsubInteractions);
 
@@ -327,15 +283,6 @@ export class LayerCompositor {
       },
     );
     this.unsubs.push(unsubKnowledge);
-
-    // 4. Locale change updates label language on globe
-    const unsubLocale = this.store.subscribe(
-      s => s.locale,
-      () => {
-        this.scheduleCompose();
-      },
-    );
-    this.unsubs.push(unsubLocale);
 
     const handleSrsUpdated = (): void => {
       if (this.store.get().knowledgeMap) {
@@ -374,24 +321,13 @@ export class LayerCompositor {
 
     // Fast material & altitude refresh without recreating meshes
     this.globe.polygonCapColor(this.polygonCapColorAccessor);
+    this.globe.polygonCapMaterial?.(this.polygonCapMaterialAccessor);
     this.globe.polygonSideColor(this.polygonSideColorAccessor);
     this.globe.polygonStrokeColor(this.polygonStrokeColorAccessor);
     this.globe.polygonAltitude(this.polygonAltitudeAccessor);
     this.globe.pathColor(this.pathColorAccessor);
     this.globe.pointColor(this.pointColorAccessor);
-    this.globe.labelColor(this.labelColorAccessor);
-
-    // If quiz mode (hiddenLabels) is on, reveal label only for hovered/selected
-    const state = this.store.get();
-    if (state.hiddenLabels && this.lastLabelCandidates.length > 0) {
-      const mergedLabels = selectVisibleLabels(this.lastLabelCandidates, {
-        hiddenLabels: true,
-        hideSelectionLabel: state.hideSelectionLabel,
-        selectedId: state.selection?.id,
-        hoveredId: state.hovered?.id,
-      });
-      this.globe.labelsData(mergedLabels);
-    }
+    this.updateCapitalColors();
   }
 
   public scheduleCompose(debounceMs = 60): void {
@@ -434,6 +370,7 @@ export class LayerCompositor {
     const mergedPaths: PathItem[] = [];
     const mergedPoints: GeoFeature[] = [];
     const labelCandidates: GeoFeature[] = [];
+    let capitalFeatures: GeoFeature[] = [];
 
     // Load data for all enabled layers in parallel
     const dataPromises = enabledLayers.map(async def => {
@@ -482,7 +419,11 @@ export class LayerCompositor {
       if (def.kind === 'polygon') {
         mergedPolygons.push(...filtered);
       } else if (def.kind === 'point') {
-        mergedPoints.push(...filtered);
+        if (def.id === 'capitals' && this.capitalsSink) {
+          capitalFeatures = filtered;
+        } else {
+          mergedPoints.push(...filtered);
+        }
       } else if (def.kind === 'path') {
         for (const feat of filtered) {
           if (feat.geometry.type === 'LineString') {
@@ -527,14 +468,10 @@ export class LayerCompositor {
     }
 
     this.lastLabelCandidates = labelCandidates;
+    this.featureIndex = new Map(labelCandidates.map(f => [f.properties.id, f]));
+    this.syncCapitals(capitalFeatures);
 
-    const mergedLabels = selectVisibleLabels(labelCandidates, {
-      hiddenLabels: state.hiddenLabels,
-      hideSelectionLabel: state.hideSelectionLabel,
-      selectedId: state.selection?.id,
-      hoveredId: state.hovered?.id,
-      maxLabels: 25,
-    });
+    const mergedLabels = this.selectLabels(labelCandidates);
 
     let polygonsUpdated = false;
     let pathsUpdated = false;
@@ -565,6 +502,8 @@ export class LayerCompositor {
       labelsUpdated = true;
     }
 
+    this.onComposed?.();
+
     return {
       polygonsCount: mergedPolygons.length,
       pathsCount: mergedPaths.length,
@@ -575,6 +514,57 @@ export class LayerCompositor {
       pointsUpdated,
       labelsUpdated,
     };
+  }
+
+  private syncCapitals(features: GeoFeature[]): void {
+    if (!this.capitalsSink) return;
+    const key = features.map(f => f.properties.id).join('|');
+    if (key !== this.lastCapitalKey) {
+      this.lastCapitalKey = key;
+      this.capitalsSink.setFeatures(features);
+    }
+    this.updateCapitalColors();
+  }
+
+  /** Knowledge-map mastery colors for capitals (they are no longer globe.gl points). */
+  private updateCapitalColors(): void {
+    if (!this.capitalsSink) return;
+    const state = this.store.get();
+    if (!state.knowledgeMap) {
+      this.capitalsSink.setColors(null);
+      return;
+    }
+    const overrides: Record<string, string> = {};
+    for (const f of this.lastLabelCandidates) {
+      if (f.properties.layerId !== 'capitals') continue;
+      const color = getSrsColor(f.properties.id, this.srsState, 'point');
+      if (color) overrides[f.properties.id] = color;
+    }
+    this.capitalsSink.setColors(overrides);
+  }
+
+  /**
+   * Label selection. Countries and capitals carry no on-globe text in the normal mode: the hover
+   * tooltip and the info card already name them, and 3D text there collides with markers and
+   * selection halos. The learning mode (`hiddenLabels`) still reveals the hovered/selected one.
+   */
+  private selectLabels(candidates: readonly GeoFeature[]): GeoFeature[] {
+    const state = this.store.get();
+    const eligible = state.hiddenLabels
+      ? candidates
+      : candidates.filter(f => !UNLABELED_KINDS.has(f.properties.kind));
+    return selectVisibleLabels(eligible, {
+      hiddenLabels: state.hiddenLabels,
+      hideSelectionLabel: state.hideSelectionLabel,
+      selectedId: state.selection?.id,
+      hoveredId: state.hovered?.id,
+      maxLabels: 25,
+    });
+  }
+
+  /** Feature of an enabled layer by id (for highlight geometry). */
+  public getFeatureById(id: string): GeoFeature | undefined {
+    return this.featureIndex.get(id);
   }
 
   private areFeaturesIdentical(a: GeoFeature[], b: GeoFeature[]): boolean {
@@ -604,6 +594,10 @@ export class LayerCompositor {
     }
     this.unsubs.length = 0;
     this.pathItemCache.clear();
+    this.invisibleCapMaterial.dispose();
+    this.featureIndex.clear();
+    this.onComposed = null;
+    this.capitalsSink = null;
     this.lastPolygons = [];
     this.lastPaths = [];
     this.lastPoints = [];

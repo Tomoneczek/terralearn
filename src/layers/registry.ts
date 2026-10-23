@@ -9,7 +9,7 @@ export const LAYER_DEFINITIONS: readonly LayerDef[] = [
     icon: 'droplets',
     kind: 'polygon',
     source: '/data/lakes.json',
-    defaultEnabled: true,
+    defaultEnabled: false,
     topN: {
       min: 1,
       max: 50,
@@ -49,7 +49,7 @@ export const LAYER_DEFINITIONS: readonly LayerDef[] = [
     icon: 'mountain',
     kind: 'polygon',
     source: '/data/regions.json',
-    defaultEnabled: true,
+    defaultEnabled: false,
     topN: {
       min: 1,
       max: 30,
@@ -165,7 +165,7 @@ export const LAYER_DEFINITIONS: readonly LayerDef[] = [
     icon: 'flag',
     kind: 'polygon',
     source: '/data/countries.json',
-    defaultEnabled: true,
+    defaultEnabled: false,
     topN: {
       min: 1,
       max: 100,

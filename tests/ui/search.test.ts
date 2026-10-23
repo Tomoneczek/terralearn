@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { setLocale } from '@/i18n';
 import { createStore, createInitialState } from '@/state/store';
 import type { AppState } from '@/state/types';
 import { SearchOverlay } from '@/ui/search';
 import type { SearchIndexItem } from '@/geo/search';
+
+// The app defaults to English; these tests assert Polish copy, so pin the locale explicitly.
+beforeEach(() => setLocale('pl'));
+const plState = () => ({ ...createInitialState(), locale: 'pl' as const });
 
 describe('SearchOverlay', () => {
   let container: HTMLElement;
@@ -47,7 +52,7 @@ describe('SearchOverlay', () => {
   });
 
   it('renders input, placeholder, and kbd badge', () => {
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const search = new SearchOverlay({ container, store });
 
     const input = container.querySelector<HTMLInputElement>('.tl-search-input');
@@ -63,9 +68,9 @@ describe('SearchOverlay', () => {
   it('typing filters results and selecting an item activates layer and selection', async () => {
     const onSelect = vi.fn();
     const store = createStore<AppState>({
-      ...createInitialState(),
+      ...plState(),
       layers: {
-        ...createInitialState().layers,
+        ...plState().layers,
         lakes: { enabled: false, topN: 10 },
       },
     });
@@ -93,7 +98,7 @@ describe('SearchOverlay', () => {
   });
 
   it('closes dropdown on Escape key', async () => {
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const search = new SearchOverlay({ container, store });
     await new Promise(r => setTimeout(r, 20));
 
@@ -112,7 +117,7 @@ describe('SearchOverlay', () => {
 
   it('navigates search results with ArrowDown/ArrowUp and selects via Enter', async () => {
     const onSelect = vi.fn();
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const search = new SearchOverlay({ container, store, onSelect });
     await new Promise(r => setTimeout(r, 20));
 
@@ -132,7 +137,7 @@ describe('SearchOverlay', () => {
   });
 
   it('displays empty state for unmatched query and closes on empty input or outside click', async () => {
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const search = new SearchOverlay({ container, store });
     await new Promise(r => setTimeout(r, 20));
 
@@ -163,7 +168,7 @@ describe('SearchOverlay', () => {
 
   it('handles global shortcut "/" and formats items in English locale', async () => {
     const store = createStore<AppState>({
-      ...createInitialState(),
+      ...plState(),
       locale: 'en',
     });
     const search = new SearchOverlay({ container, store });
@@ -192,7 +197,7 @@ describe('SearchOverlay', () => {
       vi.fn(() => Promise.reject(new Error('Network error loading index'))),
     );
 
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const search = new SearchOverlay({ container, store });
     await new Promise(r => setTimeout(r, 20));
 

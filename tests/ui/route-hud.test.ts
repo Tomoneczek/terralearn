@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { setLocale } from '@/i18n';
 import { createStore, createInitialState } from '@/state/store';
 import type { AppState } from '@/state/types';
 import { RouteHud } from '@/ui/route-hud';
+
+// The app defaults to English; these tests assert Polish copy, so pin the locale explicitly.
+beforeEach(() => setLocale('pl'));
+const plState = () => ({ ...createInitialState(), locale: 'pl' as const });
 
 describe('RouteHud component', () => {
   let container: HTMLElement;
@@ -12,7 +17,7 @@ describe('RouteHud component', () => {
   });
 
   it('remains hidden when route comparison is inactive', () => {
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const hud = new RouteHud({ container, store });
 
     const el = container.querySelector('.tl-route-hud');
@@ -23,7 +28,7 @@ describe('RouteHud component', () => {
   });
 
   it('displays prompt when activated without points', () => {
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const hud = new RouteHud({ container, store });
 
     store.set({
@@ -45,7 +50,7 @@ describe('RouteHud component', () => {
   });
 
   it('displays start point badge when point A is selected', () => {
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const hud = new RouteHud({ container, store });
 
     store.set({
@@ -67,7 +72,7 @@ describe('RouteHud component', () => {
   });
 
   it('calculates and renders distances, difference, and cards when both points are set', () => {
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const hud = new RouteHud({ container, store });
 
     store.set({
@@ -107,7 +112,7 @@ describe('RouteHud component', () => {
 
   it('clicking a preset route sets store state and flies camera', () => {
     const onFlyTo = vi.fn();
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const hud = new RouteHud({ container, store, onFlyTo });
 
     store.set({
@@ -133,7 +138,7 @@ describe('RouteHud component', () => {
   });
 
   it('clicking clear resets endpoints but leaves tool active', () => {
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const hud = new RouteHud({ container, store });
 
     store.set({
@@ -156,7 +161,7 @@ describe('RouteHud component', () => {
   });
 
   it('clicking close button deactivates route comparison', () => {
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const hud = new RouteHud({ container, store });
 
     store.set({
@@ -176,7 +181,7 @@ describe('RouteHud component', () => {
   });
 
   it('updates points from globe clicks sequentially', () => {
-    const store = createStore<AppState>(createInitialState());
+    const store = createStore<AppState>(plState());
     const hud = new RouteHud({ container, store });
 
     store.set({

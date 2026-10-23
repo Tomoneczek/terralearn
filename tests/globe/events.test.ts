@@ -2,7 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { createStore, createInitialState } from '@/state/store';
 import type { AppState } from '@/state/types';
 import type { LayerId } from '@/layers';
-import { attachGlobeEvents, type GlobeEventsDelegate } from '@/globe/events';
+import { attachGlobeEvents, resolveFeature, type GlobeEventsDelegate } from '@/globe/events';
+import { HoverArbiter } from '@/globe/hover-arbiter';
 import type { GeoFeature } from '@/globe/data-loader';
 
 describe('Globe Events & Picking', () => {
@@ -11,7 +12,11 @@ describe('Globe Events & Picking', () => {
     triggerPolygonClick: (obj: object) => void;
     triggerPolygonHover: (obj: object | null) => void;
     triggerGlobeClick: (coords: { lat: number; lng: number }) => void;
+    triggerPathClick: (obj: object) => void;
+    triggerPathHover: (obj: object | null) => void;
   } {
+    let pathClickCb: ((obj: object) => void) | undefined;
+    let pathHoverCb: ((obj: object | null) => void) | undefined;
     let polygonClickCb: ((obj: object) => void) | undefined;
     let polygonHoverCb: ((obj: object | null) => void) | undefined;
     let globeClickCb: ((coords: { lat: number; lng: number }) => void) | undefined;
@@ -25,8 +30,14 @@ describe('Globe Events & Picking', () => {
         polygonHoverCb = fn;
         return globe;
       }),
-      onPathClick: vi.fn().mockReturnThis(),
-      onPathHover: vi.fn().mockReturnThis(),
+      onPathClick: vi.fn((fn: (obj: object) => void) => {
+        pathClickCb = fn;
+        return globe;
+      }),
+      onPathHover: vi.fn((fn: (obj: object | null) => void) => {
+        pathHoverCb = fn;
+        return globe;
+      }),
       onPointClick: vi.fn().mockReturnThis(),
       onPointHover: vi.fn().mockReturnThis(),
       onGlobeClick: vi.fn((fn: (coords: { lat: number; lng: number }) => void) => {
@@ -40,6 +51,8 @@ describe('Globe Events & Picking', () => {
       triggerPolygonClick: (obj: object) => polygonClickCb?.(obj),
       triggerPolygonHover: (obj: object | null) => polygonHoverCb?.(obj),
       triggerGlobeClick: (coords: { lat: number; lng: number }) => globeClickCb?.(coords),
+      triggerPathClick: (obj: object) => pathClickCb?.(obj),
+      triggerPathHover: (obj: object | null) => pathHoverCb?.(obj),
     };
   }
 
@@ -124,5 +137,114 @@ describe('Globe Events & Picking', () => {
 
     expect(store.get().globeClick).toEqual({ lat: -15.5, lng: 45.2 });
     expect(store.get().selection).toBeNull();
+  });
+
+  // Regression: globe.gl passes paths as { id, feature, points } wrappers, which used to be
+  // ignored because the handlers looked for `properties.id` on the wrapper itself.
+  describe('path wrappers', () => {
+    const river: GeoFeature = {
+      type: 'Feature',
+      properties: {
+        id: 'nile',
+        layerId: 'rivers',
+        kind: 'river',
+        name_pl: 'Nil',
+        name_en: 'Nile',
+      },
+      geometry: { type: 'LineString', coordinates: [] },
+    };
+    const pathItem = { id: 'nile-seg-0', feature: river, points: [] };
+
+    it('sets hovered and clears it for a hovered path wrapper', () => {
+      const store = createStore<AppState>(createInitialState());
+      const { globe, triggerPathHover } = createMockGlobe();
+      attachGlobeEvents(globe, store);
+
+      triggerPathHover(pathItem);
+      expect(store.get().hovered?.id).toBe('nile');
+      expect(store.get().hovered?.kind).toBe('river');
+
+      triggerPathHover(null);
+      expect(store.get().hovered).toBeNull();
+    });
+
+    it('selects the feature behind a clicked path wrapper', () => {
+      const store = createStore<AppState>(createInitialState());
+      const { globe, triggerPathClick } = createMockGlobe();
+      attachGlobeEvents(globe, store);
+
+      triggerPathClick(pathItem);
+      expect(store.get().selection?.id).toBe('nile');
+    });
+
+    it('resolveFeature handles wrappers, plain features and junk', () => {
+      expect(resolveFeature(pathItem)?.properties.id).toBe('nile');
+      expect(resolveFeature(river)?.properties.id).toBe('nile');
+      expect(resolveFeature({})).toBeNull();
+      expect(resolveFeature({ feature: {} })).toBeNull();
+    });
+  });
+
+  // The capitals layer owns its markers: while the pointer is over one, whatever globe.gl reports
+  // underneath (a country, the background) must neither override the hover nor handle the click.
+  describe('with a hover arbiter (capitals layer)', () => {
+    const country: GeoFeature = {
+      type: 'Feature',
+      properties: {
+        id: 'pl',
+        layerId: 'borders',
+        kind: 'country',
+        name_pl: 'Polska',
+        name_en: 'Poland',
+      },
+      geometry: { type: 'Polygon', coordinates: [] },
+    };
+    const capitalRef = { id: 'capital-warsaw', layerId: 'capitals' as LayerId, kind: 'capital' };
+
+    it('routes globe.gl hover through the arbiter', () => {
+      const store = createStore<AppState>(createInitialState());
+      const container = document.createElement('div');
+      const { globe, triggerPolygonHover } = createMockGlobe();
+      attachGlobeEvents(globe, store, container, new HoverArbiter(store, container));
+
+      triggerPolygonHover(country);
+      expect(store.get().hovered?.id).toBe('pl');
+      expect(container.style.cursor).toBe('pointer');
+
+      triggerPolygonHover(null);
+      expect(store.get().hovered).toBeNull();
+      expect(container.style.cursor).toBe('default');
+    });
+
+    it('keeps the capital hovered while globe.gl reports the country underneath', () => {
+      const store = createStore<AppState>(createInitialState());
+      const arbiter = new HoverArbiter(store);
+      const { globe, triggerPolygonHover } = createMockGlobe();
+      attachGlobeEvents(globe, store, undefined, arbiter);
+
+      arbiter.setCapitalHover(capitalRef);
+      triggerPolygonHover(country);
+      expect(store.get().hovered?.id).toBe('capital-warsaw');
+
+      arbiter.setCapitalHover(null);
+      expect(store.get().hovered?.id).toBe('pl');
+    });
+
+    it('ignores globe.gl clicks (feature and background) while a capital is claimed', () => {
+      const store = createStore<AppState>(createInitialState());
+      const arbiter = new HoverArbiter(store);
+      const { globe, triggerPolygonClick, triggerGlobeClick } = createMockGlobe();
+      attachGlobeEvents(globe, store, undefined, arbiter);
+
+      arbiter.setCapitalHover(capitalRef);
+      triggerPolygonClick(country);
+      triggerGlobeClick({ lat: 1, lng: 2 });
+      expect(store.get().selection).toBeNull();
+      expect(store.get().globeClick).toBeNull();
+
+      arbiter.setCapitalHover(null);
+      triggerPolygonClick(country);
+      expect(store.get().selection?.id).toBe('pl');
+    });
   });
 });

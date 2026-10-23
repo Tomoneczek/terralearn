@@ -1,8 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/web-manifest-combined.json",
-  "name": "TerraLearn – Interaktywny Globus 3D",
+  "name": "TerraLearn – Interactive 3D Globe",
   "short_name": "TerraLearn",
-  "description": "Eksploracja geografii fizycznej i politycznej na interaktywnym globusie 3D. Oświetlenie dzień/noc, quiz ślepa mapa, fakty i porównania wielkości.",
+  "lang": "en",
+  "description": "Explore physical and political geography on an interactive 3D globe. Day/night lighting, a blind-map quiz, facts and size comparisons.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
