@@ -343,6 +343,8 @@ export interface Dictionary {
     errorReadFailed: string;
   };
   layout: {
+    hidePanel: string;
+    showPanel: string;
     dragHandleAria: string;
     expandPanel: string;
     minimizePanel: string;

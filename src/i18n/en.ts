@@ -358,6 +358,8 @@ export const en: Dictionary = {
     errorReadFailed: 'Failed to read the file.',
   },
   layout: {
+    hidePanel: 'Hide panel ([)',
+    showPanel: 'Show panel ([)',
     dragHandleAria: 'Bottom sheet handle (drag or click to resize)',
     expandPanel: 'Expand panel',
     minimizePanel: 'Minimize panel',

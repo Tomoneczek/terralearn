@@ -213,6 +213,11 @@
   color: var(--text-1);
 }
 
+/* Desktop only: hide the panel (the mobile layout uses the bottom sheet instead) */
+.panel-collapse-btn {
+  display: flex;
+}
+
 /* Floating Action Button for mobile */
 .mobile-panel-fab {
   display: none;
@@ -259,6 +264,11 @@
 
   .panel-header-btn {
     display: flex;
+  }
+
+  .panel-collapse-btn,
+  #btn-rail-panel-toggle {
+    display: none;
   }
 
   .panel {

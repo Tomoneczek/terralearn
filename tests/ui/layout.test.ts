@@ -2,12 +2,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setLocale } from '@/i18n';
-import { initLayout } from '@/ui/layout';
+import { initLayout, PANEL_COLLAPSED_KEY } from '@/ui/layout';
 
 describe('initLayout', () => {
   let root: HTMLElement;
 
   beforeEach(() => {
+    localStorage.clear();
     document.body.innerHTML = '';
     root = document.createElement('div');
     root.id = 'app';
@@ -40,6 +41,67 @@ describe('initLayout', () => {
 
     slots.togglePanel();
     expect(root.classList.contains('panel-collapsed')).toBe(false);
+  });
+
+  // User request: after choosing filters there was no visible way to hide the sidebar on desktop
+  // (only the undocumented "[" shortcut).
+  describe('hiding the panel on desktop', () => {
+    it('hides and shows the panel from the header and the rail, with matching ARIA state', () => {
+      setLocale('en');
+      initLayout(root);
+      const headerBtn = root.querySelector<HTMLButtonElement>('#btn-panel-collapse')!;
+      const railBtn = root.querySelector<HTMLButtonElement>('#btn-rail-panel-toggle')!;
+      expect(headerBtn.getAttribute('aria-expanded')).toBe('true');
+      expect(headerBtn.getAttribute('aria-label')).toBe('Hide panel ([)');
+
+      headerBtn.click();
+      expect(root.classList.contains('panel-collapsed')).toBe(true);
+      expect(railBtn.getAttribute('aria-expanded')).toBe('false');
+      expect(railBtn.getAttribute('aria-label')).toBe('Show panel ([)');
+
+      railBtn.click();
+      expect(root.classList.contains('panel-collapsed')).toBe(false);
+    });
+
+    it('remembers the choice between visits', () => {
+      initLayout(root).togglePanel();
+      expect(localStorage.getItem(PANEL_COLLAPSED_KEY)).toBe('1');
+
+      const next = document.createElement('div');
+      document.body.appendChild(next);
+      initLayout(next);
+      expect(next.classList.contains('panel-collapsed')).toBe(true);
+    });
+
+    it('brings the panel back when a rail section is picked', () => {
+      const slots = initLayout(root);
+      slots.togglePanel();
+      root.querySelector<HTMLButtonElement>('.rail-btn[data-rail-id="settings"]')!.click();
+      expect(root.classList.contains('panel-collapsed')).toBe(false);
+    });
+
+    it('works without storage', () => {
+      const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new Error('blocked');
+      });
+      const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new Error('blocked');
+      });
+      const slots = initLayout(root);
+      expect(root.classList.contains('panel-collapsed')).toBe(false);
+      slots.togglePanel();
+      expect(root.classList.contains('panel-collapsed')).toBe(true);
+      getItem.mockRestore();
+      setItem.mockRestore();
+    });
+
+    it('shows the toggles on desktop only (mobile uses the bottom sheet)', () => {
+      const css = fs.readFileSync(path.resolve(process.cwd(), 'src/styles/layout.css'), 'utf-8');
+      const mobile = css.slice(css.indexOf('@media (max-width: 900px)'));
+      expect(mobile).toMatch(
+        /\.panel-collapse-btn,\s*#btn-rail-panel-toggle\s*\{\s*display: none;/,
+      );
+    });
   });
 
   it('handles keyboard shortcut "[" and respects input/textarea targets', () => {

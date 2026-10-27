@@ -358,6 +358,8 @@ export const pl: Dictionary = {
     errorReadFailed: 'Nie udało się odczytać pliku.',
   },
   layout: {
+    hidePanel: 'Ukryj panel ([)',
+    showPanel: 'Pokaż panel ([)',
     dragHandleAria: 'Uchwyt panelu bocznego (przeciągnij lub kliknij, aby zmienić rozmiar)',
     expandPanel: 'Rozwiń panel',
     minimizePanel: 'Zminimalizuj panel',

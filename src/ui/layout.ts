@@ -16,6 +16,30 @@ export interface LayoutSlots {
   refreshRail: () => void;
 }
 
+/** localStorage key of the desktop "panel hidden" state. */
+export const PANEL_COLLAPSED_KEY = 'terralearn_panel_collapsed';
+
+function readCollapsed(): boolean {
+  try {
+    return localStorage.getItem(PANEL_COLLAPSED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeCollapsed(collapsed: boolean): void {
+  try {
+    localStorage.setItem(PANEL_COLLAPSED_KEY, collapsed ? '1' : '0');
+  } catch {
+    // Storage unavailable: the state is kept for the session only.
+  }
+}
+
+const PANEL_HIDE_ICON =
+  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m11 17-5-5 5-5"/><path d="m18 17-5-5 5-5"/></svg>';
+const PANEL_TOGGLE_ICON =
+  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>';
+
 function railLabels(): RailLabels {
   return {
     navAria: t('rail.navAria'),
@@ -76,6 +100,16 @@ export function initLayout(root: HTMLElement): LayoutSlots {
       btn.classList.toggle('active', btn.dataset.railId === activeId);
     });
   });
+  // Rail toggle at the bottom: the way back when the panel is hidden
+  const railToggleGroup = document.createElement('div');
+  railToggleGroup.className = 'rail-group';
+  const railToggleBtn = document.createElement('button');
+  railToggleBtn.type = 'button';
+  railToggleBtn.id = 'btn-rail-panel-toggle';
+  railToggleBtn.className = 'rail-btn';
+  railToggleBtn.appendChild(parseSvg(PANEL_TOGGLE_ICON));
+  railToggleGroup.appendChild(railToggleBtn);
+  rail.appendChild(railToggleGroup);
   root.appendChild(rail);
 
   // Sidebar Panel (Desktop sidebar + Mobile Bottom Sheet)
@@ -117,6 +151,14 @@ export function initLayout(root: HTMLElement): LayoutSlots {
     ),
   );
   headerActions.appendChild(minimizeBtn);
+
+  // Desktop: hide the whole panel so the globe gets the full width (mobile uses the sheet)
+  const collapseBtn = document.createElement('button');
+  collapseBtn.type = 'button';
+  collapseBtn.id = 'btn-panel-collapse';
+  collapseBtn.className = 'panel-header-btn panel-collapse-btn';
+  collapseBtn.appendChild(parseSvg(PANEL_HIDE_ICON));
+  headerActions.appendChild(collapseBtn);
   panelHeader.appendChild(headerActions);
   panel.appendChild(panelHeader);
 
@@ -189,10 +231,33 @@ export function initLayout(root: HTMLElement): LayoutSlots {
     initialSnap: 'half',
   });
 
-  // Collapse / expand panel handler
-  const togglePanel = (): void => {
-    root.classList.toggle('panel-collapsed');
+  // Collapse / expand panel handler (desktop), remembered between visits
+  const updatePanelToggles = (): void => {
+    const collapsed = root.classList.contains('panel-collapsed');
+    const label = t(collapsed ? 'layout.showPanel' : 'layout.hidePanel');
+    for (const btn of [collapseBtn, railToggleBtn]) {
+      btn.setAttribute('aria-expanded', String(!collapsed));
+      btn.setAttribute('aria-label', label);
+      btn.title = label;
+    }
+    railToggleBtn.classList.toggle('active', !collapsed);
   };
+  const setPanelCollapsed = (collapsed: boolean): void => {
+    root.classList.toggle('panel-collapsed', collapsed);
+    writeCollapsed(collapsed);
+    updatePanelToggles();
+  };
+  const togglePanel = (): void => {
+    setPanelCollapsed(!root.classList.contains('panel-collapsed'));
+  };
+  root.classList.toggle('panel-collapsed', readCollapsed());
+  updatePanelToggles();
+  collapseBtn.addEventListener('click', togglePanel);
+  railToggleBtn.addEventListener('click', togglePanel);
+  // Picking a section in the rail (map, layers, settings, quiz) brings the panel back
+  window.addEventListener('tl-rail-select', () => {
+    if (root.classList.contains('panel-collapsed')) setPanelCollapsed(false);
+  });
 
   // Keyboard shortcut "["
   window.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -213,6 +278,9 @@ export function initLayout(root: HTMLElement): LayoutSlots {
     cardContainer,
     togglePanel,
     bottomSheet,
-    refreshRail: () => updateRailLabels(rail, railLabels()),
+    refreshRail: () => {
+      updateRailLabels(rail, railLabels());
+      updatePanelToggles();
+    },
   };
 }
