@@ -8,6 +8,7 @@ import { DayNightController } from './day-night';
 import { HighlightOverlay } from './highlight-overlay';
 import { installPathHitTolerance } from './path-picking';
 import { CapitalsLayer } from './capitals-layer';
+import { PopulationLayer } from './population-layer';
 import { HoverArbiter } from './hover-arbiter';
 import { CloudsController } from './clouds';
 import { AtmosphereController } from './atmosphere';
@@ -31,6 +32,7 @@ export interface GlobeContext {
   atmosphere: AtmosphereController;
   highlight: HighlightOverlay;
   capitals: CapitalsLayer;
+  population: PopulationLayer;
   clouds: CloudsController;
   quality: QualityController;
   routes: RouteLayerController;
@@ -188,6 +190,21 @@ export function createGlobe(
   });
   compositor.capitalsSink = capitals;
 
+  // Population density: one H3 grid mesh, loaded the first time the layer is enabled
+  const population = new PopulationLayer({
+    scene: globeScene,
+    store,
+    arbiter: hoverArbiter,
+    container,
+    toGlobeCoords: (x, y) => {
+      try {
+        return globe.toGlobeCoords(x, y);
+      } catch {
+        return null;
+      }
+    },
+  });
+
   const clouds = new CloudsController(globeScene, store, {
     enabled: options.enableClouds ?? true,
     cloudsTextureUrl: '/textures/clouds.png',
@@ -253,6 +270,7 @@ export function createGlobe(
     atmosphere,
     highlight,
     capitals,
+    population,
     clouds,
     quality,
     routes,
@@ -273,6 +291,7 @@ export function createGlobe(
       compositor.destroy();
       highlight.destroy();
       capitals.destroy();
+      population.destroy();
       dayNight.destroy();
       atmosphere.destroy();
       clouds.destroy();

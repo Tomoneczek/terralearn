@@ -62,6 +62,11 @@ export const pl: Dictionary = {
     peaks: 'Najwyższe szczyty',
     landforms: 'Formy ukształtowania terenu',
     marine: 'Morza i zatoki',
+    populationDensity: 'Gęstość zaludnienia',
+  },
+  population: {
+    value: '{value} os./km²',
+    unit: 'osób na km²',
   },
   sliders: {
     topPrefix: 'Top',

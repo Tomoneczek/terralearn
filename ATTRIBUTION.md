@@ -41,6 +41,15 @@ All geographical datasets and planetary textures in **TerraLearn** are derived s
 
 ---
 
+## 4. Kontur Population
+
+- **Source:** [Kontur Population: Global Population Density for 22km H3 Hexagons](https://data.humdata.org/dataset/kontur-population-dataset-22km) (release 2023-11-01)
+- **Authors:** Kontur Inc. – fusion of GHSL, Facebook HRSL, Microsoft Buildings, Copernicus Global Land Service Land Cover, Land Information New Zealand and OpenStreetMap data.
+- **License:** **Creative Commons Attribution 4.0 International (CC BY 4.0)**.
+- **Use:** population counts aggregated to H3 resolution 3 and converted to people per km² for the population density layer (`population.json`).
+
+---
+
 ## Processing pipeline
 
 All vector datasets are processed, topology-preserved, and coordinate-optimized via `scripts/data/build.ts` to ensure low network payload (< 150-250 KB gzip per layer). The ocean water mask (`water-mask.png`) is rasterized directly from Natural Earth land polygons using pure scanline rasterization in Node.js.

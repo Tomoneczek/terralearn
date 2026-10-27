@@ -126,6 +126,25 @@ describe('UI Overlays', () => {
     });
   });
 
+  describe('LegendOverlay population scale', () => {
+    it('shows the density colour scale only while the layer is enabled', () => {
+      const store = createStore<AppState>(createInitialState());
+      const legend = new LegendOverlay({ container, store });
+      expect(container.querySelector('.tl-legend-scale')).toBeNull();
+
+      store.set({
+        ...store.get(),
+        layers: { ...store.get().layers, populationDensity: { enabled: true } },
+      });
+      expect(container.querySelectorAll('.tl-legend-swatch')).toHaveLength(7);
+      expect(container.querySelector('.tl-legend-scale-caption')?.textContent).toBe(
+        '< 1people per km²> 1000',
+      );
+
+      legend.destroy();
+    });
+  });
+
   describe('Toolbar', () => {
     it('invokes camera methods on button clicks', () => {
       const mockCamera = {
@@ -246,6 +265,32 @@ describe('UI Overlays', () => {
       expect(el.classList.contains('hidden')).toBe(false);
 
       tooltip.destroy();
+    });
+
+    it('shows the population density of the hovered cell in the current language', () => {
+      const store = createStore<AppState>({ ...createInitialState(), locale: 'en' });
+      const tooltip = new HoverTooltip({ container, store });
+      const el = container.querySelector('.tl-hover-tooltip')!;
+      const hovered = {
+        id: 'population-831f53fffffffff',
+        layerId: 'populationDensity' as const,
+        kind: 'populationDensity',
+        value: 2124,
+      };
+
+      store.set({ ...store.get(), hovered });
+      expect(el.querySelector('.tl-tooltip-name')?.textContent).toBe('2,124 people/km²');
+      expect(el.querySelector('.tl-tooltip-kind')?.textContent).toBe('Population density');
+
+      // A density names nothing, so it stays visible in learning mode.
+      store.set({ ...store.get(), hiddenLabels: true });
+      expect(el.classList.contains('hidden')).toBe(false);
+
+      store.set({ ...store.get(), locale: 'pl' });
+      expect(el.querySelector('.tl-tooltip-name')?.textContent).toBe('2124 os./km²');
+
+      tooltip.destroy();
+      setLocale('en');
     });
 
     it('shows no kind label for unknown kinds', () => {

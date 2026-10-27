@@ -107,3 +107,29 @@
   color: hsl(142, 71%, 45%);
   font-weight: 700;
 }
+
+/* Population density colour scale */
+.tl-legend-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tl-legend-swatches {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  height: 8px;
+}
+
+.tl-legend-swatch {
+  border-radius: 2px;
+}
+
+.tl-legend-scale-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-1);
+  font-size: 10px;
+  color: var(--text-3);
+}

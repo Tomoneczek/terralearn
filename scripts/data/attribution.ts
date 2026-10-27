@@ -11,6 +11,7 @@ All geographical datasets and planetary textures in **TerraLearn** are derived s
 ---
 
 ## 1. Natural Earth
+
 - **Source:** [Natural Earth Vector](https://www.naturalearthdata.com/)
 - **Authors:** Nathaniel Vaughn Kelso, Tom Patterson, and numerous cartographic contributors.
 - **License:** **Public Domain**. All versions of Natural Earth's raster + vector map data are in the public domain. You may use the maps in any manner, including modifying the content and designs, in both non-commercial and commercial projects.
@@ -21,6 +22,8 @@ All geographical datasets and planetary textures in **TerraLearn** are derived s
   - \`ne_10m_populated_places_simple\` – National capitals and major megacities.
   - \`ne_10m_geography_regions_polys\` – Mountain ranges and major desert regions.
   - \`ne_10m_geography_regions_elevation_points\` – High peaks and prominence summits.
+  - \`ne_10m_geography_marine_polys\` – Global seas, gulfs, and ocean bays.
+  - _Cross-Blended Hypsometric Tints_ – Natural Earth climate-modulated elevation relief map (\`earth-atlas.jpg\`), created by Tom Patterson and Bernhard Jenny.
 
 ---
 
@@ -39,6 +42,14 @@ All geographical datasets and planetary textures in **TerraLearn** are derived s
 - **Authority:** Główny Urząd Geodezji i Kartografii (GUGiK).
 - **Scope:** Official Polish exonyms, standardizations, and geographic terminology used for Polish language localization (\`name_pl\` properties).
 - **License:** Open Public Sector Information / Public Domain.
+
+---
+
+## 4. Kontur Population
+- **Source:** [Kontur Population: Global Population Density for 22km H3 Hexagons](https://data.humdata.org/dataset/kontur-population-dataset-22km) (release 2023-11-01)
+- **Authors:** Kontur Inc. – fusion of GHSL, Facebook HRSL, Microsoft Buildings, Copernicus Global Land Service Land Cover, Land Information New Zealand and OpenStreetMap data.
+- **License:** **Creative Commons Attribution 4.0 International (CC BY 4.0)**.
+- **Use:** population counts aggregated to H3 resolution 3 and converted to people per km² for the population density layer (\`population.json\`).
 
 ---
 

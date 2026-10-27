@@ -2,6 +2,8 @@ import type { Store, AppState } from '@/state/types';
 import { t, setLocale, getLocale } from '@/i18n';
 import type { I18nKey } from '@/i18n';
 import { getLayerColor } from './sidebar';
+import { formatNumber } from './facts-format';
+import { POPULATION_LAYER_ID } from '@/globe/population-layer';
 
 /** Translated feature kind, or an empty string for kinds without a dictionary entry. */
 function getKindLabel(kind: string | undefined): string {
@@ -74,8 +76,10 @@ export class HoverTooltip {
     this.unsubscribe = this.store.subscribe(
       s => ({ hovered: s.hovered, mode: s.mode, locale: s.locale, learning: s.hiddenLabels }),
       ({ hovered, mode, locale, learning }) => {
-        // Learning mode ("hide names") and quizzes must not give the name away on hover
-        if (!hovered || mode === 'quiz' || learning) {
+        // Learning mode ("hide names") and quizzes must not give the name away on hover;
+        // a population density value names nothing, so it stays visible while learning.
+        const isPopulation = hovered?.layerId === POPULATION_LAYER_ID;
+        if (!hovered || mode === 'quiz' || (learning && !isPopulation)) {
           this.element.classList.add('hidden');
         } else {
           const color = getLayerColor(hovered.layerId);
@@ -85,9 +89,16 @@ export class HoverTooltip {
           if (getLocale() !== activeLocale) {
             setLocale(activeLocale);
           }
-          const name = activeLocale === 'en' ? hovered.name_en : hovered.name_pl;
-          this.label.textContent = name ?? hovered.name_pl ?? hovered.name_en ?? hovered.id;
-          this.kind.textContent = getKindLabel(hovered.kind);
+          if (isPopulation) {
+            this.label.textContent = t('population.value', {
+              value: formatNumber(hovered.value ?? 0, 1),
+            });
+            this.kind.textContent = t('layers.populationDensity');
+          } else {
+            const name = activeLocale === 'en' ? hovered.name_en : hovered.name_pl;
+            this.label.textContent = name ?? hovered.name_pl ?? hovered.name_en ?? hovered.id;
+            this.kind.textContent = getKindLabel(hovered.kind);
+          }
           this.updatePosition();
           this.element.classList.remove('hidden');
         }

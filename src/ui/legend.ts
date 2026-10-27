@@ -1,5 +1,6 @@
 import type { Store, AppState } from '@/state/types';
 import { LAYER_DEFINITIONS, type LayerDef } from '@/layers';
+import { DENSITY_COLORS, densityClassLabel } from '@/globe/population-scale';
 import { SRS_STATUS_COLORS } from '@/layers/styles';
 import { loadSrsState } from '@/quiz/srs';
 import { t, type I18nKey } from '@/i18n';
@@ -135,7 +136,43 @@ export class LegendOverlay {
 
     row.appendChild(dot);
     row.appendChild(label);
-    return row;
+    if (def.id !== 'populationDensity') return row;
+
+    const group = document.createElement('div');
+    group.className = 'tl-legend-group';
+    group.appendChild(row);
+    group.appendChild(this.createDensityScale());
+    return group;
+  }
+
+  /** Colour classes of the population density grid (see population-scale.ts). */
+  private createDensityScale(): HTMLElement {
+    const scale = document.createElement('div');
+    scale.className = 'tl-legend-scale';
+    scale.setAttribute('aria-label', `${t('layers.populationDensity')} (${t('population.unit')})`);
+
+    const swatches = document.createElement('div');
+    swatches.className = 'tl-legend-swatches';
+    DENSITY_COLORS.forEach((color, index) => {
+      const swatch = document.createElement('span');
+      swatch.className = 'tl-legend-swatch';
+      swatch.style.backgroundColor = color;
+      swatch.title = densityClassLabel(index);
+      swatches.appendChild(swatch);
+    });
+
+    const caption = document.createElement('div');
+    caption.className = 'tl-legend-scale-caption';
+    const low = document.createElement('span');
+    low.textContent = densityClassLabel(0);
+    const unit = document.createElement('span');
+    unit.textContent = t('population.unit');
+    const high = document.createElement('span');
+    high.textContent = densityClassLabel(DENSITY_COLORS.length - 1);
+    caption.append(low, unit, high);
+
+    scale.append(swatches, caption);
+    return scale;
   }
 
   private renderItems(): void {

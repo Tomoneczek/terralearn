@@ -11,11 +11,13 @@ export type LayerId =
   | 'deserts'
   | 'peaks'
   | 'landforms'
-  | 'marine';
+  | 'marine'
+  | 'populationDensity';
 
 export type LayerGroup = 'modes' | 'physical' | 'political' | 'tools';
 
-export type LayerKind = 'polygon' | 'path' | 'point' | 'label' | 'arc' | 'html';
+/** `hex`: a thematic H3 grid drawn by its own layer (see population-layer.ts), not by the compositor. */
+export type LayerKind = 'polygon' | 'path' | 'point' | 'label' | 'arc' | 'html' | 'hex';
 
 export interface TopNConfig {
   min: number;

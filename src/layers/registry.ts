@@ -207,6 +207,15 @@ export const LAYER_DEFINITIONS: readonly LayerDef[] = [
       radius: 0.4,
     },
   },
+  {
+    id: 'populationDensity',
+    group: 'political',
+    labelKey: 'layers.populationDensity',
+    icon: 'users',
+    kind: 'hex',
+    source: '/data/population.json',
+    defaultEnabled: false,
+  },
 ] as const;
 
 export function getLayer(id: LayerId): LayerDef | undefined {

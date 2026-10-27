@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { dataVersion } from '../../scripts/data/stampServiceWorker';
 
 describe('G11-03 Service Worker Script Content & Strategy', () => {
   const swPath = path.resolve(process.cwd(), 'public/sw.js');
@@ -9,6 +10,13 @@ describe('G11-03 Service Worker Script Content & Strategy', () => {
     expect(fs.existsSync(swPath)).toBe(true);
     const content = fs.readFileSync(swPath, 'utf-8');
     expect(content.length).toBeGreaterThan(100);
+  });
+
+  // Regression: /data/ is served cache-first under a fixed 'v1' cache, so installed PWAs kept the
+  // old facts.json (Polish sentences) after the switch to structured facts.
+  it('ties the cache version to the shipped data files', () => {
+    const content = fs.readFileSync(swPath, 'utf-8');
+    expect(content).toContain(`const CACHE_VERSION = '${dataVersion()}';`);
   });
 
   it('defines cache names and event listeners', () => {

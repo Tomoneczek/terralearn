@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { stampServiceWorker } from './stampServiceWorker.js';
 import { geoContains, type GeoGeometryObjects } from 'd3-geo';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -595,4 +596,5 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   console.log(
     `Built search-index.json (${searchIndex.length} items) and facts.json (${Object.keys(facts).length} items)`,
   );
+  console.log(`Service worker cache version: ${stampServiceWorker()}`);
 }

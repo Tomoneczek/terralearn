@@ -79,4 +79,36 @@ describe('HoverArbiter', () => {
     bare.setGlobeHover(ref('PL'));
     expect(store.get().hovered?.id).toBe('PL');
   });
+
+  describe('population grid (lowest priority)', () => {
+    const cell = (h3: string): FeatureRef => ({
+      id: `population-${h3}`,
+      layerId: 'populationDensity',
+      kind: 'populationDensity',
+      value: 120,
+    });
+
+    it('shows the density only when nothing else is under the pointer, without a pointer cursor', () => {
+      arbiter.setPopulationHover(cell('831f53fffffffff'));
+      expect(store.get().hovered?.id).toBe('population-831f53fffffffff');
+      expect(container.style.cursor).toBe('default');
+
+      arbiter.setGlobeHover(ref('PL'));
+      expect(store.get().hovered?.id).toBe('PL');
+      expect(container.style.cursor).toBe('pointer');
+
+      arbiter.setGlobeHover(null);
+      expect(store.get().hovered?.id).toBe('population-831f53fffffffff');
+    });
+
+    it('loses to a hovered capital and clears when the layer reports nothing', () => {
+      arbiter.setPopulationHover(cell('831f53fffffffff'));
+      arbiter.setCapitalHover(ref('capital-warsaw', 'capital'));
+      expect(store.get().hovered?.id).toBe('capital-warsaw');
+
+      arbiter.setCapitalHover(null);
+      arbiter.setPopulationHover(null);
+      expect(store.get().hovered).toBeNull();
+    });
+  });
 });

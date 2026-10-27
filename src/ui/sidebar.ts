@@ -50,6 +50,8 @@ export function getLayerColor(id: LayerId): string {
       return 'hsl(140, 65%, 55%)';
     case 'marine':
       return 'hsl(205, 90%, 60%)';
+    case 'populationDensity':
+      return 'hsl(18, 95%, 58%)';
   }
 }
 

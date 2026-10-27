@@ -8,6 +8,8 @@ export interface FeatureRef {
   name?: string;
   name_pl?: string;
   name_en?: string;
+  /** Value of a data cell under the pointer (people/km² for the population grid). */
+  value?: number;
   lat?: number;
   lng?: number;
 }

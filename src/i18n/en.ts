@@ -62,6 +62,11 @@ export const en: Dictionary = {
     peaks: 'Highest peaks',
     landforms: 'Landforms & Regions',
     marine: 'Seas & Bays',
+    populationDensity: 'Population density',
+  },
+  population: {
+    value: '{value} people/km²',
+    unit: 'people per km²',
   },
   sliders: {
     topPrefix: 'Top',

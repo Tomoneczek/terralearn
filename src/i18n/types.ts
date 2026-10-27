@@ -64,6 +64,11 @@ export interface Dictionary {
     peaks: string;
     landforms: string;
     marine: string;
+    populationDensity: string;
+  };
+  population: {
+    value: string;
+    unit: string;
   };
   sliders: {
     topPrefix: string;

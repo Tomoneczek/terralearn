@@ -358,7 +358,10 @@ export class LayerCompositor {
     }
 
     const state = this.store.get();
-    const enabledLayers = LAYER_DEFINITIONS.filter(def => state.layers[def.id]?.enabled);
+    // `hex` layers (population grid) are not GeoJSON features: they draw themselves.
+    const enabledLayers = LAYER_DEFINITIONS.filter(
+      def => def.kind !== 'hex' && state.layers[def.id]?.enabled,
+    );
 
     const mergedPolygons: GeoFeature[] = [];
     const mergedPaths: PathItem[] = [];

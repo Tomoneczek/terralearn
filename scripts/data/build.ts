@@ -13,6 +13,8 @@ import {
   maxElevationInRange,
 } from './physicalRanking.js';
 import { mergeNearbyNamesakes } from './dedupe.js';
+import { buildPopulationGrid } from './population.js';
+import { stampServiceWorker } from './stampServiceWorker.js';
 import { writeAttribution } from './attribution.js';
 import {
   type GeoFeature,
@@ -621,11 +623,22 @@ export async function buildData(): Promise<void> {
   fs.writeFileSync(placesFile, JSON.stringify(placesCol));
   console.log(`    ✓ Saved ${placesCol.features.length} places to places.json`);
 
-  // 6. Attribution
+  // 6. Population density grid (Kontur Population, H3)
+  console.log('  → Processing population density grid...');
+  const populationGrid = buildPopulationGrid(
+    path.join(RAW_DIR, 'kontur_population_20231101_r4.gpkg.gz'),
+    RAW_DIR,
+  );
+  const populationFile = path.join(OUT_DIR, 'population.json');
+  fs.writeFileSync(populationFile, JSON.stringify(populationGrid));
+  console.log(`    ✓ Saved ${populationGrid.cells.length} H3 cells to population.json`);
+
+  // 7. Attribution
   console.log('  → Writing attribution...');
   writeAttribution();
+  console.log(`  ✓ Service worker cache version: ${stampServiceWorker()}`);
 
-  // 7. Budget summary
+  // 8. Budget summary
   console.log('\n📊 File size budget verification:');
   const filesToCheck = [
     { name: 'countries.json', budgetGzipKb: 150, path: countriesFile },
@@ -635,6 +648,7 @@ export async function buildData(): Promise<void> {
     { name: 'landforms.json', budgetGzipKb: 200, path: landformsFile },
     { name: 'marine.json', budgetGzipKb: 250, path: marineFile },
     { name: 'places.json', budgetGzipKb: 80, path: placesFile },
+    { name: 'population.json', budgetGzipKb: 150, path: populationFile },
   ];
 
   let anyExceeded = false;

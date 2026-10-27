@@ -39,6 +39,12 @@ export const DATASETS = [
     filename: 'ne_10m_geography_marine_polys.geojson',
     url: 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_geography_marine_polys.geojson',
   },
+  {
+    // Kontur Population (CC BY 4.0): population counts in H3 resolution-4 cells, GeoPackage.
+    id: 'population',
+    filename: 'kontur_population_20231101_r4.gpkg.gz',
+    url: 'https://geodata-eu-central-1-kontur-public.s3.eu-central-1.amazonaws.com/kontur_datasets/kontur_population_20231101_r4.gpkg.gz',
+  },
 ] as const;
 
 export async function fetchDatasets(force = false): Promise<void> {
@@ -46,7 +52,7 @@ export async function fetchDatasets(force = false): Promise<void> {
     fs.mkdirSync(CACHE_DIR, { recursive: true });
   }
 
-  console.log(`📦 Fetching Natural Earth datasets into ${CACHE_DIR}...`);
+  console.log(`📦 Fetching datasets into ${CACHE_DIR}...`);
 
   for (const ds of DATASETS) {
     const dest = path.join(CACHE_DIR, ds.filename);
@@ -63,9 +69,10 @@ export async function fetchDatasets(force = false): Promise<void> {
       throw new Error(`Failed to download ${ds.url}: ${res.status} ${res.statusText}`);
     }
 
-    const text = await res.text();
-    fs.writeFileSync(dest, text, 'utf-8');
-    console.log(`  ✓ Saved ${ds.id} (${(text.length / 1024).toFixed(1)} KB)`);
+    // Binary-safe: the population dataset is a gzipped GeoPackage.
+    const bytes = Buffer.from(await res.arrayBuffer());
+    fs.writeFileSync(dest, bytes);
+    console.log(`  ✓ Saved ${ds.id} (${(bytes.length / 1024).toFixed(1)} KB)`);
   }
 
   console.log('✅ All datasets cached successfully.');
