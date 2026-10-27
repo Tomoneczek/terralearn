@@ -173,9 +173,94 @@ describe('mergeRivers & River Flow Normalization', () => {
     });
   });
 
+  describe('river systems', () => {
+    const segment = (name: string, nameEn: string, coordinates: number[][]) => ({
+      type: 'Feature' as const,
+      properties: { name, name_en: nameEn },
+      geometry: { type: 'LineString' as const, coordinates },
+    });
+
+    it('merges segments with different local names into one river (Yangtze regression)', () => {
+      const merged = mergeRivers(
+        [
+          segment('Jinsha', 'Yangtze', [
+            [95, 33],
+            [100, 27],
+          ]),
+          segment('Chang Jiang', 'Yangtze', [
+            [100, 27],
+            [110, 30],
+          ]),
+          segment('Yangtze', 'Yangtze', [
+            [110, 30],
+            [121.8, 31.5],
+          ]),
+        ],
+        { Yangtze: 'Jangcy', Jinsha: 'Jangcy (Dolina Złotego Piasku)' },
+      );
+      expect(merged).toHaveLength(1);
+      expect(merged[0]!.properties.id).toBe('river-yangtze');
+      expect(merged[0]!.properties.name_pl).toBe('Jangcy');
+      expect(merged[0]!.properties.aliases).toEqual(
+        expect.arrayContaining(['Jinsha', 'Chang Jiang']),
+      );
+    });
+
+    it('merges explicit system members and uses the commonly cited length (Nile regression)', () => {
+      const merged = mergeRivers(
+        [
+          segment('Victoria Nile', 'Victoria Nile', [
+            [33, 0.5],
+            [32, 2],
+          ]),
+          segment('El Bahr el Abyad', 'White Nile', [
+            [32, 9],
+            [32.5, 15.6],
+          ]),
+          segment('Nile', 'Nile', [
+            [32.5, 15.6],
+            [31.2, 31.5],
+          ]),
+          segment('El Bahr el Azraq', 'Blue Nile', [
+            [37, 12],
+            [32.5, 15.6],
+          ]),
+        ],
+        { Nile: 'Nil' },
+      );
+      const names = merged.map(f => f.properties.name_en);
+      expect(names).toEqual(['Nile', 'Blue Nile']);
+      expect(merged[0]!.properties.rank.length).toBe(6650);
+      expect(merged[0]!.properties.rank.order).toBe(1);
+    });
+
+    it('collapses repeated spaces in names ("São  Francisco")', () => {
+      const merged = mergeRivers(
+        [
+          segment('São  Francisco', 'São  Francisco', [
+            [-45, -20],
+            [-36.4, -10.5],
+          ]),
+        ],
+        {},
+      );
+      expect(merged[0]!.properties.name_en).toBe('São Francisco');
+    });
+  });
+
   describe('Output public/data/rivers.json Geographic Verification', () => {
     const riversPath = path.resolve(process.cwd(), 'public/data/rivers.json');
     const riversCol = JSON.parse(fs.readFileSync(riversPath, 'utf-8')) as GeoFeatureCollection;
+
+    it('ranks Nile, Amazon and Yangtze as the three longest rivers, each a single feature', () => {
+      const top = riversCol.features.slice(0, 3).map(f => f.properties.name_en);
+      expect(top).toEqual(['Nile', 'Amazon', 'Yangtze']);
+      const counts = new Map<string, number>();
+      for (const f of riversCol.features) {
+        counts.set(f.properties.name_en, (counts.get(f.properties.name_en) ?? 0) + 1);
+      }
+      expect([...counts].filter(([, n]) => n > 1)).toEqual([]);
+    });
 
     function getRiverMainStem(name: string): PositionList {
       const feat = riversCol.features.find(
@@ -188,7 +273,7 @@ describe('mergeRivers & River Flow Normalization', () => {
     }
 
     it('Amazonka flows eastward from the Andes towards the Atlantic Ocean', () => {
-      const main = getRiverMainStem('Amazonas');
+      const main = getRiverMainStem('Amazon');
       const start = main[0]!;
       const end = main[main.length - 1]!;
       // Source in Peru/Andes (west, lng < -70)

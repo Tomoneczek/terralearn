@@ -1,5 +1,6 @@
 import { geoLength } from 'd3-geo';
 import type { GeoFeature } from './schema.js';
+import { cleanRiverName, findRiverSystem, riverLengthKm, riverSystemKey } from './riverSystems.js';
 
 interface RawRiverProperties {
   name?: string | null;
@@ -285,6 +286,25 @@ export function orientRiverChains(riverKey: string, chains: PositionList[]): Pos
   return oriented;
 }
 
+/**
+ * Raw name that identifies a merged river: the system's primary name, else the segment named
+ * like the English name (keeps ids such as `river-yangtze` stable), else the longest segment.
+ */
+function primaryRawName(key: string, nameEn: string, rawNames: Map<string, number>): string {
+  const system = findRiverSystem(key);
+  if (system && rawNames.has(system.primary)) return system.primary;
+  if (rawNames.has(nameEn)) return nameEn;
+  let best = nameEn;
+  let bestVertices = -1;
+  for (const [rawName, vertices] of rawNames) {
+    if (vertices > bestVertices) {
+      best = rawName;
+      bestVertices = vertices;
+    }
+  }
+  return best;
+}
+
 export function mergeRivers(
   rawFeatures: RawRiverFeature[],
   overrides: Record<string, string>,
@@ -292,10 +312,11 @@ export function mergeRivers(
   const groups = new Map<
     string,
     {
-      name: string;
       nameEn: string;
       aliases: Set<string>;
       lines: PositionList[];
+      /** Vertex count per raw (local) name, used to pick the primary name. */
+      rawNames: Map<string, number>;
     }
   >();
 
@@ -303,15 +324,18 @@ export function mergeRivers(
     const rawName = feature.properties.name || feature.properties.name_en;
     if (!rawName) continue;
 
-    const trimmed = rawName.trim();
-    const key = trimmed.toLowerCase();
+    const trimmed = cleanRiverName(rawName);
+    const nameEn = cleanRiverName(feature.properties.name_en || trimmed);
+    // Segments of one river carry different local names but share the English name
+    // (or belong to an explicit river system), so they are grouped by that key.
+    const key = riverSystemKey(nameEn);
 
     if (!groups.has(key)) {
       groups.set(key, {
-        name: trimmed,
-        nameEn: (feature.properties.name_en || trimmed).trim(),
+        nameEn: findRiverSystem(key)?.nameEn ?? nameEn,
         aliases: new Set<string>(),
         lines: [],
+        rawNames: new Map<string, number>(),
       });
     }
 
@@ -320,6 +344,7 @@ export function mergeRivers(
       group.aliases.add(feature.properties.name_alt);
     }
 
+    const before = group.lines.length;
     if (feature.geometry.type === 'LineString') {
       group.lines.push(roundPositions(feature.geometry.coordinates as number[][]));
     } else if (feature.geometry.type === 'MultiLineString') {
@@ -327,6 +352,8 @@ export function mergeRivers(
         group.lines.push(roundPositions(line));
       }
     }
+    const vertices = group.lines.slice(before).reduce((sum, line) => sum + line.length, 0);
+    group.rawNames.set(trimmed, (group.rawNames.get(trimmed) ?? 0) + vertices);
   }
 
   const results: GeoFeature[] = [];
@@ -337,8 +364,14 @@ export function mergeRivers(
     // 1. Stitch contiguous line segments into continuous chains
     const stitchedLines = stitchSegments(group.lines);
 
+    const name = primaryRawName(key, group.nameEn, group.rawNames);
+    for (const rawName of group.rawNames.keys()) {
+      if (rawName !== name && rawName !== group.nameEn) group.aliases.add(rawName);
+    }
+
     // 2. Orient all chains from source to mouth
-    const orientedLines: MultiPositionList = orientRiverChains(key, stitchedLines);
+    const mouthKey = KNOWN_MOUTHS[name.toLowerCase()] ? name.toLowerCase() : key;
+    const orientedLines: MultiPositionList = orientRiverChains(mouthKey, stitchedLines);
 
     const multiLineFeature = {
       type: 'Feature' as const,
@@ -349,20 +382,20 @@ export function mergeRivers(
       properties: {},
     };
 
-    const lengthKm = Math.round(geoLength(multiLineFeature) * 6371.0088);
+    const lengthKm = riverLengthKm(key, Math.round(geoLength(multiLineFeature) * 6371.0088));
 
     // Pick a representative coordinate along the main river stem for label
     const mainLine = orientedLines[0] ?? [];
     const midIdx = Math.floor(mainLine.length / 2);
     const midCoord = mainLine[midIdx] ?? [0, 0];
 
-    const namePl = overrides[group.name] || overrides[group.nameEn] || group.name;
+    const namePl = overrides[name] || overrides[group.nameEn] || name;
 
     results.push({
       type: 'Feature',
-      id: `river-${slugify(group.name)}`,
+      id: `river-${slugify(name)}`,
       properties: {
-        id: `river-${slugify(group.name)}`,
+        id: `river-${slugify(name)}`,
         kind: 'river',
         layerId: 'physical-rivers',
         name_pl: namePl,

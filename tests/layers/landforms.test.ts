@@ -19,7 +19,7 @@ describe('G09-01 Landforms Layer and Physical Geography', () => {
 
     const content = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
     expect(content.type).toBe('FeatureCollection');
-    expect(content.features).toHaveLength(198);
+    expect(content.features).toHaveLength(197);
 
     const kinds = new Set(content.features.map((f: GeoFeature) => f.properties.kind));
     expect(kinds.size).toBe(1);
@@ -33,7 +33,7 @@ describe('G09-01 Landforms Layer and Physical Geography', () => {
     expect(subkinds.has('delta')).toBe(true);
     expect(subkinds.has('peninsula')).toBe(true);
 
-    // Check rank order consistency (1..198)
+    // Check rank order consistency (1..197)
     const first = content.features[0];
     expect(first.properties.rank?.order).toBe(1);
     expect(first.properties.rank?.area).toBeGreaterThan(1_000_000);
@@ -179,7 +179,7 @@ describe('G09-01 Landforms Layer and Physical Geography', () => {
     const landformSearches = searchIndex.filter(
       (item: { kind: string }) => item.kind === 'landform',
     );
-    expect(landformSearches.length).toBe(198);
+    expect(landformSearches.length).toBe(197);
 
     // Verify first landform has facts and stats
     const sampleId = landformSearches[0].id;

@@ -5,6 +5,14 @@ import { geoArea } from 'd3-geo';
 import polylabel from 'polylabel';
 import { fetchDatasets } from './fetch.js';
 import { mergeRivers } from './mergeRivers.js';
+import {
+  SEAS_LISTED_AS_LAKES,
+  compareRanges,
+  isReservoir,
+  lakeEnglishName,
+  maxElevationInRange,
+} from './physicalRanking.js';
+import { mergeNearbyNamesakes } from './dedupe.js';
 import { writeAttribution } from './attribution.js';
 import {
   type GeoFeature,
@@ -213,11 +221,18 @@ export async function buildData(): Promise<void> {
   console.log('  → Processing lakes...');
   const rawLakes = JSON.parse(fs.readFileSync(path.join(RAW_DIR, 'ne_50m_lakes.geojson'), 'utf-8'));
 
-  const lakeFeatures: GeoFeature[] = [];
+  let lakeFeatures: GeoFeature[] = [];
   const usedLakeIds = new Set<string>();
-  for (const raw of rawLakes.features) {
+  const rawMarineForLakes = JSON.parse(
+    fs.readFileSync(path.join(RAW_DIR, 'ne_10m_geography_marine_polys.geojson'), 'utf-8'),
+  );
+  const reclassifiedSeas = rawMarineForLakes.features.filter(
+    (f: { properties: { name?: string } }) => SEAS_LISTED_AS_LAKES.has(String(f.properties.name)),
+  );
+  for (const raw of [...rawLakes.features, ...reclassifiedSeas]) {
     const name = raw.properties.name || raw.properties.name_en;
     if (!name) continue;
+    if (isReservoir(raw.properties)) continue;
 
     const areaKm2 = Math.round(geoArea(raw) * EARTH_RADIUS_KM * EARTH_RADIUS_KM);
     const [labelLng, labelLat] = computeLabelPoint(raw.geometry);
@@ -232,7 +247,7 @@ export async function buildData(): Promise<void> {
         kind: 'lake',
         layerId: 'physical-lakes',
         name_pl: namePl,
-        name_en: raw.properties.name_en || name,
+        name_en: lakeEnglishName(raw.properties),
         aliases: [raw.properties.name_alt, raw.properties.name_abb].filter(Boolean),
         rank: {
           area: areaKm2,
@@ -247,6 +262,7 @@ export async function buildData(): Promise<void> {
     });
   }
 
+  lakeFeatures = mergeNearbyNamesakes(lakeFeatures, 2);
   lakeFeatures.sort((a, b) => (b.properties.rank.area || 0) - (a.properties.rank.area || 0));
   lakeFeatures.forEach((f, idx) => {
     f.properties.rank.order = idx + 1;
@@ -273,19 +289,9 @@ export async function buildData(): Promise<void> {
     ),
   );
 
-  // Build peak elevation map by region
-  const peakElevationMap = new Map<string, number>();
-  for (const peak of rawPeaks.features) {
-    const reg = (peak.properties.region || '').toLowerCase();
-    const subreg = (peak.properties.subregion || '').toLowerCase();
-    const elev = Number(peak.properties.elevation) || 0;
-    if (reg && elev > (peakElevationMap.get(reg) || 0)) peakElevationMap.set(reg, elev);
-    if (subreg && elev > (peakElevationMap.get(subreg) || 0)) peakElevationMap.set(subreg, elev);
-  }
-
   const regionFeatures: GeoFeature[] = [];
-  const mountainFeatures: GeoFeature[] = [];
-  const desertFeatures: GeoFeature[] = [];
+  let mountainFeatures: GeoFeature[] = [];
+  let desertFeatures: GeoFeature[] = [];
   const usedRegionIds = new Set<string>();
 
   for (const raw of rawRegions.features) {
@@ -299,7 +305,7 @@ export async function buildData(): Promise<void> {
 
     const [labelLng, labelLat] = computeLabelPoint(raw.geometry);
     const areaKm2 = Math.round(geoArea(raw) * EARTH_RADIUS_KM * EARTH_RADIUS_KM);
-    const namePl = overrides.regions[name] || raw.properties.NAME_PL || name;
+    const namePl = titleCasePolish(overrides.regions[name] || raw.properties.NAME_PL || name);
     const nameEn = raw.properties.NAME_EN || name;
     const id = makeUniqueId(
       `${isMountain ? 'mountain' : 'desert'}-${slugify(name)}`,
@@ -318,7 +324,7 @@ export async function buildData(): Promise<void> {
         aliases: [raw.properties.NAMEALT].filter(Boolean),
         rank: isMountain
           ? {
-              elevation: peakElevationMap.get(name.toLowerCase()) || 2000,
+              elevation: maxElevationInRange(raw.geometry, rawPeaks.features, nameEn),
               area: areaKm2,
             }
           : {
@@ -340,9 +346,9 @@ export async function buildData(): Promise<void> {
     }
   }
 
-  mountainFeatures.sort(
-    (a, b) => (b.properties.rank.elevation || 0) - (a.properties.rank.elevation || 0),
-  );
+  mountainFeatures = mergeNearbyNamesakes(mountainFeatures, 12);
+  desertFeatures = mergeNearbyNamesakes(desertFeatures, 4);
+  mountainFeatures.sort((a, b) => compareRanges(a.properties.rank, b.properties.rank));
   mountainFeatures.forEach((f, idx) => {
     f.properties.rank.order = idx + 1;
   });
@@ -378,7 +384,7 @@ export async function buildData(): Promise<void> {
     Peninsula: 'peninsula',
   };
 
-  const landformFeatures: GeoFeature[] = [];
+  let landformFeatures: GeoFeature[] = [];
   const usedLandformIds = new Set<string>();
 
   for (const raw of rawRegions.features) {
@@ -420,6 +426,8 @@ export async function buildData(): Promise<void> {
     });
   }
 
+  // Wider radius: landforms are large and Natural Earth splits e.g. the Brazilian Highlands.
+  landformFeatures = mergeNearbyNamesakes(landformFeatures, 10);
   landformFeatures.sort((a, b) => (b.properties.rank.area || 0) - (a.properties.rank.area || 0));
   landformFeatures.forEach((f, idx) => {
     f.properties.rank.order = idx + 1;
@@ -457,6 +465,7 @@ export async function buildData(): Promise<void> {
     const fclass = String(raw.properties.featurecla || '');
     const subkind = marineClasses[fclass];
     if (!subkind) continue;
+    if (SEAS_LISTED_AS_LAKES.has(String(raw.properties.name))) continue;
 
     const name = raw.properties.name || raw.properties.name_en;
     if (!name) continue;
