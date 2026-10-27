@@ -1,4 +1,5 @@
 import { parseSvg } from './dom';
+import { makeDraggable, type DraggableController } from './draggable';
 import type { Store, AppState } from '@/state/types';
 import { loadGeoData, type GeoFeature } from '@/globe/data-loader';
 import { t, getLocale, localize, localizedName, type I18nKey } from '@/i18n';
@@ -85,6 +86,7 @@ export function formatArea(km2: number): string {
  * Floating HUD overlay for True Size polygon comparison.
  */
 export class SizeComparisonHud {
+  private readonly draggable: DraggableController;
   private readonly container: HTMLElement;
   private readonly store: Store<AppState>;
   private readonly onFlyTo?: (lat: number, lng: number, altitude?: number) => void;
@@ -101,6 +103,10 @@ export class SizeComparisonHud {
 
     this.element = document.createElement('div');
     this.element.className = 'tl-size-hud hidden';
+    this.draggable = makeDraggable(this.element, {
+      handle: '.tl-size-header',
+      storageKey: 'terralearn_panel_pos_size',
+    });
     this.container.appendChild(this.element);
 
     void this.preloadCountries();
@@ -396,6 +402,7 @@ export class SizeComparisonHud {
   }
 
   public destroy(): void {
+    this.draggable.destroy();
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;

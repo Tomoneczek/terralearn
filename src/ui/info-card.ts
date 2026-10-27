@@ -1,4 +1,5 @@
 import type { Store, AppState } from '@/state/types';
+import { makeDraggable, type DraggableController } from './draggable';
 import type { LayerId } from '@/layers';
 import { resolveAssetUrl } from '@/utils/assets';
 import { t, setLocale, getLocale } from '@/i18n';
@@ -12,6 +13,7 @@ export interface InfoCardOptions {
 }
 
 export class InfoCard {
+  private readonly draggable: DraggableController;
   public readonly element: HTMLElement;
   private readonly store: Store<AppState>;
   private readonly onFlyTo?: () => void;
@@ -26,6 +28,10 @@ export class InfoCard {
 
     this.element = document.createElement('article');
     this.element.className = 'tl-info-card hidden';
+    this.draggable = makeDraggable(this.element, {
+      handle: '.tl-card-header',
+      storageKey: 'terralearn_panel_pos_card',
+    });
     this.element.setAttribute('aria-label', t('card.title'));
     options.container.appendChild(this.element);
 
@@ -322,6 +328,7 @@ export class InfoCard {
   }
 
   public destroy(): void {
+    this.draggable.destroy();
     this.isDestroyed = true;
     if (this.unsubscribe) {
       this.unsubscribe();

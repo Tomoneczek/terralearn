@@ -1,4 +1,5 @@
 import { parseSvg } from './dom';
+import { makeDraggable, type DraggableController } from './draggable';
 import type { Store, AppState, RoutePoint } from '@/state/types';
 import { haversineDistanceKm, rhumbLine } from '@/geo/spherical';
 import { t, localize, localizedName, type I18nKey, type LocalizedText } from '@/i18n';
@@ -50,6 +51,7 @@ function pointName(point: RoutePoint): string {
  * Floating HUD overlay for spherical route comparison (Orthodrome vs Loxodrome).
  */
 export class RouteHud {
+  private readonly draggable: DraggableController;
   private readonly container: HTMLElement;
   private readonly store: Store<AppState>;
   private readonly onFlyTo?: (lat: number, lng: number, altitude?: number) => void;
@@ -65,6 +67,10 @@ export class RouteHud {
 
     this.element = document.createElement('div');
     this.element.className = 'tl-route-hud hidden';
+    this.draggable = makeDraggable(this.element, {
+      handle: '.tl-route-header',
+      storageKey: 'terralearn_panel_pos_route',
+    });
     this.container.appendChild(this.element);
 
     this.bindStore();
@@ -392,6 +398,7 @@ export class RouteHud {
   }
 
   public destroy(): void {
+    this.draggable.destroy();
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;

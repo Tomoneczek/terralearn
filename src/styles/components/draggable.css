@@ -1,0 +1,15 @@
+/* Draggable floating panels (see src/ui/draggable.ts) */
+.tl-draggable .tl-route-header,
+.tl-draggable .tl-antipodes-header,
+.tl-draggable .tl-size-header,
+.tl-draggable .tl-card-header {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.tl-draggable.tl-dragging,
+.tl-draggable.tl-dragging > * {
+  cursor: grabbing;
+  user-select: none;
+}

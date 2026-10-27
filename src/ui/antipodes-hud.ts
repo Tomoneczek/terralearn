@@ -1,4 +1,5 @@
 import { parseSvg } from './dom';
+import { makeDraggable, type DraggableController } from './draggable';
 import type { Store, AppState } from '@/state/types';
 import { antipode } from '@/geo/spherical';
 import { detectLocationAtCoords, type OceanId } from '@/geo/antipodes-detector';
@@ -69,6 +70,7 @@ const OCEAN_KEY_MAP: Record<OceanId, I18nKey> = {
 };
 
 export class AntipodesHud {
+  private readonly draggable: DraggableController;
   private readonly container: HTMLElement;
   private readonly store: Store<AppState>;
   private readonly onFlyTo?: (lat: number, lng: number, altitude?: number) => void;
@@ -85,6 +87,10 @@ export class AntipodesHud {
 
     this.element = document.createElement('div');
     this.element.className = 'tl-antipodes-hud hidden';
+    this.draggable = makeDraggable(this.element, {
+      handle: '.tl-antipodes-header',
+      storageKey: 'terralearn_panel_pos_antipodes',
+    });
     this.container.appendChild(this.element);
 
     void this.preloadCountries();
@@ -358,6 +364,7 @@ export class AntipodesHud {
   }
 
   public destroy(): void {
+    this.draggable.destroy();
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;

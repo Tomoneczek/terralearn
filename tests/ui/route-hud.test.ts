@@ -230,4 +230,25 @@ describe('RouteHud component', () => {
 
     hud.destroy();
   });
+
+  it('can be dragged by its header so it does not cover the globe', () => {
+    localStorage.removeItem('terralearn_panel_pos_route');
+    const store = createStore<AppState>(plState());
+    const hud = new RouteHud({ container, store });
+    store.set({ routeComparison: { active: true, from: null, to: null } });
+
+    const panel = container.querySelector<HTMLElement>('.tl-route-hud')!;
+    expect(panel.classList.contains('tl-draggable')).toBe(true);
+
+    const header = panel.querySelector('.tl-route-title')!;
+    const down = new MouseEvent('pointerdown', { bubbles: true, clientX: 10, clientY: 10 });
+    Object.defineProperty(down, 'pointerId', { value: 1 });
+    header.dispatchEvent(down);
+    const move = new MouseEvent('pointermove', { bubbles: true, clientX: 60, clientY: 90 });
+    Object.defineProperty(move, 'pointerId', { value: 1 });
+    panel.dispatchEvent(move);
+    expect(panel.style.translate).not.toBe('');
+
+    hud.destroy();
+  });
 });
