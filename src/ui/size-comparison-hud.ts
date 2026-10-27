@@ -1,7 +1,7 @@
 import { parseSvg } from './dom';
 import type { Store, AppState } from '@/state/types';
 import { loadGeoData, type GeoFeature } from '@/globe/data-loader';
-import { t, type I18nKey } from '@/i18n';
+import { t, getLocale, localize, localizedName, type I18nKey } from '@/i18n';
 
 export const AFRICA_AREA_KM2 = 30_370_000;
 export const POLAND_AREA_KM2 = 312_696;
@@ -64,31 +64,21 @@ export const SIZE_PRESETS: SizePresetItem[] = [
   },
 ];
 
-export const POPULAR_COUNTRIES = [
-  { code: 'GL', label: 'Grenlandia' },
-  { code: 'PL', label: 'Polska' },
-  { code: 'BR', label: 'Brazylia' },
-  { code: 'AU', label: 'Australia' },
-  { code: 'RU', label: 'Rosja' },
-  { code: 'US', label: 'USA' },
-  { code: 'CN', label: 'Chiny' },
-  { code: 'IN', label: 'Indie' },
-  { code: 'DZ', label: 'Algieria' },
-  { code: 'CD', label: 'DR Kongo' },
-];
+const NUMBER_LOCALES = { pl: 'pl-PL', en: 'en-US' } as const;
 
+/** "2.19 M km² (2,189,751 km²)" / "2,19 mln km² (2 189 751 km²)" in the current locale. */
 export function formatArea(km2: number): string {
-  if (km2 >= 1_000_000) {
-    const mln = (km2 / 1_000_000)
-      .toLocaleString('pl-PL', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })
+  const locale = NUMBER_LOCALES[getLocale()];
+  // Polish groups digits with a non-breaking space; a plain space wraps more predictably here.
+  const format = (value: number, digits = 0) =>
+    value
+      .toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits })
       .replace(/\u00a0/g, ' ');
-    const full = km2.toLocaleString('pl-PL').replace(/\u00a0/g, ' ');
-    return `${mln} mln km² (${full} km²)`;
+  const full = t('sizeCompare.areaKm2', { value: format(km2) });
+  if (km2 >= 1_000_000) {
+    return `${t('sizeCompare.areaMillionKm2', { value: format(km2 / 1_000_000, 2) })} (${full})`;
   }
-  return `${km2.toLocaleString('pl-PL').replace(/\u00a0/g, ' ')} km²`;
+  return full;
 }
 
 /**
@@ -146,7 +136,10 @@ export class SizeComparisonHud {
     const lat = targetLat ?? feat.properties.labelLat ?? 0;
     const lng = targetLng ?? feat.properties.labelLng ?? 0;
     const area = feat.properties.rank?.area ?? 0;
-    const name = feat.properties.name_pl || feat.properties.name_en || countryCode;
+    const name = localizedName(feat.properties.name_pl, feat.properties.name_en) ?? {
+      pl: countryCode,
+      en: countryCode,
+    };
 
     this.store.set({
       sizeComparison: {
@@ -250,7 +243,8 @@ export class SizeComparisonHud {
 
     const countryName = document.createElement('span');
     countryName.className = 'tl-size-country-name';
-    countryName.textContent = comparison.countryName ?? comparison.countryId ?? '—';
+    countryName.textContent =
+      localize(comparison.countryName ?? undefined) ?? comparison.countryId ?? '—';
 
     const badge = document.createElement('span');
     badge.className = 'tl-size-badge';

@@ -29,7 +29,7 @@ describe('AntipodesHud', () => {
     store.set({
       antipodes: {
         active: true,
-        source: { lat: 52.23, lng: 21.01, label: 'Warszawa' },
+        source: { lat: 52.23, lng: 21.01, label: { pl: 'Warszawa', en: 'Warsaw' } },
         antipode: {
           lat: -52.23,
           lng: -158.99,
@@ -44,7 +44,9 @@ describe('AntipodesHud', () => {
 
     // Verify Point A card
     const cardA = el?.querySelector('.source-card');
-    expect(cardA?.textContent).toContain('Warszawa');
+    // Regression: preset labels were Polish in the English UI.
+    expect(cardA?.textContent).toContain('Warsaw');
+    expect(cardA?.textContent).not.toContain('Warszawa');
     expect(cardA?.textContent).toContain('52.23° N, 21.01° E');
 
     // Verify Point B card
@@ -66,7 +68,7 @@ describe('AntipodesHud', () => {
     store.set({
       antipodes: {
         active: true,
-        source: { lat: 52.23, lng: 21.01, label: 'Warszawa' },
+        source: { lat: 52.23, lng: 21.01, label: { pl: 'Warszawa', en: 'Warsaw' } },
         antipode: { lat: -52.23, lng: -158.99, locationName: 'Ocean Spokojny', isLand: false },
       },
     });
@@ -87,7 +89,7 @@ describe('AntipodesHud', () => {
     store.set({
       antipodes: {
         active: true,
-        source: { lat: 52.23, lng: 21.01, label: 'Warszawa' },
+        source: { lat: 52.23, lng: 21.01, label: { pl: 'Warszawa', en: 'Warsaw' } },
         antipode: { lat: -52.23, lng: -158.99, locationName: 'Ocean Spokojny', isLand: false },
       },
     });
@@ -113,7 +115,7 @@ describe('AntipodesHud', () => {
     store.set({
       antipodes: {
         active: true,
-        source: { lat: 52.23, lng: 21.01, label: 'Warszawa' },
+        source: { lat: 52.23, lng: 21.01, label: { pl: 'Warszawa', en: 'Warsaw' } },
         antipode: { lat: -52.23, lng: -158.99, locationName: 'Ocean Spokojny', isLand: false },
       },
     });

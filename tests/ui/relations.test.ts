@@ -18,8 +18,7 @@ describe('Geographic Relations in InfoCard (G11-04)', () => {
       name_pl: 'Polska',
       name_en: 'Poland',
       kind: 'country',
-      kind_pl: 'Państwo',
-      stats: [{ label: 'Powierzchnia', value: '312 696 km²' }],
+      stats: [{ key: 'area', value: 312_696 }],
       relations: {
         capital: {
           id: 'capital-warsaw',
@@ -57,8 +56,7 @@ describe('Geographic Relations in InfoCard (G11-04)', () => {
       name_pl: 'Wisła',
       name_en: 'Vistula',
       kind: 'river',
-      kind_pl: 'Rzeka',
-      stats: [{ label: 'Długość', value: '1 047 km' }],
+      stats: [{ key: 'length', value: 1047 }],
       relations: {
         countries: [
           {
@@ -78,8 +76,7 @@ describe('Geographic Relations in InfoCard (G11-04)', () => {
       name_pl: 'Mount Everest',
       name_en: 'Mount Everest',
       kind: 'peak',
-      kind_pl: 'Szczyt',
-      stats: [{ label: 'Wysokość', value: '8 848 m n.p.m.' }],
+      stats: [{ key: 'elevation', value: 8848 }],
       relations: {
         countries: [
           {

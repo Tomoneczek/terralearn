@@ -37,7 +37,7 @@ describe('AntipodesLayerController (3D antipodal markers & shaft)', () => {
     store.set({
       antipodes: {
         active: true,
-        source: { lat: 52.23, lng: 21.01, label: 'Warszawa' },
+        source: { lat: 52.23, lng: 21.01, label: { pl: 'Warszawa', en: 'Warsaw' } },
         antipode: { lat: -52.23, lng: -158.99, locationName: 'Ocean Spokojny', isLand: false },
       },
     });
@@ -68,7 +68,7 @@ describe('AntipodesLayerController (3D antipodal markers & shaft)', () => {
     store.set({
       antipodes: {
         active: true,
-        source: { lat: 40.41, lng: -3.7, label: 'Madryt' },
+        source: { lat: 40.41, lng: -3.7, label: { pl: 'Madryt', en: 'Madrid' } },
         antipode: { lat: -40.41, lng: 176.3, locationName: 'Nowa Zelandia', isLand: true },
       },
     });

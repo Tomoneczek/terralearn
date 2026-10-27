@@ -55,7 +55,7 @@ describe('RouteLayerController (3D spherical routes)', () => {
       store.set({
         routeComparison: {
           active: true,
-          from: { lat: 52.23, lng: 21.01, label: 'Warszawa' },
+          from: { lat: 52.23, lng: 21.01, label: { pl: 'Warszawa', en: 'Warsaw' } },
           to: null,
         },
       });
@@ -75,8 +75,8 @@ describe('RouteLayerController (3D spherical routes)', () => {
       store.set({
         routeComparison: {
           active: true,
-          from: { lat: 52.23, lng: 21.01, label: 'Warszawa' },
-          to: { lat: 35.68, lng: 139.76, label: 'Tokio' },
+          from: { lat: 52.23, lng: 21.01, label: { pl: 'Warszawa', en: 'Warsaw' } },
+          to: { lat: 35.68, lng: 139.76, label: { pl: 'Tokio', en: 'Tokyo' } },
         },
       });
 

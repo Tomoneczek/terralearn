@@ -56,7 +56,7 @@ describe('RouteHud component', () => {
     store.set({
       routeComparison: {
         active: true,
-        from: { lat: 52.23, lng: 21.01, label: 'Warszawa' },
+        from: { lat: 52.23, lng: 21.01, label: { pl: 'Warszawa', en: 'Warsaw' } },
         to: null,
       },
     });
@@ -78,8 +78,8 @@ describe('RouteHud component', () => {
     store.set({
       routeComparison: {
         active: true,
-        from: { lat: 52.23, lng: 21.01, label: 'Warszawa' },
-        to: { lat: 35.68, lng: 139.76, label: 'Tokio' },
+        from: { lat: 52.23, lng: 21.01, label: { pl: 'Warszawa', en: 'Warsaw' } },
+        to: { lat: 35.68, lng: 139.76, label: { pl: 'Tokio', en: 'Tokyo' } },
       },
     });
 
@@ -130,8 +130,8 @@ describe('RouteHud component', () => {
     presetBtns[0]?.click();
 
     const comparison = store.get().routeComparison;
-    expect(comparison?.from?.label).toBe('Warszawa');
-    expect(comparison?.to?.label).toBe('Tokio');
+    expect(comparison?.from?.label).toEqual({ pl: 'Warszawa', en: 'Warsaw' });
+    expect(comparison?.to?.label).toEqual({ pl: 'Tokio', en: 'Tokyo' });
     expect(onFlyTo).toHaveBeenCalledTimes(1);
 
     hud.destroy();
@@ -205,6 +205,28 @@ describe('RouteHud component', () => {
     });
     expect(store.get().routeComparison?.from?.lat).toBe(50);
     expect(store.get().routeComparison?.to?.lat).toBe(40);
+
+    hud.destroy();
+  });
+
+  // Regression: preset routes were hard-coded in Polish ("Warszawa → Tokio") in the English UI.
+  it('shows preset route names and endpoints in English', () => {
+    setLocale('en');
+    const store = createStore<AppState>({ ...createInitialState(), locale: 'en' });
+    const hud = new RouteHud({ container, store });
+
+    store.set({ routeComparison: { active: true, from: null, to: null } });
+    const names = Array.from(
+      container.querySelectorAll<HTMLButtonElement>('.tl-route-preset-btn'),
+      b => b.textContent,
+    );
+    expect(names).toEqual(['Warsaw → Tokyo', 'London → San Francisco', 'New York → Singapore']);
+
+    container.querySelector<HTMLButtonElement>('.tl-route-preset-btn')?.click();
+    const endpoints = container.querySelector('.tl-route-endpoints')?.textContent ?? '';
+    expect(endpoints).toContain('Warsaw');
+    expect(endpoints).toContain('Tokyo');
+    expect(endpoints).not.toContain('Warszawa');
 
     hud.destroy();
   });

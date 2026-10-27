@@ -3,7 +3,7 @@ import type { Store, AppState } from '@/state/types';
 import { antipode } from '@/geo/spherical';
 import { detectLocationAtCoords, type OceanId } from '@/geo/antipodes-detector';
 import { loadGeoData, type GeoFeatureCollection } from '@/globe/data-loader';
-import { t, getLocale, type I18nKey } from '@/i18n';
+import { t, getLocale, localize, localizedName, type I18nKey, type LocalizedText } from '@/i18n';
 
 export interface AntipodesHudOptions {
   container: HTMLElement;
@@ -14,7 +14,7 @@ export interface AntipodesHudOptions {
 export interface AntipodePresetItem {
   id: string;
   nameKey: I18nKey;
-  source: { lat: number; lng: number; label: string };
+  source: { lat: number; lng: number; label: LocalizedText };
   cameraA: { lat: number; lng: number; altitude: number };
   cameraB: { lat: number; lng: number; altitude: number };
 }
@@ -23,35 +23,35 @@ export const ANTIPODE_PRESETS: AntipodePresetItem[] = [
   {
     id: 'warsaw-pacific',
     nameKey: 'antipodes.presetWarsawPacific',
-    source: { lat: 52.23, lng: 21.01, label: 'Warszawa' },
+    source: { lat: 52.23, lng: 21.01, label: { pl: 'Warszawa', en: 'Warsaw' } },
     cameraA: { lat: 52, lng: 21, altitude: 2.0 },
     cameraB: { lat: -52, lng: -159, altitude: 2.0 },
   },
   {
     id: 'madrid-nz',
     nameKey: 'antipodes.presetMadridNz',
-    source: { lat: 40.41, lng: -3.7, label: 'Madryt' },
+    source: { lat: 40.41, lng: -3.7, label: { pl: 'Madryt', en: 'Madrid' } },
     cameraA: { lat: 40, lng: -4, altitude: 2.0 },
     cameraB: { lat: -40, lng: 176, altitude: 2.0 },
   },
   {
     id: 'beijing-argentina',
     nameKey: 'antipodes.presetBeijingArgentina',
-    source: { lat: 39.9, lng: 116.4, label: 'Pekin' },
+    source: { lat: 39.9, lng: 116.4, label: { pl: 'Pekin', en: 'Beijing' } },
     cameraA: { lat: 40, lng: 116, altitude: 2.0 },
     cameraB: { lat: -40, lng: -64, altitude: 2.0 },
   },
   {
     id: 'bogota-indonesia',
     nameKey: 'antipodes.presetBogotaIndonesia',
-    source: { lat: 4.71, lng: -74.07, label: 'Bogota' },
+    source: { lat: 4.71, lng: -74.07, label: { pl: 'Bogota', en: 'Bogotá' } },
     cameraA: { lat: 5, lng: -74, altitude: 2.0 },
     cameraB: { lat: -5, lng: 106, altitude: 2.0 },
   },
   {
     id: 'hawaii-botswana',
     nameKey: 'antipodes.presetHawaiiBotswana',
-    source: { lat: 19.89, lng: -155.58, label: 'Hawaje' },
+    source: { lat: 19.89, lng: -155.58, label: { pl: 'Hawaje', en: 'Hawaii' } },
     cameraA: { lat: 20, lng: -156, altitude: 2.0 },
     cameraB: { lat: -20, lng: 24, altitude: 2.0 },
   },
@@ -100,7 +100,7 @@ export class AntipodesHud {
     }
   }
 
-  public async setPoint(lat: number, lng: number, label?: string): Promise<void> {
+  public async setPoint(lat: number, lng: number, label?: LocalizedText): Promise<void> {
     if (!this.countriesData) {
       await this.preloadCountries();
     }
@@ -229,7 +229,8 @@ export class AntipodesHud {
 
       const nameA = document.createElement('div');
       nameA.className = 'tl-card-name';
-      nameA.textContent = source.label ?? `${source.lat.toFixed(1)}°, ${source.lng.toFixed(1)}°`;
+      nameA.textContent =
+        localize(source.label) ?? `${source.lat.toFixed(1)}°, ${source.lng.toFixed(1)}°`;
 
       const coordsA = document.createElement('div');
       coordsA.className = 'tl-card-coords';
@@ -319,7 +320,7 @@ export class AntipodesHud {
     this.element.appendChild(body);
   }
 
-  private handlePointSelected(lat: number, lng: number, label?: string): void {
+  private handlePointSelected(lat: number, lng: number, label?: LocalizedText): void {
     const current = this.store.get().antipodes;
     if (!current || !current.active) return;
     void this.setPoint(lat, lng, label);
@@ -346,7 +347,7 @@ export class AntipodesHud {
             this.handlePointSelected(
               selection.lat,
               selection.lng,
-              selection.name_pl || selection.name,
+              localizedName(selection.name_pl || selection.name, selection.name_en),
             );
           }
         }

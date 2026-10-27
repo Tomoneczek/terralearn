@@ -44,9 +44,21 @@ function roundCoords(coords: unknown): unknown {
   return coords.map(roundCoords);
 }
 
-function slugify(text: string): string {
+/** Letters that NFD does not decompose into an ASCII base letter plus a diacritic. */
+const SLUG_LETTERS: Readonly<Record<string, string>> = {
+  ł: 'l',
+  ø: 'o',
+  đ: 'd',
+  ß: 'ss',
+  æ: 'ae',
+  œ: 'oe',
+  ı: 'i',
+};
+
+export function slugify(text: string): string {
   return text
     .toLowerCase()
+    .replace(/[łøđßæœı]/g, ch => SLUG_LETTERS[ch] ?? ch)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')

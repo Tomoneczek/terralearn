@@ -1,7 +1,7 @@
 import { parseSvg } from './dom';
 import type { Store, AppState, RoutePoint } from '@/state/types';
 import { haversineDistanceKm, rhumbLine } from '@/geo/spherical';
-import { t } from '@/i18n';
+import { t, localize, localizedName, type I18nKey, type LocalizedText } from '@/i18n';
 
 export interface RouteHudOptions {
   container: HTMLElement;
@@ -11,7 +11,7 @@ export interface RouteHudOptions {
 
 export interface RoutePresetItem {
   id: string;
-  name: string;
+  nameKey: I18nKey;
   from: RoutePoint;
   to: RoutePoint;
   camera: { lat: number; lng: number; altitude: number };
@@ -20,26 +20,31 @@ export interface RoutePresetItem {
 export const ROUTE_PRESETS: RoutePresetItem[] = [
   {
     id: 'warsaw-tokyo',
-    name: 'Warszawa → Tokio',
-    from: { lat: 52.23, lng: 21.01, label: 'Warszawa' },
-    to: { lat: 35.68, lng: 139.76, label: 'Tokio' },
+    nameKey: 'route.presetWarsawTokyo',
+    from: { lat: 52.23, lng: 21.01, label: { pl: 'Warszawa', en: 'Warsaw' } },
+    to: { lat: 35.68, lng: 139.76, label: { pl: 'Tokio', en: 'Tokyo' } },
     camera: { lat: 58, lng: 80, altitude: 2.2 },
   },
   {
     id: 'london-sf',
-    name: 'Londyn → San Francisco',
-    from: { lat: 51.51, lng: -0.13, label: 'Londyn' },
-    to: { lat: 37.77, lng: -122.42, label: 'San Francisco' },
+    nameKey: 'route.presetLondonSf',
+    from: { lat: 51.51, lng: -0.13, label: { pl: 'Londyn', en: 'London' } },
+    to: { lat: 37.77, lng: -122.42, label: { pl: 'San Francisco', en: 'San Francisco' } },
     camera: { lat: 60, lng: -60, altitude: 2.2 },
   },
   {
     id: 'ny-singapore',
-    name: 'Nowy Jork → Singapur',
-    from: { lat: 40.71, lng: -74.01, label: 'Nowy Jork' },
-    to: { lat: 1.35, lng: 103.82, label: 'Singapur' },
+    nameKey: 'route.presetNySingapore',
+    from: { lat: 40.71, lng: -74.01, label: { pl: 'Nowy Jork', en: 'New York' } },
+    to: { lat: 1.35, lng: 103.82, label: { pl: 'Singapur', en: 'Singapore' } },
     camera: { lat: 70, lng: 20, altitude: 2.5 },
   },
 ];
+
+/** Name of a route endpoint in the current language, or its coordinates. */
+function pointName(point: RoutePoint): string {
+  return localize(point.label) ?? `${point.lat.toFixed(1)}°, ${point.lng.toFixed(1)}°`;
+}
 
 /**
  * Floating HUD overlay for spherical route comparison (Orthodrome vs Loxodrome).
@@ -129,7 +134,7 @@ export class RouteHud {
     for (const preset of ROUTE_PRESETS) {
       const btn = document.createElement('button');
       btn.className = 'tl-route-preset-btn';
-      btn.textContent = preset.name;
+      btn.textContent = t(preset.nameKey);
       btn.addEventListener('click', () => {
         this.store.set({
           routeComparison: {
@@ -165,7 +170,7 @@ export class RouteHud {
 
       const labelA = document.createElement('span');
       labelA.className = 'tl-point-label';
-      labelA.textContent = from.label ?? `${from.lat.toFixed(1)}°, ${from.lng.toFixed(1)}°`;
+      labelA.textContent = pointName(from);
 
       startCard.appendChild(badgeA);
       startCard.appendChild(labelA);
@@ -187,7 +192,7 @@ export class RouteHud {
       badgeA.textContent = 'A';
       const nameA = document.createElement('span');
       nameA.className = 'tl-point-name';
-      nameA.textContent = from.label ?? `${from.lat.toFixed(1)}°, ${from.lng.toFixed(1)}°`;
+      nameA.textContent = pointName(from);
       endA.appendChild(badgeA);
       endA.appendChild(nameA);
 
@@ -202,7 +207,7 @@ export class RouteHud {
       badgeB.textContent = 'B';
       const nameB = document.createElement('span');
       nameB.className = 'tl-point-name';
-      nameB.textContent = to.label ?? `${to.lat.toFixed(1)}°, ${to.lng.toFixed(1)}°`;
+      nameB.textContent = pointName(to);
       endB.appendChild(badgeB);
       endB.appendChild(nameB);
 
@@ -331,7 +336,7 @@ export class RouteHud {
     this.element.appendChild(footer);
   }
 
-  private handleMapClick(lat: number, lng: number, label?: string): void {
+  private handleMapClick(lat: number, lng: number, label?: LocalizedText): void {
     const state = this.store.get();
     const comparison = state.routeComparison;
     if (!comparison || !comparison.active) return;
@@ -367,7 +372,11 @@ export class RouteHud {
         if (comparison?.active && selection && selection.id !== this.lastSelectionId) {
           this.lastSelectionId = selection.id;
           if (selection.lat !== undefined && selection.lng !== undefined) {
-            this.handleMapClick(selection.lat, selection.lng, selection.name_pl || selection.name);
+            this.handleMapClick(
+              selection.lat,
+              selection.lng,
+              localizedName(selection.name_pl || selection.name, selection.name_en),
+            );
           }
         }
 

@@ -65,9 +65,22 @@ export interface SearchIndexItem {
   rank?: number;
 }
 
+/** Numeric facts; labels, units and number formatting are applied by the UI per locale. */
+export type FactStatKey = 'area' | 'population' | 'length' | 'elevation' | 'maxElevation' | 'rank';
+
 export interface FactStat {
-  label: string;
-  value: string;
+  key: FactStatKey;
+  value: number;
+}
+
+/** Familiar Polish reference objects used for "x times …" comparisons. */
+export type ComparisonRef = 'poland' | 'vistula' | 'rysy' | 'sniardwy' | 'baltic' | 'warsaw';
+
+export interface FactComparison {
+  metric: 'area' | 'length' | 'elevation' | 'population';
+  ref: ComparisonRef;
+  /** Value of the object divided by the value of the reference. */
+  ratio: number;
 }
 
 export interface GeographicRelationItem {
@@ -92,10 +105,10 @@ export interface ObjectFacts {
   name_pl: string;
   name_en: string;
   kind: string;
-  kind_pl: string;
+  /** Landform or marine subtype (plateau, sea, ...), used for the kind label. */
+  subtype?: string;
   stats: FactStat[];
-  trivia?: string;
-  comparison?: string;
+  comparison?: FactComparison;
   relations?: GeographicRelations;
 }
 
@@ -137,189 +150,108 @@ function getFeatureCoords(f: RawGeoFeature): { lat: number; lng: number } {
   return { lat: 0, lng: 0 };
 }
 
-function getKindPl(kind: string, subType?: string): string {
-  switch (kind) {
-    case 'country':
-      return 'Państwo';
-    case 'lake':
-      return 'Jezioro';
-    case 'river':
-      return 'Rzeka';
-    case 'mountain_range':
-    case 'mountain':
-      return 'Pasmo górskie';
-    case 'desert':
-      return 'Pustynia';
-    case 'capital':
-      return 'Stolica państwa';
-    case 'megacity':
-      return 'Metropolia';
-    case 'peak':
-      return 'Szczyt górski';
-    case 'landform':
-      switch (subType) {
-        case 'plateau':
-          return 'Wyżyna / Płaskowyż';
-        case 'plain':
-          return 'Nizina / Równina';
-        case 'basin':
-          return 'Kotlina / Basen';
-        case 'delta':
-          return 'Delta rzeczna';
-        case 'peninsula':
-          return 'Półwysep';
-        default:
-          return 'Forma terenu';
-      }
-    case 'marine':
-      switch (subType) {
-        case 'sea':
-          return 'Morze';
-        case 'gulf':
-        case 'bay':
-          return 'Zatoka';
-        case 'strait':
-          return 'Cieśnina';
-        case 'channel':
-          return 'Kanał morski';
-        case 'sound':
-        case 'fjord':
-          return 'Fiord / Cieśnina';
-        case 'ocean':
-          return 'Ocean';
-        default:
-          return 'Akwen morski';
-      }
-    default:
-      return 'Obiekt geograficzny';
-  }
-}
+/** Reference values for comparisons. */
+const REFERENCE_VALUES: Readonly<Record<ComparisonRef, number>> = {
+  poland: 312_696, // km²
+  vistula: 1047, // km
+  rysy: 2499, // m
+  sniardwy: 113.8, // km²
+  baltic: 377_000, // km²
+  warsaw: 1_790_000, // inhabitants
+};
 
-/** Poland's total area, used as the reference for "x times Poland" comparisons. */
-const POLAND_AREA_KM2 = 312_696;
 const POLAND_ID = 'PL';
 
-/** Formats a number with a Polish decimal comma, e.g. 98.9 -> "98,9". */
-export function formatDecimalPl(value: number, digits = 1): string {
-  return value.toLocaleString('pl-PL', {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  });
+/** Ratios are stored with 3 significant decimals; the UI rounds them for display. */
+function compare(
+  metric: FactComparison['metric'],
+  ref: ComparisonRef,
+  value: number,
+): FactComparison {
+  return { metric, ref, ratio: Math.round((value / REFERENCE_VALUES[ref]) * 1000) / 1000 };
 }
 
 export function generateFacts(f: RawGeoFeature): ObjectFacts {
   const p = f.properties;
   const stats: FactStat[] = [];
-  let comparison: string | undefined;
+  let comparison: FactComparison | undefined;
 
   const area = p.rank?.area;
   const pop = p.rank?.population;
   const elev = p.rank?.elevation;
   const len = p.rank?.length;
+  const order = p.rank?.order;
 
-  if (p.kind === 'country') {
-    if (area) {
-      stats.push({ label: 'Powierzchnia', value: `${area.toLocaleString('pl-PL')} km²` });
-      const ratio = area / POLAND_AREA_KM2;
-      // Comparing Poland with itself is meaningless (and the dataset area differs slightly).
-      if (p.id === POLAND_ID) {
-        comparison = undefined;
-      } else if (ratio >= 1) {
-        comparison = `Powierzchnia równa ok. ${formatDecimalPl(ratio)}x terytorium Polski`;
-      } else {
-        comparison = `Powierzchnia stanowi ok. ${formatDecimalPl(ratio * 100)}% powierzchni Polski`;
+  switch (p.kind) {
+    case 'country':
+      if (area) {
+        stats.push({ key: 'area', value: area });
+        // Comparing Poland with itself is meaningless (and the dataset area differs slightly).
+        if (p.id !== POLAND_ID) comparison = compare('area', 'poland', area);
       }
-    }
-    if (pop) {
-      stats.push({ label: 'Ludność', value: `${pop.toLocaleString('pl-PL')} os.` });
-    }
-    if (p.rank?.order) {
-      stats.push({ label: 'Miejsce wg powierzchni', value: `#${p.rank.order} na świecie` });
-    }
-  } else if (p.kind === 'lake') {
-    if (area) {
-      stats.push({ label: 'Powierzchnia', value: `${area.toLocaleString('pl-PL')} km²` });
-      const sniardwyRatio = Math.round(area / 113.8);
-      comparison = `Powierzchnia równa ok. ${sniardwyRatio.toLocaleString('pl-PL')}x Jezioro Śniardwy`;
-    }
-    if (p.rank?.order) {
-      stats.push({ label: 'Ranking jezior', value: `#${p.rank.order} na świecie` });
-    }
-  } else if (p.kind === 'river') {
-    if (len) {
-      stats.push({ label: 'Długość', value: `${Math.round(len).toLocaleString('pl-PL')} km` });
-      const wislaRatio = len / 1047;
-      comparison = `Długość równa ok. ${formatDecimalPl(wislaRatio)}x długości Wisły`;
-    }
-    if (p.rank?.order) {
-      stats.push({ label: 'Ranking rzek', value: `#${p.rank.order} na świecie` });
-    }
-  } else if (p.kind === 'mountain_range' || p.kind === 'mountain') {
-    if (elev) {
-      stats.push({ label: 'Maks. wysokość', value: `${elev.toLocaleString('pl-PL')} m n.p.m.` });
-      const rysyRatio = elev / 2499;
-      comparison = `Wysokość najwyższego szczytu: ok. ${formatDecimalPl(rysyRatio)}x Rysy`;
-    }
-    if (area) {
-      stats.push({ label: 'Obszar', value: `${area.toLocaleString('pl-PL')} km²` });
-    }
-  } else if (p.kind === 'desert') {
-    if (area) {
-      stats.push({ label: 'Powierzchnia', value: `${area.toLocaleString('pl-PL')} km²` });
-      const ratio = area / POLAND_AREA_KM2;
-      comparison = `Obszar równy ok. ${formatDecimalPl(ratio)}x terytorium Polski`;
-    }
-  } else if (p.kind === 'landform') {
-    if (area) {
-      stats.push({ label: 'Powierzchnia', value: `${area.toLocaleString('pl-PL')} km²` });
-      const ratio = area / POLAND_AREA_KM2;
-      if (ratio >= 1) {
-        comparison = `Obszar równy ok. ${formatDecimalPl(ratio)}x terytorium Polski`;
-      } else {
-        comparison = `Obszar stanowi ok. ${formatDecimalPl(ratio * 100)}% powierzchni Polski`;
+      if (pop) stats.push({ key: 'population', value: pop });
+      break;
+    case 'lake':
+      if (area) {
+        stats.push({ key: 'area', value: area });
+        comparison = compare('area', 'sniardwy', area);
       }
-    }
-    if (p.rank?.order) {
-      stats.push({ label: 'Ranking form terenu', value: `#${p.rank.order} na świecie` });
-    }
-  } else if (p.kind === 'marine') {
-    if (area) {
-      stats.push({ label: 'Powierzchnia', value: `${area.toLocaleString('pl-PL')} km²` });
-      const balticRatio = area / 377000;
-      if (balticRatio >= 1) {
-        comparison = `Powierzchnia równa ok. ${formatDecimalPl(balticRatio)}x Morze Bałtyckie`;
-      } else {
-        comparison = `Powierzchnia stanowi ok. ${formatDecimalPl(balticRatio * 100)}% Morza Bałtyckiego`;
+      break;
+    case 'river':
+      if (len) {
+        stats.push({ key: 'length', value: Math.round(len) });
+        comparison = compare('length', 'vistula', len);
       }
-    }
-    if (p.rank?.order) {
-      stats.push({ label: 'Ranking akwenów morskich', value: `#${p.rank.order} na świecie` });
-    }
-  } else if (p.kind === 'capital' || p.kind === 'megacity') {
-    if (pop) {
-      stats.push({ label: 'Ludność', value: `${pop.toLocaleString('pl-PL')} mieszkańców` });
-      const warsawRatio = pop / 1790000;
-      comparison = `Populacja równa ok. ${formatDecimalPl(warsawRatio)}x Warszawa`;
-    }
-    if (p.countryName) {
-      stats.push({ label: 'Kraj', value: p.countryName });
-    }
-  } else if (p.kind === 'peak') {
-    if (elev) {
-      stats.push({ label: 'Wysokość', value: `${elev.toLocaleString('pl-PL')} m n.p.m.` });
-      const rysyRatio = elev / 2499;
-      comparison = `Wysokość równa ok. ${formatDecimalPl(rysyRatio)}x Rysy`;
-    }
+      break;
+    case 'mountain_range':
+    case 'mountain':
+      if (elev) {
+        stats.push({ key: 'maxElevation', value: elev });
+        comparison = compare('elevation', 'rysy', elev);
+      }
+      if (area) stats.push({ key: 'area', value: area });
+      break;
+    case 'desert':
+    case 'landform':
+      if (area) {
+        stats.push({ key: 'area', value: area });
+        comparison = compare('area', 'poland', area);
+      }
+      break;
+    case 'marine':
+      if (area) {
+        stats.push({ key: 'area', value: area });
+        comparison = compare('area', 'baltic', area);
+      }
+      break;
+    case 'capital':
+    case 'megacity':
+      // The country is shown as a relation chip, so it is not repeated as a stat.
+      if (pop) {
+        stats.push({ key: 'population', value: pop });
+        comparison = compare('population', 'warsaw', pop);
+      }
+      break;
+    case 'peak':
+      if (elev) {
+        stats.push({ key: 'elevation', value: elev });
+        comparison = compare('elevation', 'rysy', elev);
+      }
+      break;
   }
 
+  const ranked = ['country', 'lake', 'river', 'landform', 'marine'].includes(p.kind);
+  if (ranked && order) stats.push({ key: 'rank', value: order });
+
+  const subtype = p.landformType || p.marineType;
   return {
     id: p.id,
     name_pl: p.name_pl,
     name_en: p.name_en,
     kind: p.kind,
-    kind_pl: getKindPl(p.kind, p.landformType || p.marineType),
+    ...(subtype ? { subtype } : {}),
     stats,
-    comparison,
+    ...(comparison ? { comparison } : {}),
   };
 }
 

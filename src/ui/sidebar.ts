@@ -1,7 +1,7 @@
 import type { Store, AppState, QualityPreset, GraticuleMode, AppTheme } from '@/state/types';
 import type { LayerDef, LayerId } from '@/layers/types';
 import { LAYER_DEFINITIONS } from '@/layers/registry';
-import { t } from '@/i18n';
+import { t, localizedName } from '@/i18n';
 import { parseSvg } from './dom';
 import { ToggleSwitch } from './components/toggle';
 import { TopNSlider } from './components/slider';
@@ -362,7 +362,10 @@ export class SidebarController {
               sizeComparison: {
                 active: true,
                 countryId: feat.properties.id,
-                countryName: feat.properties.name_pl || feat.properties.name_en || targetId,
+                countryName: localizedName(feat.properties.name_pl, feat.properties.name_en) ?? {
+                  pl: targetId,
+                  en: targetId,
+                },
                 countryAreaKm2: feat.properties.rank?.area ?? 0,
                 targetLat: feat.properties.labelLat ?? 0,
                 targetLng: feat.properties.labelLng ?? 0,
@@ -402,7 +405,10 @@ export class SidebarController {
         const sel = this.store.get().selection;
         const lat = sel?.lat ?? 52.23;
         const lng = sel?.lng ?? 21.01;
-        const label = sel?.name_pl || sel?.name || 'Warszawa';
+        const label = (sel && localizedName(sel.name_pl || sel.name, sel.name_en)) || {
+          pl: 'Warszawa',
+          en: 'Warsaw',
+        };
         const anti = antipode({ lat, lng });
         this.store.set({
           antipodes: {

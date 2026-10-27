@@ -19,6 +19,27 @@ export function getLocale(): Locale {
   return currentLocale;
 }
 
+/** Text available in both UI languages, e.g. the name of a place picked on the globe. */
+export interface LocalizedText {
+  pl: string;
+  en: string;
+}
+
+/** Builds a LocalizedText from feature names, falling back to whichever name exists. */
+export function localizedName(
+  namePl: string | undefined,
+  nameEn: string | undefined,
+): LocalizedText | undefined {
+  const pl = namePl || nameEn;
+  const en = nameEn || namePl;
+  return pl && en ? { pl, en } : undefined;
+}
+
+/** The text in the current UI language. */
+export function localize(text: LocalizedText | undefined): string | undefined {
+  return text?.[currentLocale];
+}
+
 /**
  * Resolves a dot-notated translation key and optionally interpolates params.
  * e.g. t('layers.lakes') or t('quiz.errorDistance', { n: 42 })

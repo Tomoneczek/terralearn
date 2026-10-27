@@ -18,8 +18,7 @@ describe('G11-02 UI Locale Switch Components', () => {
       name_pl: 'Polska',
       name_en: 'Poland',
       kind: 'country',
-      kind_pl: 'Państwo',
-      stats: [{ label: 'Stolica', value: 'Warszawa' }],
+      stats: [{ key: 'area', value: 312_696 }],
     },
   };
 

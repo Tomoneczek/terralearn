@@ -102,6 +102,52 @@ export interface Dictionary {
     capitalCity: string;
     mountainRange: string;
     country: string;
+    maxElevation: string;
+    worldRank: string;
+    values: {
+      area: string;
+      population: string;
+      length: string;
+      elevation: string;
+      rank: string;
+    };
+    compareTimes: string;
+    comparePercent: string;
+    metrics: {
+      area: string;
+      length: string;
+      elevation: string;
+      population: string;
+    };
+    refsTimes: Record<'poland' | 'vistula' | 'rysy' | 'sniardwy' | 'baltic' | 'warsaw', string>;
+    refsPercent: Record<'poland' | 'vistula' | 'rysy' | 'sniardwy' | 'baltic' | 'warsaw', string>;
+    kinds: Record<
+      | 'country'
+      | 'lake'
+      | 'river'
+      | 'mountain'
+      | 'desert'
+      | 'capital'
+      | 'megacity'
+      | 'peak'
+      | 'landform'
+      | 'plateau'
+      | 'plain'
+      | 'basin'
+      | 'delta'
+      | 'peninsula'
+      | 'marine'
+      | 'sea'
+      | 'gulf'
+      | 'bay'
+      | 'strait'
+      | 'channel'
+      | 'sound'
+      | 'fjord'
+      | 'ocean'
+      | 'other',
+      string
+    >;
   };
   search: {
     noResults: string;
@@ -222,6 +268,8 @@ export interface Dictionary {
   };
   sizeCompare: {
     title: string;
+    areaKm2: string;
+    areaMillionKm2: string;
     close: string;
     presets: string;
     presetGreenlandAfrica: string;

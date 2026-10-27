@@ -76,7 +76,7 @@ describe('SizeComparisonLayerController (3D ghost polygon)', () => {
       sizeComparison: {
         active: true,
         countryId: 'GL',
-        countryName: 'Grenlandia',
+        countryName: { pl: 'Grenlandia', en: 'Greenland' },
         countryAreaKm2: 2189751,
         targetLat: 0,
         targetLng: 20,
@@ -110,7 +110,7 @@ describe('SizeComparisonLayerController (3D ghost polygon)', () => {
       sizeComparison: {
         active: true,
         countryId: 'TEST_MULTI',
-        countryName: 'Multi Island',
+        countryName: { pl: 'Multi Island', en: 'Multi Island' },
         countryAreaKm2: 500000,
         targetLat: 10,
         targetLng: 30,
@@ -136,7 +136,7 @@ describe('SizeComparisonLayerController (3D ghost polygon)', () => {
       sizeComparison: {
         active: true,
         countryId: 'GL',
-        countryName: 'Grenlandia',
+        countryName: { pl: 'Grenlandia', en: 'Greenland' },
         countryAreaKm2: 2189751,
         targetLat: 0,
         targetLng: 20,
@@ -159,7 +159,7 @@ describe('SizeComparisonLayerController (3D ghost polygon)', () => {
       sizeComparison: {
         active: true,
         countryId: 'GL',
-        countryName: 'Grenlandia',
+        countryName: { pl: 'Grenlandia', en: 'Greenland' },
         countryAreaKm2: 2189751,
         targetLat: 0,
         targetLng: 20,
@@ -172,7 +172,7 @@ describe('SizeComparisonLayerController (3D ghost polygon)', () => {
       sizeComparison: {
         active: true,
         countryId: 'GL',
-        countryName: 'Grenlandia',
+        countryName: { pl: 'Grenlandia', en: 'Greenland' },
         countryAreaKm2: 2189751,
         targetLat: 50,
         targetLng: 15,
@@ -198,7 +198,7 @@ describe('SizeComparisonLayerController (3D ghost polygon)', () => {
         sizeComparison: {
           active: true,
           countryId: 'DEGEN',
-          countryName: 'Degenerate',
+          countryName: { pl: 'Degenerate', en: 'Degenerate' },
           countryAreaKm2: 100,
           targetLat: 0,
           targetLng: 0,

@@ -1,3 +1,4 @@
+import type { LocalizedText } from '@/i18n/t';
 import type { LayerId } from '@/layers';
 
 export interface FeatureRef {
@@ -25,7 +26,7 @@ export interface LayerState {
 export interface RoutePoint {
   lat: number;
   lng: number;
-  label?: string;
+  label?: LocalizedText;
 }
 
 export interface RouteComparisonState {
@@ -37,7 +38,7 @@ export interface RouteComparisonState {
 export interface SizeComparisonState {
   active: boolean;
   countryId: string | null;
-  countryName: string | null;
+  countryName: LocalizedText | null;
   countryAreaKm2: number | null;
   targetLat: number;
   targetLng: number;
@@ -47,7 +48,7 @@ export interface SizeComparisonState {
 export interface AntipodesPoint {
   lat: number;
   lng: number;
-  label?: string;
+  label?: LocalizedText;
   locationName?: string;
   isLand?: boolean;
 }

@@ -18,12 +18,19 @@ describe('InfoCard', () => {
       name_pl: 'Polska',
       name_en: 'Poland',
       kind: 'country',
-      kind_pl: 'Państwo',
       stats: [
-        { label: 'Powierzchnia', value: '312 696 km²' },
-        { label: 'Ludność', value: '38 000 000 os.' },
+        { key: 'area', value: 312_696 },
+        { key: 'population', value: 38_000_000 },
       ],
-      comparison: 'Powierzchnia równa ok. 1.0x terytorium Polski',
+      comparison: { metric: 'area', ref: 'poland', ratio: 1.0 },
+    },
+    'megacity-lodz': {
+      id: 'megacity-lodz',
+      name_pl: 'Łódź',
+      name_en: 'Łódź',
+      kind: 'megacity',
+      stats: [{ key: 'population', value: 758_000 }],
+      comparison: { metric: 'population', ref: 'warsaw', ratio: 0.423 },
     },
   };
 
@@ -79,6 +86,51 @@ describe('InfoCard', () => {
     // Regression: the comparison box used a dollar-sign icon.
     const iconPath = cardEl.querySelector('.tl-card-comp-icon path')?.getAttribute('d') ?? '';
     expect(iconPath).not.toContain('M17 5H9.5');
+
+    card.destroy();
+  });
+
+  // Regression: with English UI the card showed "Ludność … mieszkańców", "Kraj: Poland"
+  // and "Populacja równa ok. 0,4x Warszawa", because facts.json stored Polish sentences.
+  it('renders stats and comparison in English without Polish words', async () => {
+    setLocale('en');
+    const store = createStore<AppState>({ ...createInitialState(), locale: 'en' });
+    const card = new InfoCard({ container, store });
+    await new Promise(r => setTimeout(r, 20));
+
+    store.set({
+      ...store.get(),
+      selection: { id: 'megacity-lodz', layerId: 'megacities', kind: 'megacity' },
+    });
+
+    const cardEl = container.querySelector('.tl-info-card')!;
+    expect(cardEl.querySelector('.tl-card-kind')?.textContent).toBe('Megacity');
+    expect(cardEl.querySelector('.tl-card-stat-label')?.textContent).toBe('Population');
+    expect(cardEl.querySelector('.tl-card-stat-value')?.textContent).toBe('758,000');
+    expect(cardEl.querySelector('.tl-card-comp-text')?.textContent).toBe(
+      'Population ≈ 42% of Warsaw',
+    );
+    expect(cardEl.textContent).not.toMatch(/Ludność|Kraj|mieszkańców|Populacja|Warszawa/);
+
+    card.destroy();
+  });
+
+  it('formats Polish numbers and comparisons with Polish grammar', async () => {
+    const store = createStore<AppState>(plState());
+    const card = new InfoCard({ container, store });
+    await new Promise(r => setTimeout(r, 20));
+
+    store.set({
+      ...store.get(),
+      selection: { id: 'megacity-lodz', layerId: 'megacities', kind: 'megacity' },
+    });
+
+    const cardEl = container.querySelector('.tl-info-card')!;
+    expect(cardEl.querySelector('.tl-card-kind')?.textContent).toBe('Metropolia');
+    expect(cardEl.querySelector('.tl-card-stat-value')?.textContent).toBe('758\u00a0000 os.');
+    expect(cardEl.querySelector('.tl-card-comp-text')?.textContent).toBe(
+      'Populacja stanowi ok. 42% ludności Warszawy',
+    );
 
     card.destroy();
   });

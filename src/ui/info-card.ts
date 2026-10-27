@@ -3,6 +3,7 @@ import type { LayerId } from '@/layers';
 import { resolveAssetUrl } from '@/utils/assets';
 import { t, setLocale, getLocale } from '@/i18n';
 import type { ObjectFacts, GeographicRelationItem } from '../../scripts/data/buildSearchAndFacts';
+import { formatComparison, formatStat, kindLabel } from './facts-format';
 
 export interface InfoCardOptions {
   container: HTMLElement;
@@ -104,11 +105,7 @@ export class InfoCard {
 
     const kindBadge = document.createElement('span');
     kindBadge.className = 'tl-card-kind';
-    kindBadge.textContent = isEn
-      ? facts?.kind
-        ? t(`quiz.categories.${facts.kind}` as never)
-        : 'Feature'
-      : (facts?.kind_pl ?? 'Obiekt');
+    kindBadge.textContent = kindLabel(facts?.kind, facts?.subtype);
 
     const mainTitle = isEn
       ? facts?.name_en || facts?.name_pl || id
@@ -159,13 +156,14 @@ export class InfoCard {
         const item = document.createElement('div');
         item.className = 'tl-card-stat-row';
 
+        const { label, value } = formatStat(stat);
         const dt = document.createElement('dt');
         dt.className = 'tl-card-stat-label';
-        dt.textContent = stat.label;
+        dt.textContent = label;
 
         const dd = document.createElement('dd');
         dd.className = 'tl-card-stat-value';
-        dd.textContent = stat.value;
+        dd.textContent = value;
 
         item.appendChild(dt);
         item.appendChild(dd);
@@ -186,7 +184,7 @@ export class InfoCard {
 
       const compText = document.createElement('span');
       compText.className = 'tl-card-comp-text';
-      compText.textContent = facts.comparison;
+      compText.textContent = formatComparison(facts.comparison);
 
       compBox.appendChild(icon);
       compBox.appendChild(compText);

@@ -9,6 +9,7 @@ import {
   SIZE_PRESETS,
 } from '@/ui/size-comparison-hud';
 import { clearGeoDataCache } from '@/globe/data-loader';
+import { setLocale } from '@/i18n';
 
 describe('SizeComparisonHud', () => {
   let container: HTMLElement;
@@ -27,21 +28,26 @@ describe('SizeComparisonHud', () => {
 
   beforeEach(() => {
     clearGeoDataCache();
+    setLocale('en');
     container = document.createElement('div');
     document.body.appendChild(container);
   });
 
   describe('formatArea', () => {
-    it('formats areas >= 1 mln km² with millions and exact km²', () => {
-      const res = formatArea(2189751);
-      expect(res).toContain('mln km²');
-      expect(res).toContain('2 189 751 km²');
+    it('formats areas >= 1 mln km² with millions and exact km² (Polish)', () => {
+      setLocale('pl');
+      expect(formatArea(2189751)).toBe('2,19 mln km² (2 189 751 km²)');
     });
 
-    it('formats areas < 1 mln km² with exact km²', () => {
-      const res = formatArea(312696);
-      expect(res).toContain('312 696 km²');
-      expect(res).not.toContain('mln');
+    it('formats areas < 1 mln km² with exact km² (Polish)', () => {
+      setLocale('pl');
+      expect(formatArea(312696)).toBe('312 696 km²');
+    });
+
+    // Regression: the English UI showed Polish number formatting and "mln".
+    it('formats areas with English separators and units', () => {
+      expect(formatArea(2189751)).toBe('2.19 M km² (2,189,751 km²)');
+      expect(formatArea(312696)).toBe('312,696 km²');
     });
   });
 
@@ -79,7 +85,7 @@ describe('SizeComparisonHud', () => {
         sizeComparison: {
           active: true,
           countryId: 'GL',
-          countryName: 'Grenlandia',
+          countryName: { pl: 'Grenlandia', en: 'Greenland' },
           countryAreaKm2: 2189751,
           targetLat: 0,
           targetLng: 20,
@@ -92,14 +98,14 @@ describe('SizeComparisonHud', () => {
 
       // Verify country name and badge
       const countryName = el?.querySelector('.tl-size-country-name');
-      expect(countryName?.textContent).toBe('Grenlandia');
+      expect(countryName?.textContent).toBe('Greenland');
 
       const badge = el?.querySelector('.tl-size-badge');
       expect(badge?.textContent).toBe('GL');
 
       // Verify area and comparison ratios
       const areaVal = el?.querySelector('.tl-size-stat-val');
-      expect(areaVal?.textContent).toContain('mln km²');
+      expect(areaVal?.textContent).toContain('M km²');
 
       const ratioItems = el?.querySelectorAll('.tl-size-ratio-item');
       expect(ratioItems?.length).toBe(2); // vs Africa and vs Poland
@@ -115,7 +121,7 @@ describe('SizeComparisonHud', () => {
         sizeComparison: {
           active: true,
           countryId: 'GL',
-          countryName: 'Grenlandia',
+          countryName: { pl: 'Grenlandia', en: 'Greenland' },
           countryAreaKm2: 2189751,
           targetLat: 0,
           targetLng: 20,
@@ -140,7 +146,7 @@ describe('SizeComparisonHud', () => {
         sizeComparison: {
           active: true,
           countryId: 'GL',
-          countryName: 'Grenlandia',
+          countryName: { pl: 'Grenlandia', en: 'Greenland' },
           countryAreaKm2: 2189751,
           targetLat: 0,
           targetLng: 20,
@@ -166,7 +172,7 @@ describe('SizeComparisonHud', () => {
         sizeComparison: {
           active: true,
           countryId: 'GL',
-          countryName: 'Grenlandia',
+          countryName: { pl: 'Grenlandia', en: 'Greenland' },
           countryAreaKm2: 2189751,
           targetLat: 70,
           targetLng: -40,
@@ -225,7 +231,7 @@ describe('SizeComparisonHud', () => {
         sizeComparison: {
           active: true,
           countryId: 'GL',
-          countryName: 'Grenlandia',
+          countryName: { pl: 'Grenlandia', en: 'Greenland' },
           countryAreaKm2: 2189751,
           targetLat: 70,
           targetLng: -40,
@@ -242,7 +248,7 @@ describe('SizeComparisonHud', () => {
 
       const updated = store.get().sizeComparison;
       expect(updated?.countryId).toBe('FR');
-      expect(updated?.countryName).toBe('Francja');
+      expect(updated?.countryName).toEqual({ pl: 'Francja', en: 'Francja' });
 
       // Test invalid country code in setCountry
       await hud.setCountry('NON_EXISTENT');
@@ -264,7 +270,7 @@ describe('SizeComparisonHud', () => {
         sizeComparison: {
           active: true,
           countryId: 'XX',
-          countryName: 'Nieznany',
+          countryName: { pl: 'Nieznany', en: 'Nieznany' },
           countryAreaKm2: 0,
           targetLat: 0,
           targetLng: 0,
