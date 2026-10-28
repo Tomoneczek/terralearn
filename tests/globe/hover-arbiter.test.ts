@@ -111,4 +111,16 @@ describe('HoverArbiter', () => {
       expect(store.get().hovered).toBeNull();
     });
   });
+
+  // Regression: leaving the globe for the sidebar kept "Saudi Arabia" hovered, so the tooltip
+  // stayed on top of the menu.
+  it('hides the hover while the pointer is outside the globe and restores it on return', () => {
+    arbiter.setGlobeHover(ref('SA'));
+    arbiter.setPointerInside(false);
+    expect(store.get().hovered).toBeNull();
+    expect(container.style.cursor).toBe('default');
+
+    arbiter.setPointerInside(true);
+    expect(store.get().hovered?.id).toBe('SA');
+  });
 });

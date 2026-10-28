@@ -125,6 +125,57 @@ describe('Globe Events & Picking', () => {
     expect(container.style.cursor).toBe('default');
   });
 
+  // Regression: globe.gl keeps its hovered object when the pointer leaves the canvas, so the
+  // tooltip ("Saudi Arabia") stayed on top of the sidebar.
+  it('clears the hover when the pointer leaves the globe and restores it on return', () => {
+    const store = createStore(createInitialState());
+    const { globe, triggerPolygonHover } = createMockGlobe();
+    const container = document.createElement('div');
+    const arbiter = new HoverArbiter(store, container);
+    const detach = attachGlobeEvents(globe, store, container, arbiter);
+
+    triggerPolygonHover({
+      type: 'Feature',
+      properties: {
+        id: 'SA',
+        layerId: 'countriesTopN',
+        kind: 'country',
+        name_pl: 'Arabia Saudyjska',
+      },
+      geometry: { type: 'Point', coordinates: [45, 24] },
+    });
+    container.dispatchEvent(new Event('pointerleave'));
+    expect(store.get().hovered).toBeNull();
+
+    container.dispatchEvent(new Event('pointerenter'));
+    expect(store.get().hovered?.id).toBe('SA');
+
+    detach();
+    container.dispatchEvent(new Event('pointerleave'));
+    expect(store.get().hovered?.id).toBe('SA');
+  });
+
+  it('clears the hover on pointer leave without an arbiter', () => {
+    const store = createStore(createInitialState());
+    const { globe, triggerPolygonHover } = createMockGlobe();
+    const container = document.createElement('div');
+    attachGlobeEvents(globe, store, container);
+
+    triggerPolygonHover({
+      type: 'Feature',
+      properties: {
+        id: 'SA',
+        layerId: 'countriesTopN',
+        kind: 'country',
+        name_pl: 'Arabia Saudyjska',
+      },
+      geometry: { type: 'Point', coordinates: [45, 24] },
+    });
+    container.dispatchEvent(new Event('pointerleave'));
+    expect(store.get().hovered).toBeNull();
+    expect(container.style.cursor).toBe('default');
+  });
+
   it('records globe coordinate click and clears selection', () => {
     const store = createStore<AppState>({
       ...createInitialState(),

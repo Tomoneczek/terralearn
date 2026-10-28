@@ -116,7 +116,17 @@ export function attachGlobeEvents(
     });
   });
 
+  // globe.gl does not report "nothing hovered" when the pointer leaves the canvas
+  const onPointerLeave = () => {
+    if (arbiter) arbiter.setPointerInside(false);
+    else handleFeatureHover(null);
+  };
+  const onPointerEnter = () => arbiter?.setPointerInside(true);
+  container?.addEventListener('pointerleave', onPointerLeave);
+  container?.addEventListener('pointerenter', onPointerEnter);
+
   return () => {
-    // Teardown / cleanup if needed
+    container?.removeEventListener('pointerleave', onPointerLeave);
+    container?.removeEventListener('pointerenter', onPointerEnter);
   };
 }

@@ -11,6 +11,8 @@ export class HoverArbiter {
   private globeHover: FeatureRef | null = null;
   private capitalHover: FeatureRef | null = null;
   private populationHover: FeatureRef | null = null;
+  /** False while the pointer is outside the globe (e.g. over the sidebar). */
+  private pointerInside = true;
 
   constructor(
     private readonly store: Store<AppState>,
@@ -33,14 +35,25 @@ export class HoverArbiter {
     this.apply();
   }
 
+  /**
+   * globe.gl keeps its last hovered object when the pointer leaves the canvas, so the tooltip
+   * stayed on top of the sidebar. Hovers are suppressed while outside but remembered: globe.gl
+   * will not report the same object again when the pointer comes back over it.
+   */
+  public setPointerInside(inside: boolean): void {
+    if (inside === this.pointerInside) return;
+    this.pointerInside = inside;
+    this.apply();
+  }
+
   /** True while the pointer is over a capital: globe.gl clicks/hovers must not override it. */
   public isCapitalClaimed(): boolean {
     return this.capitalHover !== null;
   }
 
   private apply(): void {
-    const feature = this.capitalHover ?? this.globeHover;
-    const winner = feature ?? this.populationHover;
+    const feature = this.pointerInside ? (this.capitalHover ?? this.globeHover) : null;
+    const winner = feature ?? (this.pointerInside ? this.populationHover : null);
     if (this.container) {
       this.container.style.cursor = feature ? 'pointer' : 'default';
     }
