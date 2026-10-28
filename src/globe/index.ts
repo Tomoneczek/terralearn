@@ -10,3 +10,5 @@ export * from './size-comparison-layer';
 export * from './antipodes-layer';
 export * from './graticule-layer';
 export * from './sun';
+export * from './moon';
+export * from './sky-clock';

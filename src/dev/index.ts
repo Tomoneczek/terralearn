@@ -6,6 +6,7 @@ import { countDrawCalls, formatDrawCalls } from './draw-calls';
 import { SpotlightDebugOverlay } from './spotlight-debug';
 import type { SpotlightParams } from '@/globe/capitals-spotlight';
 import type { SunParams } from '@/globe/sun';
+import type { MoonParams } from '@/globe/moon';
 
 function readDrawCalls(context: GlobeContext): number | null {
   try {
@@ -92,6 +93,104 @@ export function registerSunDevParams(context: GlobeContext): () => void {
       set: value => {
         sun.params[spec.key] = value;
         sun.applyParams();
+      },
+    }),
+  );
+  return () => unregister.forEach(fn => fn());
+}
+
+const MOON_SPECS: readonly {
+  key: keyof MoonParams;
+  label: string;
+  group: string;
+  min: number;
+  max: number;
+  step: number;
+}[] = [
+  { key: 'scale', label: 'Size × (1 = real)', group: 'Moon', min: 1, max: 20, step: 0.5 },
+  { key: 'earthshine', label: 'Earthshine', group: 'Moon', min: 0, max: 1, step: 0.01 },
+  {
+    key: 'shadowWidening',
+    label: "Earth's shadow widening (atmosphere)",
+    group: 'Eclipses',
+    min: 1,
+    max: 1.05,
+    step: 0.005,
+  },
+  { key: 'umbraGlow', label: 'Red light in umbra', group: 'Eclipses', min: 0, max: 1, step: 0.01 },
+];
+
+const DAY_MS = 86_400_000;
+const HOUR_MS = 3_600_000;
+
+/**
+ * Moon look, eclipse switches and the sky clock offset (days + hours), for previewing phases
+ * and eclipses at any moment; `?time=` (see load-dev-panel) freezes the sky at an exact instant.
+ */
+export function registerSkyDevParams(context: GlobeContext): () => void {
+  const { moon, dayNight, skyClock } = context;
+  const unregister = MOON_SPECS.map(spec =>
+    registerDevParam({
+      id: `moon.${spec.key}`,
+      label: spec.label,
+      group: spec.group,
+      min: spec.min,
+      max: spec.max,
+      step: spec.step,
+      get: () => moon.params[spec.key],
+      set: value => {
+        moon.params[spec.key] = value;
+        moon.applyParams();
+      },
+    }),
+  );
+
+  let eclipsesOn = true;
+  unregister.push(
+    registerDevParam({
+      id: 'eclipses.enabled',
+      label: 'Eclipse shadows (0 = off, 1 = on)',
+      group: 'Eclipses',
+      min: 0,
+      max: 1,
+      step: 1,
+      get: () => (eclipsesOn ? 1 : 0),
+      set: value => {
+        eclipsesOn = value >= 0.5;
+        moon.setEclipsesEnabled(eclipsesOn);
+        dayNight.setEclipsesEnabled(eclipsesOn);
+      },
+    }),
+  );
+
+  let offsetDays = 0;
+  let offsetHours = 0;
+  const applyOffset = (): void => skyClock.setOffsetMs(offsetDays * DAY_MS + offsetHours * HOUR_MS);
+  unregister.push(
+    registerDevParam({
+      id: 'sky.offsetDays',
+      label: 'Time offset (days)',
+      group: 'Sky clock',
+      min: -400,
+      max: 400,
+      step: 1,
+      get: () => offsetDays,
+      set: value => {
+        offsetDays = value;
+        applyOffset();
+      },
+    }),
+    registerDevParam({
+      id: 'sky.offsetHours',
+      label: 'Time offset (hours)',
+      group: 'Sky clock',
+      min: -24,
+      max: 24,
+      step: 0.25,
+      get: () => offsetHours,
+      set: value => {
+        offsetHours = value;
+        applyOffset();
       },
     }),
   );
@@ -232,6 +331,7 @@ export function initDevPanel(root: HTMLElement, context: GlobeContext): DevPanel
   const unregisterRender = registerRenderDevParams(context);
   const unregisterCapitals = registerCapitalsDevParams(context);
   const unregisterSun = registerSunDevParams(context);
+  const unregisterSky = registerSkyDevParams(context);
   const frameStats = new FrameStats();
   frameStats.start();
   const stats = (): DevStats => ({
@@ -249,6 +349,7 @@ export function initDevPanel(root: HTMLElement, context: GlobeContext): DevPanel
     unregisterRender();
     unregisterCapitals();
     unregisterSun();
+    unregisterSky();
   });
   return panel;
 }

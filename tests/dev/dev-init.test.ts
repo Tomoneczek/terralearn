@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Scene, Vector3 } from 'three';
 import { AtmosphereController } from '@/globe/atmosphere';
 import { SunController, DEFAULT_SUN_PARAMS } from '@/globe/sun';
+import { MoonController, DEFAULT_MOON_PARAMS } from '@/globe/moon';
+import { DayNightController } from '@/globe/day-night';
+import { SkyClock } from '@/globe/sky-clock';
 import { CapitalsLayer } from '@/globe/capitals-layer';
 import { HoverArbiter } from '@/globe/hover-arbiter';
 import { CAPITALS_SPOTLIGHT_DEFAULTS } from '@/globe/capitals-spotlight';
@@ -12,6 +15,7 @@ import {
   registerCapitalsDevParams,
   registerRenderDevParams,
   registerSunDevParams,
+  registerSkyDevParams,
 } from '@/dev';
 import { SpotlightDebugOverlay } from '@/dev/spotlight-debug';
 import { loadDevPanel } from '@/dev/load-dev-panel';
@@ -22,11 +26,21 @@ function fakeContext(): {
   atmosphere: AtmosphereController;
   capitals: CapitalsLayer;
   sun: SunController;
+  moon: MoonController;
+  dayNight: DayNightController;
+  skyClock: SkyClock;
   container: HTMLElement;
 } {
   const store = createStore(createInitialState());
   const atmosphere = new AtmosphereController(new Scene(), store);
   const sun = new SunController(null, store, { sunDirection: new Vector3(0, 0, 1) });
+  const skyClock = new SkyClock({ realNow: () => Date.UTC(2026, 9, 28, 12) });
+  const dayNight = new DayNightController(store, { date: skyClock.now() });
+  skyClock.onTick(date => dayNight.updateSun(date));
+  const moon = new MoonController(null, store, {
+    moonPosition: dayNight.getMoonPosition(),
+    sunDirection: dayNight.getSunDirection(),
+  });
   const container = document.createElement('div');
   container.getBoundingClientRect = () => ({ width: 1000, height: 600 }) as DOMRect;
   const capitals = new CapitalsLayer({
@@ -40,6 +54,9 @@ function fakeContext(): {
     atmosphere,
     capitals,
     sun,
+    moon,
+    dayNight,
+    skyClock,
     fpsMonitor: { getFps: () => 60 },
     quality: { getActiveTier: () => 'high' },
     camera: { getPointOfView: () => ({ lat: 0, lng: 0, altitude: 2 }) },
@@ -49,7 +66,7 @@ function fakeContext(): {
       },
     },
   } as unknown as GlobeContext;
-  return { context, atmosphere, capitals, sun, container };
+  return { context, atmosphere, capitals, sun, moon, dayNight, skyClock, container };
 }
 
 describe('initDevPanel', () => {
@@ -103,6 +120,44 @@ describe('sun params', () => {
     unregister();
     expect(listDevParams()).toHaveLength(0);
     sun.destroy();
+  });
+});
+
+describe('sky params', () => {
+  beforeEach(() => clearDevParams());
+
+  it('tunes the Moon, toggles eclipse shadows and shifts the sky clock', () => {
+    const { context, moon, dayNight, skyClock } = fakeContext();
+    const unregister = registerSkyDevParams(context);
+
+    for (const key of Object.keys(DEFAULT_MOON_PARAMS)) {
+      expect(listDevParams().some(p => p.id === `moon.${key}`)).toBe(true);
+    }
+    setDevParam('moon.scale', 4);
+    expect(moon.getMesh().scale.x).toBe(4);
+    setDevParam('moon.umbraGlow', 0.8);
+    expect(moon.getMaterial().uniforms.uUmbraGlow?.value).toBe(0.8);
+
+    setDevParam('eclipses.enabled', 0);
+    expect(moon.getMaterial().uniforms.uEclipses?.value).toBe(0);
+    expect(dayNight.getMaterial().uniforms.uEclipses?.value).toBe(0);
+
+    const before = dayNight.getMoonPosition().clone();
+    setDevParam('sky.offsetDays', 2);
+    setDevParam('sky.offsetHours', 6);
+    expect(skyClock.getOffsetMs()).toBe(2 * 86_400_000 + 6 * 3_600_000);
+    // The Moon moves ~13°/day, so its position must have changed
+    expect(dayNight.getMoonPosition().angleTo(before)).toBeGreaterThan(0.3);
+
+    resetAllDevParams();
+    expect(skyClock.getOffsetMs()).toBe(0);
+    expect(moon.params.scale).toBe(1);
+
+    unregister();
+    expect(listDevParams()).toHaveLength(0);
+    moon.destroy();
+    dayNight.destroy();
+    skyClock.destroy();
   });
 });
 
@@ -267,6 +322,18 @@ describe('loadDevPanel', () => {
     const { context } = fakeContext();
     await loadDevPanel('?dev=true', document.body, context);
     expect(document.querySelector('.tl-dev-panel')).not.toBeNull();
+  });
+
+  it('freezes the sky clock at ?time= in dev mode only', async () => {
+    const importer = vi.fn(() => Promise.resolve({ initDevPanel: vi.fn() }) as never);
+    const { context, skyClock } = fakeContext();
+
+    await loadDevPanel('?time=2026-08-12T17:46:00Z', document.body, context, importer);
+    expect(skyClock.getFixedTime()).toBeNull();
+
+    await loadDevPanel('?dev=true&time=2026-08-12T17:46:00Z', document.body, context, importer);
+    expect(skyClock.now().toISOString()).toBe('2026-08-12T17:46:00.000Z');
+    skyClock.destroy();
   });
 
   it('swallows import failures instead of breaking the app', async () => {

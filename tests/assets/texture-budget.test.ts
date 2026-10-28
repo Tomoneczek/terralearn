@@ -16,6 +16,7 @@ describe('Texture Assets Budget and Quality Integrity (G08-01)', () => {
       'water-mask.png': 50 * 1024, // max 50 KB
       'clouds.png': 500 * 1024, // max 500 KB
       'night-sky.png': 1000 * 1024, // max 1000 KB
+      'moon.jpg': 150 * 1024, // max 150 KB (1024×512)
     };
 
     let totalBytes = 0;

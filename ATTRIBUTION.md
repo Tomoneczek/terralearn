@@ -29,6 +29,9 @@ All geographical datasets and planetary textures in **TerraLearn** are derived s
 - **Assets used:**
   - _Blue Marble: Next Generation_ – Daytime equirectangular planetary albedo map (`earth-day.jpg`).
   - _Black Marble: Night Lights_ – Global nighttime city lights emission map (`earth-night.jpg`).
+- **Moon texture:** [NASA Scientific Visualization Studio – CGI Moon Kit](https://svs.gsfc.nasa.gov/4720)
+  (Ernie Wright, NASA GSFC; colour mosaic from the Lunar Reconnaissance Orbiter Camera), **Public Domain**.
+  - 1024×512 equirectangular lunar colour map (`moon.jpg`).
 
 ---
 

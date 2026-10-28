@@ -13,6 +13,8 @@ import { HoverArbiter } from './hover-arbiter';
 import { CloudsController } from './clouds';
 import { AtmosphereController } from './atmosphere';
 import { SunController } from './sun';
+import { MoonController } from './moon';
+import { SkyClock } from './sky-clock';
 import { FPSMonitor, QualityController } from './performance';
 
 import type { ArcItem } from '@/geo/spherical';
@@ -32,6 +34,8 @@ export interface GlobeContext {
   dayNight: DayNightController;
   atmosphere: AtmosphereController;
   sun: SunController;
+  moon: MoonController;
+  skyClock: SkyClock;
   highlight: HighlightOverlay;
   capitals: CapitalsLayer;
   population: PopulationLayer;
@@ -99,8 +103,12 @@ export function createGlobe(
     },
   );
 
+  // One clock for the whole sky (Sun, Moon, eclipses); ticks every minute
+  const skyClock = new SkyClock();
+
   // Day/Night Terminator Controller & Material
   const dayNight = new DayNightController(store, {
+    date: skyClock.now(),
     baseTextureUrl: earthTexture,
     dayTextureUrl: '/textures/earth-day.jpg',
     nightTextureUrl: options.nightTexture,
@@ -169,8 +177,23 @@ export function createGlobe(
   });
 
   // The Sun in the sky at its real angular size, sharing the day/night sun direction
-  const sun = new SunController(globeScene, store, { sunDirection: dayNight.getSunDirection() });
-  const unsubscribeSunUpdate = dayNight.onSunUpdate(date => sun.setDate(date));
+  const sun = new SunController(globeScene, store, {
+    sunDirection: dayNight.getSunDirection(),
+    date: skyClock.now(),
+  });
+
+  // The Moon at its real position and size, lit by the same sun direction (phase)
+  const moon = new MoonController(globeScene, store, {
+    moonPosition: dayNight.getMoonPosition(),
+    sunDirection: dayNight.getSunDirection(),
+    date: skyClock.now(),
+  });
+
+  const unsubscribeSunUpdate = dayNight.onSunUpdate(date => {
+    sun.setDate(date);
+    moon.setDate(date);
+  });
+  const unsubscribeSkyClock = skyClock.onTick(date => dayNight.updateSun(date));
 
   // Rivers are thin screen-space lines: give them a comfortable pointer hit area
   installPathHitTolerance();
@@ -275,6 +298,8 @@ export function createGlobe(
     dayNight,
     atmosphere,
     sun,
+    moon,
+    skyClock,
     highlight,
     capitals,
     population,
@@ -299,8 +324,11 @@ export function createGlobe(
       highlight.destroy();
       capitals.destroy();
       population.destroy();
+      unsubscribeSkyClock();
       unsubscribeSunUpdate();
+      skyClock.destroy();
       sun.destroy();
+      moon.destroy();
       dayNight.destroy();
       atmosphere.destroy();
       clouds.destroy();

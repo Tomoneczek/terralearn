@@ -255,3 +255,42 @@ describe('DayNightController and Terminator Shader', () => {
     controller.destroy();
   });
 });
+
+describe('DayNightController sky state (Moon and solar eclipses)', () => {
+  it('tracks the Moon position and solar disc size for the sky time', async () => {
+    const { calculateMoonScenePosition } = await import('@/geo/lunar');
+    const { sunAngularRadiusRad, MOON_RADIUS_SCENE, DAY_NIGHT_FRAGMENT_SHADER } =
+      await import('@/globe/day-night');
+    const store = createStore({ ...createInitialState(), dayNight: true });
+    const date = new Date(Date.UTC(2026, 7, 12, 17, 46));
+    const controller = new DayNightController(store, { date });
+    const u = controller.getMaterial().uniforms;
+
+    expect(controller.getMoonPosition().toArray()).toEqual(calculateMoonScenePosition(date));
+    expect(u.uMoonPosition?.value).toBe(controller.getMoonPosition());
+    expect(u.uMoonRadius?.value).toBe(MOON_RADIUS_SCENE);
+    expect(u.uSunAngularRadius?.value).toBeCloseTo(sunAngularRadiusRad(date), 12);
+    // ~0.27° in radians
+    expect(u.uSunAngularRadius?.value).toBeCloseTo(0.00459, 4);
+
+    const later = new Date(date.getTime() + 86_400_000);
+    controller.updateSun(later);
+    expect(controller.getMoonPosition().toArray()).toEqual(calculateMoonScenePosition(later));
+
+    controller.setEclipsesEnabled(false);
+    expect(u.uEclipses?.value).toBe(0);
+    expect(DAY_NIGHT_FRAGMENT_SHADER).toContain('eclipseDiscOcclusion');
+    controller.destroy();
+  });
+
+  it('no longer runs its own timer (the sky clock drives updates)', () => {
+    vi.useFakeTimers();
+    const store = createStore({ ...createInitialState(), dayNight: true });
+    const controller = new DayNightController(store, { date: new Date(Date.UTC(2026, 0, 1)) });
+    const before = controller.getSunDirection().clone();
+    vi.advanceTimersByTime(10 * 60_000);
+    expect(controller.getSunDirection().equals(before)).toBe(true);
+    controller.destroy();
+    vi.useRealTimers();
+  });
+});

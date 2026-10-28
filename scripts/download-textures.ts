@@ -11,6 +11,11 @@ const list = [
   { name: 'earth-day.jpg', url: 'https://unpkg.com/three-globe/example/img/earth-day.jpg' },
   { name: 'earth-night.jpg', url: 'https://unpkg.com/three-globe/example/img/earth-night.jpg' },
   { name: 'night-sky.png', url: 'https://unpkg.com/three-globe/example/img/night-sky.png' },
+  // NASA SVS CGI Moon Kit (LRO colour mosaic, public domain), 1024×512
+  {
+    name: 'moon.jpg',
+    url: 'https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_poles_1k.jpg',
+  },
 ];
 
 async function download() {
