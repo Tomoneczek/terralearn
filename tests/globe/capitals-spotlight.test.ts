@@ -151,7 +151,7 @@ describe('findNearestCapital', () => {
   const items = [
     screen('a', 100, 100, 0, 1),
     screen('b', 108, 100, 0, 1),
-    screen('hidden', 200, 200, 0, 0.1),
+    screen('hidden', 200, 200, 0, 0.05),
   ];
 
   it('returns the nearest capital within the hit radius', () => {
@@ -161,6 +161,20 @@ describe('findNearestCapital', () => {
 
   it('ignores capitals that are too faint to interact with', () => {
     expect(findNearestCapital(items, { x: 200, y: 200 }, P)).toBeNull();
+  });
+
+  // Regression: zoomed out to a whole continent (zoom fade ~0.15) every capital is drawn faint but
+  // visible; a 0.3 threshold made Warsaw unclickable and the click selected Poland underneath.
+  it('lets every clearly visible capital be clicked, also at the continent zoom', () => {
+    const altitude = 1.65;
+    const zoomFade = computeZoomFade(altitude, P);
+    const opacity = computeCapitalOpacity({ ...base, distPx: 0, zoomFade }, P);
+    // Drawn faint but visible: below the old 0.3 threshold that swallowed the click.
+    expect(opacity).toBeGreaterThan(0.12);
+    expect(opacity).toBeLessThan(0.3);
+    expect(
+      findNearestCapital([screen('capital-warsaw', 300, 300, 0, opacity)], { x: 302, y: 301 }, P),
+    ).toBe('capital-warsaw');
   });
 
   it('returns null outside the hit radius', () => {

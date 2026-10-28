@@ -24,7 +24,10 @@ export interface SpotlightParams {
   pointScaleCloseAltitude: number;
   /** Pointer hit radius in CSS pixels. */
   hitRadiusPx: number;
-  /** A capital below this opacity cannot be hovered or clicked. */
+  /**
+   * A capital below this opacity cannot be hovered or clicked. Kept low: a marker that can be
+   * seen must be clickable, otherwise the click falls through to the country underneath.
+   */
   hitMinOpacity: number;
 }
 
@@ -39,7 +42,7 @@ export const CAPITALS_SPOTLIGHT_DEFAULTS: Readonly<SpotlightParams> = {
   pointZoomScale: 2.2,
   pointScaleCloseAltitude: 0.25,
   hitRadiusPx: 12,
-  hitMinOpacity: 0.3,
+  hitMinOpacity: 0.1,
 };
 
 /** Population range (log10) mapped onto [rankScaleMin, rankScaleMax]. */
