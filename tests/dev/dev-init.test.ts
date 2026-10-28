@@ -1,12 +1,18 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Scene } from 'three';
+import { Scene, Vector3 } from 'three';
 import { AtmosphereController } from '@/globe/atmosphere';
+import { SunController, DEFAULT_SUN_PARAMS } from '@/globe/sun';
 import { CapitalsLayer } from '@/globe/capitals-layer';
 import { HoverArbiter } from '@/globe/hover-arbiter';
 import { CAPITALS_SPOTLIGHT_DEFAULTS } from '@/globe/capitals-spotlight';
 import { createStore, createInitialState } from '@/state/store';
 import type { GlobeContext } from '@/globe';
-import { initDevPanel, registerCapitalsDevParams, registerRenderDevParams } from '@/dev';
+import {
+  initDevPanel,
+  registerCapitalsDevParams,
+  registerRenderDevParams,
+  registerSunDevParams,
+} from '@/dev';
 import { SpotlightDebugOverlay } from '@/dev/spotlight-debug';
 import { loadDevPanel } from '@/dev/load-dev-panel';
 import { clearDevParams, listDevParams, resetAllDevParams, setDevParam } from '@/dev/dev-params';
@@ -15,10 +21,12 @@ function fakeContext(): {
   context: GlobeContext;
   atmosphere: AtmosphereController;
   capitals: CapitalsLayer;
+  sun: SunController;
   container: HTMLElement;
 } {
   const store = createStore(createInitialState());
   const atmosphere = new AtmosphereController(new Scene(), store);
+  const sun = new SunController(null, store, { sunDirection: new Vector3(0, 0, 1) });
   const container = document.createElement('div');
   container.getBoundingClientRect = () => ({ width: 1000, height: 600 }) as DOMRect;
   const capitals = new CapitalsLayer({
@@ -31,6 +39,7 @@ function fakeContext(): {
   const context = {
     atmosphere,
     capitals,
+    sun,
     fpsMonitor: { getFps: () => 60 },
     quality: { getActiveTier: () => 'high' },
     camera: { getPointOfView: () => ({ lat: 0, lng: 0, altitude: 2 }) },
@@ -40,7 +49,7 @@ function fakeContext(): {
       },
     },
   } as unknown as GlobeContext;
-  return { context, atmosphere, capitals, container };
+  return { context, atmosphere, capitals, sun, container };
 }
 
 describe('initDevPanel', () => {
@@ -70,6 +79,30 @@ describe('initDevPanel', () => {
     panel.destroy();
     expect(listDevParams()).toHaveLength(0);
     atmosphere.destroy();
+  });
+});
+
+describe('sun params', () => {
+  beforeEach(() => clearDevParams());
+
+  it('exposes every sun parameter and pushes glow changes into the shader', () => {
+    const { context, sun } = fakeContext();
+    const unregister = registerSunDevParams(context);
+
+    for (const key of Object.keys(DEFAULT_SUN_PARAMS)) {
+      expect(listDevParams().some(p => p.id === `sun.${key}`)).toBe(true);
+    }
+    setDevParam('sun.glowStrength', 1.2);
+    setDevParam('sun.discScale', 5);
+    expect(sun.getMaterial().uniforms.uGlowStrength?.value).toBe(1.2);
+    expect(sun.params.discScale).toBe(5);
+
+    resetAllDevParams();
+    expect(sun.params.discScale).toBe(1);
+
+    unregister();
+    expect(listDevParams()).toHaveLength(0);
+    sun.destroy();
   });
 });
 

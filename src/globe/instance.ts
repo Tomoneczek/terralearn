@@ -12,6 +12,7 @@ import { PopulationLayer } from './population-layer';
 import { HoverArbiter } from './hover-arbiter';
 import { CloudsController } from './clouds';
 import { AtmosphereController } from './atmosphere';
+import { SunController } from './sun';
 import { FPSMonitor, QualityController } from './performance';
 
 import type { ArcItem } from '@/geo/spherical';
@@ -30,6 +31,7 @@ export interface GlobeContext {
   compositor: LayerCompositor;
   dayNight: DayNightController;
   atmosphere: AtmosphereController;
+  sun: SunController;
   highlight: HighlightOverlay;
   capitals: CapitalsLayer;
   population: PopulationLayer;
@@ -166,6 +168,10 @@ export function createGlobe(
     dayColor: atmosphereColor,
   });
 
+  // The Sun in the sky at its real angular size, sharing the day/night sun direction
+  const sun = new SunController(globeScene, store, { sunDirection: dayNight.getSunDirection() });
+  const unsubscribeSunUpdate = dayNight.onSunUpdate(date => sun.setDate(date));
+
   // Rivers are thin screen-space lines: give them a comfortable pointer hit area
   installPathHitTolerance();
 
@@ -268,6 +274,7 @@ export function createGlobe(
     compositor,
     dayNight,
     atmosphere,
+    sun,
     highlight,
     capitals,
     population,
@@ -292,6 +299,8 @@ export function createGlobe(
       highlight.destroy();
       capitals.destroy();
       population.destroy();
+      unsubscribeSunUpdate();
+      sun.destroy();
       dayNight.destroy();
       atmosphere.destroy();
       clouds.destroy();

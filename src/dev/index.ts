@@ -5,6 +5,7 @@ import { FrameStats } from './frame-stats';
 import { countDrawCalls, formatDrawCalls } from './draw-calls';
 import { SpotlightDebugOverlay } from './spotlight-debug';
 import type { SpotlightParams } from '@/globe/capitals-spotlight';
+import type { SunParams } from '@/globe/sun';
 
 function readDrawCalls(context: GlobeContext): number | null {
   try {
@@ -60,6 +61,40 @@ export function registerGlobeDevParams(context: GlobeContext): () => void {
     uniformParam('atmosphere.facingMin', 'uTwilightFacingMin', 'Facing fade start', -0.5, 1, 0.01),
     uniformParam('atmosphere.facingMax', 'uTwilightFacingMax', 'Facing fade end', -0.5, 1, 0.01),
   ];
+  return () => unregister.forEach(fn => fn());
+}
+
+const SUN_SPECS: readonly {
+  key: keyof SunParams;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+}[] = [
+  { key: 'discScale', label: 'Disc size × (1 = real 0.53°)', min: 1, max: 20, step: 0.5 },
+  { key: 'glowStrength', label: 'Glow strength', min: 0, max: 2, step: 0.05 },
+  { key: 'glowFalloff', label: 'Glow falloff (disc radii)', min: 0.5, max: 10, step: 0.25 },
+  { key: 'glowExtent', label: 'Glow extent (disc radii)', min: 2, max: 40, step: 1 },
+];
+
+/** Solar disc and glow tuning; the disc defaults to its real angular size. */
+export function registerSunDevParams(context: GlobeContext): () => void {
+  const sun = context.sun;
+  const unregister = SUN_SPECS.map(spec =>
+    registerDevParam({
+      id: `sun.${spec.key}`,
+      label: spec.label,
+      group: 'Sun',
+      min: spec.min,
+      max: spec.max,
+      step: spec.step,
+      get: () => sun.params[spec.key],
+      set: value => {
+        sun.params[spec.key] = value;
+        sun.applyParams();
+      },
+    }),
+  );
   return () => unregister.forEach(fn => fn());
 }
 
@@ -196,6 +231,7 @@ export function initDevPanel(root: HTMLElement, context: GlobeContext): DevPanel
   const unregisterGlobe = registerGlobeDevParams(context);
   const unregisterRender = registerRenderDevParams(context);
   const unregisterCapitals = registerCapitalsDevParams(context);
+  const unregisterSun = registerSunDevParams(context);
   const frameStats = new FrameStats();
   frameStats.start();
   const stats = (): DevStats => ({
@@ -212,6 +248,7 @@ export function initDevPanel(root: HTMLElement, context: GlobeContext): DevPanel
     unregisterGlobe();
     unregisterRender();
     unregisterCapitals();
+    unregisterSun();
   });
   return panel;
 }

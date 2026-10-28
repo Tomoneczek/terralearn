@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { calculateSubSolarPoint, calculateSunDirection, getJulianDate } from '@/geo/solar';
+import {
+  AU_KM,
+  SUN_RADIUS_KM,
+  calculateSubSolarPoint,
+  calculateSunAngularDiameterDeg,
+  calculateSunDirection,
+  calculateSunDistanceAu,
+  getJulianDate,
+} from '@/geo/solar';
 
 describe('Solar Astronomical Calculations', () => {
   it('calculates Julian Date correctly for known epochs', () => {
@@ -70,5 +78,24 @@ describe('Solar Astronomical Calculations', () => {
     const dir = calculateSunDirection(new Date(Date.UTC(2026, 5, 21, 12, 0, 0)));
     const magnitude = Math.sqrt(dir[0] ** 2 + dir[1] ** 2 + dir[2] ** 2);
     expect(magnitude).toBeCloseTo(1.0, 5);
+  });
+});
+
+describe('Earth–Sun distance and solar disc size', () => {
+  it('is ~0.9833 AU at perihelion and ~1.0167 AU at aphelion', () => {
+    expect(calculateSunDistanceAu(new Date(Date.UTC(2026, 0, 3, 17)))).toBeCloseTo(0.9833, 3);
+    expect(calculateSunDistanceAu(new Date(Date.UTC(2026, 6, 6, 18)))).toBeCloseTo(1.0167, 3);
+  });
+
+  it('gives the apparent angular diameter of ~32.5′ in January and ~31.5′ in July', () => {
+    const toArcmin = (deg: number): number => deg * 60;
+    const january = toArcmin(calculateSunAngularDiameterDeg(new Date(Date.UTC(2026, 0, 3, 17))));
+    const july = toArcmin(calculateSunAngularDiameterDeg(new Date(Date.UTC(2026, 6, 6, 18))));
+    expect(Math.abs(january - 32.53)).toBeLessThan(0.1);
+    expect(Math.abs(july - 31.46)).toBeLessThan(0.1);
+  });
+
+  it('is ~0.533° at 1 AU', () => {
+    expect(2 * Math.atan(SUN_RADIUS_KM / AU_KM) * (180 / Math.PI)).toBeCloseTo(0.533, 3);
   });
 });

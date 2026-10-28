@@ -6,6 +6,11 @@ export interface SubSolarPoint {
 const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
 
+/** Mean solar radius (IAU 2015 nominal value), km. */
+export const SUN_RADIUS_KM = 695_700;
+/** Astronomical unit (IAU 2012), km. */
+export const AU_KM = 149_597_870.7;
+
 /**
  * Calculates the Julian Date from a JavaScript Date.
  */
@@ -13,17 +18,22 @@ export function getJulianDate(date: Date): number {
   return date.getTime() / 86400000 + 2440587.5;
 }
 
+function daysSinceJ2000(date: Date): number {
+  return getJulianDate(date) - 2451545.0;
+}
+
+/** Mean anomaly of the Sun in degrees for `n` days since J2000.0. */
+function solarMeanAnomalyDeg(n: number): number {
+  return (357.5291 + 0.98560028 * n) % 360;
+}
+
 /**
  * Calculates the sub-solar coordinates (latitude and longitude on Earth where
  * the Sun is at its zenith) for any UTC time using Meeus solar position formulas.
  */
 export function calculateSubSolarPoint(date: Date = new Date()): SubSolarPoint {
-  const jd = getJulianDate(date);
-  const n = jd - 2451545.0; // Days since J2000.0
-
-  // Mean anomaly of the Sun (degrees)
-  const M = (357.5291 + 0.98560028 * n) % 360;
-  const mRad = M * DEG2RAD;
+  const n = daysSinceJ2000(date);
+  const mRad = solarMeanAnomalyDeg(n) * DEG2RAD;
 
   // Mean longitude of the Sun (degrees)
   const L = (280.4665 + 0.98564736 * n) % 360;
@@ -84,4 +94,22 @@ export function calculateSunDirection(date: Date = new Date()): [number, number,
   const z = cosLat * Math.cos(lngRad);
 
   return [x, y, z];
+}
+
+/**
+ * Earth–Sun distance in astronomical units (Meeus, low-precision series in the mean anomaly).
+ * Ranges from ~0.9833 AU at perihelion (early January) to ~1.0167 AU at aphelion (early July).
+ */
+export function calculateSunDistanceAu(date: Date = new Date()): number {
+  const mRad = solarMeanAnomalyDeg(daysSinceJ2000(date)) * DEG2RAD;
+  return 1.00014 - 0.01671 * Math.cos(mRad) - 0.00014 * Math.cos(2 * mRad);
+}
+
+/**
+ * Apparent angular diameter of the solar disc seen from Earth, in degrees
+ * (~0.542° at perihelion, ~0.524° at aphelion).
+ */
+export function calculateSunAngularDiameterDeg(date: Date = new Date()): number {
+  const distanceKm = calculateSunDistanceAu(date) * AU_KM;
+  return 2 * Math.atan(SUN_RADIUS_KM / distanceKm) * RAD2DEG;
 }

@@ -95,6 +95,7 @@ export class DayNightController {
   private readonly store: Store<AppState>;
   private readonly unsubs: (() => void)[] = [];
   private intervalId: ReturnType<typeof setInterval> | null = null;
+  private readonly sunListeners = new Set<(date: Date) => void>();
   private baseTexture: Texture | null = null;
   private dayTexture: Texture | null = null;
   private nightTexture: Texture | null = null;
@@ -158,6 +159,18 @@ export class DayNightController {
     if (sunUniform) {
       sunUniform.set(x, y, z);
     }
+    for (const listener of this.sunListeners) {
+      listener(date);
+    }
+  }
+
+  /**
+   * Notifies about every sun update (the direction vector itself is shared and mutated in
+   * place); used by consumers that derive more than the direction, e.g. the solar disc size.
+   */
+  public onSunUpdate(listener: (date: Date) => void): () => void {
+    this.sunListeners.add(listener);
+    return () => this.sunListeners.delete(listener);
   }
 
   public setEnabled(enabled: boolean): void {
@@ -208,6 +221,7 @@ export class DayNightController {
       unsub();
     }
     this.unsubs.length = 0;
+    this.sunListeners.clear();
     this.baseTexture?.dispose();
     this.dayTexture?.dispose();
     this.nightTexture?.dispose();
