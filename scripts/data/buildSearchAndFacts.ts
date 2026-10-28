@@ -161,14 +161,28 @@ const REFERENCE_VALUES: Readonly<Record<ComparisonRef, number>> = {
   warsaw: 1_790_000, // inhabitants
 };
 
-const POLAND_ID = 'PL';
+/**
+ * Feature ids of the reference objects themselves. Comparing a reference with itself is
+ * meaningless, and the dataset value usually differs slightly from the reference value
+ * ("Warsaw ≈ 95% of Warsaw"), so these features get no comparison.
+ */
+export const REFERENCE_FEATURE_IDS: Readonly<Record<ComparisonRef, string>> = {
+  poland: 'PL',
+  vistula: 'river-vistula',
+  rysy: 'peak-rysy',
+  sniardwy: 'lake-sniardwy',
+  baltic: 'marine-sea-baltic-sea',
+  warsaw: 'capital-warsaw',
+};
 
 /** Ratios are stored with 3 significant decimals; the UI rounds them for display. */
 function compare(
+  id: string,
   metric: FactComparison['metric'],
   ref: ComparisonRef,
   value: number,
-): FactComparison {
+): FactComparison | undefined {
+  if (id === REFERENCE_FEATURE_IDS[ref]) return undefined;
   return { metric, ref, ratio: Math.round((value / REFERENCE_VALUES[ref]) * 1000) / 1000 };
 }
 
@@ -187,28 +201,27 @@ export function generateFacts(f: RawGeoFeature): ObjectFacts {
     case 'country':
       if (area) {
         stats.push({ key: 'area', value: area });
-        // Comparing Poland with itself is meaningless (and the dataset area differs slightly).
-        if (p.id !== POLAND_ID) comparison = compare('area', 'poland', area);
+        comparison = compare(p.id, 'area', 'poland', area);
       }
       if (pop) stats.push({ key: 'population', value: pop });
       break;
     case 'lake':
       if (area) {
         stats.push({ key: 'area', value: area });
-        comparison = compare('area', 'sniardwy', area);
+        comparison = compare(p.id, 'area', 'sniardwy', area);
       }
       break;
     case 'river':
       if (len) {
         stats.push({ key: 'length', value: Math.round(len) });
-        comparison = compare('length', 'vistula', len);
+        comparison = compare(p.id, 'length', 'vistula', len);
       }
       break;
     case 'mountain_range':
     case 'mountain':
       if (elev) {
         stats.push({ key: 'maxElevation', value: elev });
-        comparison = compare('elevation', 'rysy', elev);
+        comparison = compare(p.id, 'elevation', 'rysy', elev);
       }
       if (area) stats.push({ key: 'area', value: area });
       break;
@@ -216,13 +229,13 @@ export function generateFacts(f: RawGeoFeature): ObjectFacts {
     case 'landform':
       if (area) {
         stats.push({ key: 'area', value: area });
-        comparison = compare('area', 'poland', area);
+        comparison = compare(p.id, 'area', 'poland', area);
       }
       break;
     case 'marine':
       if (area) {
         stats.push({ key: 'area', value: area });
-        comparison = compare('area', 'baltic', area);
+        comparison = compare(p.id, 'area', 'baltic', area);
       }
       break;
     case 'capital':
@@ -230,13 +243,13 @@ export function generateFacts(f: RawGeoFeature): ObjectFacts {
       // The country is shown as a relation chip, so it is not repeated as a stat.
       if (pop) {
         stats.push({ key: 'population', value: pop });
-        comparison = compare('population', 'warsaw', pop);
+        comparison = compare(p.id, 'population', 'warsaw', pop);
       }
       break;
     case 'peak':
       if (elev) {
         stats.push({ key: 'elevation', value: elev });
-        comparison = compare('elevation', 'rysy', elev);
+        comparison = compare(p.id, 'elevation', 'rysy', elev);
       }
       break;
   }
