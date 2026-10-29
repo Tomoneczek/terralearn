@@ -28,3 +28,5 @@ pnpm-debug.log*
 *.ntvs*
 *.njsproj
 .DS_Store
+# Claude Code session worktrees
+.claude/worktrees/
