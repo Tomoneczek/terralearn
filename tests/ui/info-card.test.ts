@@ -104,7 +104,7 @@ describe('InfoCard', () => {
     });
 
     const cardEl = container.querySelector('.tl-info-card')!;
-    expect(cardEl.querySelector('.tl-card-kind')?.textContent).toBe('Megacity');
+    expect(cardEl.querySelector('.tl-card-kind')?.textContent).toBe('City');
     expect(cardEl.querySelector('.tl-card-stat-label')?.textContent).toBe('Population');
     expect(cardEl.querySelector('.tl-card-stat-value')?.textContent).toBe('758,000');
     expect(cardEl.querySelector('.tl-card-comp-text')?.textContent).toBe(
@@ -126,7 +126,7 @@ describe('InfoCard', () => {
     });
 
     const cardEl = container.querySelector('.tl-info-card')!;
-    expect(cardEl.querySelector('.tl-card-kind')?.textContent).toBe('Metropolia');
+    expect(cardEl.querySelector('.tl-card-kind')?.textContent).toBe('Miasto');
     expect(cardEl.querySelector('.tl-card-stat-value')?.textContent).toBe('758\u00a0000 os.');
     expect(cardEl.querySelector('.tl-card-comp-text')?.textContent).toBe(
       'Populacja stanowi ok. 42% ludności Warszawy',

@@ -261,7 +261,7 @@ export const pl: Dictionary = {
       peak: 'Szczyt górski',
       desert: 'Pustynia',
       capital: 'Stolica',
-      megacity: 'Metropolia',
+      megacity: 'Miasto',
       marine: 'Morze / Zatoka',
       landform: 'Forma ukształtowania terenu',
       other: 'Obiekt geograficzny',
