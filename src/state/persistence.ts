@@ -30,11 +30,9 @@ export const PersistedStateSchema = z.object({
 export type PersistedState = z.infer<typeof PersistedStateSchema>;
 
 export function loadPersistedState(): PersistedState | null {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return null;
-  }
-
   try {
+    if (typeof window === 'undefined' || !window.localStorage) return null;
+
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
 
@@ -53,26 +51,30 @@ export function loadPersistedState(): PersistedState | null {
   }
 }
 
+/**
+ * The slice of the state that survives a reload. Everything else (selection, hover, tools,
+ * Moon panel, quiz) is transient by omission: only fields listed here are ever written.
+ */
+export function pickPersistedState(state: AppState): PersistedState {
+  return {
+    layers: state.layers,
+    theme: state.theme,
+    dayNight: state.dayNight,
+    clouds: state.clouds,
+    quality: state.quality,
+    graticule: state.graticule,
+    locale: state.locale,
+    hiddenLabels: state.hiddenLabels,
+    knowledgeMap: state.knowledgeMap,
+    moonScale: state.moonScale,
+  };
+}
+
 export function savePersistedState(state: AppState): void {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return;
-  }
-
   try {
-    const toSave: PersistedState = {
-      layers: state.layers,
-      theme: state.theme,
-      dayNight: state.dayNight,
-      clouds: state.clouds,
-      quality: state.quality,
-      graticule: state.graticule,
-      locale: state.locale,
-      hiddenLabels: state.hiddenLabels,
-      knowledgeMap: state.knowledgeMap,
-      moonScale: state.moonScale,
-    };
-
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    // Accessing localStorage itself throws when site data is blocked
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(pickPersistedState(state)));
   } catch (err) {
     console.warn('Failed to save state to localStorage:', err);
   }

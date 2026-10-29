@@ -1,6 +1,6 @@
 import './styles/index.css';
 import { initLayout } from './ui/layout';
-import { store } from './state';
+import { store, restoreState, startStateSync } from './state';
 import { createGlobe, type GlobeContext } from './globe';
 
 import { SidebarController } from './ui/sidebar';
@@ -40,10 +40,16 @@ export let routeHud: RouteHud | null = null;
 export let sizeComparisonHud: SizeComparisonHud | null = null;
 export let antipodesHud: AntipodesHud | null = null;
 export let moonCard: MoonCard | null = null;
+let stopStateSync: (() => void) | null = null;
 
 export function bootstrap(): void {
   const root = document.getElementById('app');
   if (root) {
+    // Saved settings and the shared view must be in the store before any component reads it
+    restoreState(store);
+    stopStateSync?.();
+    stopStateSync = startStateSync(store);
+
     root.setAttribute('data-ready', 'true');
     const slots = initLayout(root);
     initPwa();
