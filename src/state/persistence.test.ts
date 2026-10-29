@@ -124,4 +124,24 @@ describe('State Persistence', () => {
     savePersistedState(state);
     expect(localStorage.getItem('terralearn_state_v1')).not.toContain('moonPanelOpen');
   });
+
+  it('persists the rankings category, ignores an unknown one and never stores the panel state', () => {
+    const state = createInitialState();
+    expect(state.rankingsCategory).toBe('lakes');
+    state.rankingsCategory = 'rivers';
+    state.rankingsPanelOpen = true;
+    savePersistedState(state);
+    expect(localStorage.getItem('terralearn_state_v1')).not.toContain('rankingsPanelOpen');
+    expect(applyPersistedState(createInitialState(), loadPersistedState()).rankingsCategory).toBe(
+      'rivers',
+    );
+
+    localStorage.setItem(
+      'terralearn_state_v1',
+      JSON.stringify({ dayNight: false, rankingsCategory: 'volcanoes' }),
+    );
+    const loaded = loadPersistedState();
+    expect(loaded?.dayNight).toBe(false);
+    expect(applyPersistedState(createInitialState(), loaded).rankingsCategory).toBe('lakes');
+  });
 });

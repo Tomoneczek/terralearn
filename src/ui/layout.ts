@@ -40,6 +40,9 @@ const PANEL_HIDE_ICON =
 const PANEL_TOGGLE_ICON =
   '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>';
 
+const RANKINGS_ICON =
+  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6h11"/><path d="M10 12h11"/><path d="M10 18h11"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>';
+
 function railLabels(): RailLabels {
   return {
     navAria: t('rail.navAria'),
@@ -49,6 +52,7 @@ function railLabels(): RailLabels {
       layers: t('rail.layers'),
       quiz: t('rail.quiz'),
       settings: t('rail.settings'),
+      rankings: t('rail.rankings'),
     },
   };
 }
@@ -108,7 +112,19 @@ export function initLayout(root: HTMLElement): LayoutSlots {
   railToggleBtn.id = 'btn-rail-panel-toggle';
   railToggleBtn.className = 'rail-btn';
   railToggleBtn.appendChild(parseSvg(PANEL_TOGGLE_ICON));
-  railToggleGroup.appendChild(railToggleBtn);
+  const rankingsBtn = document.createElement('button');
+  rankingsBtn.type = 'button';
+  rankingsBtn.id = 'btn-rail-rankings';
+  rankingsBtn.className = 'rail-btn';
+  rankingsBtn.dataset.railId = 'rankings';
+  rankingsBtn.setAttribute('aria-label', t('rail.rankings'));
+  rankingsBtn.title = t('rail.rankings');
+  rankingsBtn.appendChild(parseSvg(RANKINGS_ICON));
+  // Opening the table is handled in main.ts (it owns the store)
+  rankingsBtn.addEventListener('click', () =>
+    window.dispatchEvent(new CustomEvent('tl-rankings-toggle')),
+  );
+  railToggleGroup.append(rankingsBtn, railToggleBtn);
   rail.appendChild(railToggleGroup);
   root.appendChild(rail);
 

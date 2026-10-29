@@ -5,6 +5,7 @@ import { t, localizedName } from '@/i18n';
 import { parseSvg } from './dom';
 import { ToggleSwitch } from './components/toggle';
 import { TopNSlider } from './components/slider';
+import { isRankingCategory, type RankingCategory } from '@/rankings/types';
 import { PRESETS, applyPreset, detectActivePreset, type PresetId } from './presets';
 import { loadGeoData } from '@/globe/data-loader';
 import { antipode } from '@/geo/spherical';
@@ -985,6 +986,19 @@ export class SidebarController {
       this.layerSliders.set(layer.id, slider);
 
       inner.appendChild(slider.element);
+      if (isRankingCategory(layer.id)) {
+        const tableLink = document.createElement('button');
+        tableLink.type = 'button';
+        tableLink.className = 'tl-layer-table-link';
+        tableLink.textContent = t('rankings.showTable');
+        tableLink.addEventListener('click', () =>
+          this.store.set({
+            rankingsPanelOpen: true,
+            rankingsCategory: layer.id as RankingCategory,
+          }),
+        );
+        inner.appendChild(tableLink);
+      }
       wrapper.appendChild(inner);
       card.appendChild(wrapper);
     }

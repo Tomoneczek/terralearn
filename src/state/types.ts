@@ -1,5 +1,6 @@
 import type { LocalizedText } from '@/i18n/t';
 import type { LayerId } from '@/layers';
+import type { RankingCategory } from '@/rankings/types';
 
 export interface FeatureRef {
   id: string;
@@ -84,6 +85,10 @@ export interface AppState {
   moonScale: number;
   /** Whether the Moon panel is open (not persisted). */
   moonPanelOpen: boolean;
+  /** Whether the rankings table is open (not persisted). */
+  rankingsPanelOpen: boolean;
+  /** Category shown in the rankings table; the last one used is remembered. */
+  rankingsCategory: RankingCategory;
 }
 
 export type Selector<T, V> = (state: T) => V;

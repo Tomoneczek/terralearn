@@ -9,6 +9,8 @@ import { Toolbar } from './ui/toolbar';
 import { LegendOverlay } from './ui/legend';
 import { InfoCard } from './ui/info-card';
 import { MoonCard } from './ui/moon-card';
+import { RankingsPanel } from './ui/rankings-panel';
+import { locateRow } from './rankings';
 import { HoverTooltip } from './ui/hover-tooltip';
 
 import { QuizEngine } from './quiz/engine';
@@ -40,6 +42,7 @@ export let routeHud: RouteHud | null = null;
 export let sizeComparisonHud: SizeComparisonHud | null = null;
 export let antipodesHud: AntipodesHud | null = null;
 export let moonCard: MoonCard | null = null;
+export let rankingsPanel: RankingsPanel | null = null;
 let stopStateSync: (() => void) | null = null;
 
 export function bootstrap(): void {
@@ -147,6 +150,19 @@ export function bootstrap(): void {
         },
       });
     }
+
+    rankingsPanel = new RankingsPanel({
+      container: root,
+      store,
+      onLocate: (row, category) =>
+        locateRow(row, category, {
+          store,
+          flyTo: (lat, lng, altitude) => globeContext?.camera.flyTo(lat, lng, altitude),
+        }),
+    });
+    window.addEventListener('tl-rankings-toggle', () => {
+      store.set(s => ({ rankingsPanelOpen: !s.rankingsPanelOpen }));
+    });
 
     if (typeof window !== 'undefined') {
       window.addEventListener('tl-start-quiz', (e: Event) => {

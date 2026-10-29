@@ -1,0 +1,247 @@
+/* Rankings table: reuses the floating card look (.tl-info-card), see src/ui/rankings-panel.ts */
+.tl-rankings {
+  position: fixed;
+  top: var(--space-5);
+  left: calc(var(--rail-width) + var(--sidebar-width) + var(--space-5));
+  width: min(560px, calc(100vw - var(--rail-width) - var(--sidebar-width) - 2 * var(--space-5)));
+  max-height: calc(100vh - 2 * var(--space-5));
+  z-index: 85;
+}
+
+.panel-collapsed .tl-rankings {
+  left: calc(var(--rail-width) + var(--space-5));
+  width: min(560px, calc(100vw - var(--rail-width) - 2 * var(--space-5)));
+}
+
+.tl-rankings-header {
+  align-items: center;
+}
+
+.tl-rankings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.tl-rankings-tab {
+  background: transparent;
+  color: var(--text-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tl-rankings-tab:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-1);
+}
+
+.tl-rankings-tab[aria-pressed='true'] {
+  background-color: var(--c-accent-blue);
+  border-color: var(--c-accent-blue);
+  color: var(--text-inverse);
+  font-weight: 600;
+}
+
+.tl-rankings-filter {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  background: var(--bg-2);
+  color: var(--text-1);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 13px;
+}
+
+.tl-rankings-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.tl-rankings-count,
+.tl-rankings-status {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.tl-rankings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tl-rankings-table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.tl-rankings-sort {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
+.tl-rankings-sort:hover {
+  color: var(--text-1);
+}
+
+.tl-rankings-row td {
+  padding: 5px 6px;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+  color: var(--text-1);
+}
+
+.tl-rankings-row:hover {
+  background-color: var(--bg-hover);
+}
+
+.tl-rankings-row.is-selected {
+  background-color: var(--bg-active);
+  box-shadow: inset 3px 0 0 var(--c-city);
+}
+
+.tl-rankings-rank {
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  width: 2.5em;
+}
+
+.tl-rankings-name-text {
+  font-weight: 600;
+}
+
+.tl-rankings-subtype {
+  display: block;
+  color: var(--text-3);
+  font-size: 11px;
+  margin-left: 14px;
+}
+
+.tl-rankings-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--border-default);
+}
+
+.tl-rankings-dot.is-on {
+  background: var(--c-accent-teal);
+  border-color: var(--c-accent-teal);
+}
+
+.tl-rankings-value {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  min-width: 110px;
+}
+
+.tl-rankings-bar {
+  display: block;
+  height: 3px;
+  margin-top: 3px;
+  width: var(--w, 0%);
+  background: var(--c-accent-blue);
+  border-radius: var(--radius-full);
+}
+
+.tl-rankings-countries {
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.tl-rankings-locate {
+  background: transparent;
+  color: var(--text-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.tl-rankings-locate:hover,
+.tl-rankings-locate:focus-visible {
+  color: var(--text-1);
+  border-color: var(--c-accent-blue);
+  background-color: var(--bg-hover);
+}
+
+.tl-rankings-more {
+  align-self: center;
+  background: var(--bg-2);
+  color: var(--text-1);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tl-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Mobile: a bottom sheet-like panel instead of a floating window */
+@media (max-width: 900px) {
+  .tl-rankings,
+  .panel-collapsed .tl-rankings {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 70vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    z-index: 95;
+  }
+
+  .tl-rankings-countries {
+    display: none;
+  }
+}
+
+/* "Show table" link under a layer's Top N slider (sidebar) */
+.tl-layer-table-link {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 2px 0;
+  color: var(--c-accent-blue);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}

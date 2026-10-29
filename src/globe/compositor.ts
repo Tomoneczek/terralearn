@@ -98,6 +98,8 @@ export class LayerCompositor {
   private srsState: SrsState = {};
   // Features of all enabled layers by id, used to resolve hover/selection geometry
   private featureIndex = new Map<string, GeoFeature>();
+  // Features of enabled layers that the Top N slider currently leaves out, by id
+  private hiddenByTopN = new Map<string, { def: LayerDef; feature: GeoFeature }>();
   /** Invoked after every compose so dependents can re-resolve features. */
   public onComposed: (() => void) | null = null;
   /** Where capitals are rendered; without a sink they fall back to regular globe points. */
@@ -367,6 +369,7 @@ export class LayerCompositor {
     const mergedPaths: PathItem[] = [];
     const mergedPoints: GeoFeature[] = [];
     const allFeatures: GeoFeature[] = [];
+    const hiddenByTopN = new Map<string, { def: LayerDef; feature: GeoFeature }>();
     let capitalFeatures: GeoFeature[] = [];
 
     // Load data for all enabled layers in parallel
@@ -398,9 +401,14 @@ export class LayerCompositor {
         if (def.id === 'borders' && f.properties.kind !== 'country') return false;
         if (def.id === 'countriesTopN' && f.properties.kind !== 'country') return false;
 
-        // TopN filter
+        // TopN filter. Objects beyond it are not drawn, but stay resolvable for the highlight
+        // overlay (the rankings table can locate an object that is outside the Top N).
         const order = f.properties.rank?.order ?? 1;
-        return order <= maxRank;
+        if (order > maxRank) {
+          hiddenByTopN.set(f.properties.id, { def, feature: f });
+          return false;
+        }
+        return true;
       });
 
       // Tag features with current layerId and ensure stable id for ThreeDigest
@@ -465,6 +473,7 @@ export class LayerCompositor {
 
     this.lastFeatures = allFeatures;
     this.featureIndex = new Map(allFeatures.map(f => [f.properties.id, f]));
+    this.hiddenByTopN = hiddenByTopN;
     this.syncCapitals(capitalFeatures);
 
     let polygonsUpdated = false;
@@ -528,9 +537,20 @@ export class LayerCompositor {
     this.capitalsSink.setColors(overrides);
   }
 
-  /** Feature of an enabled layer by id (for highlight geometry). */
+  /**
+   * Feature of an enabled layer by id (for highlight geometry), including objects the Top N
+   * slider leaves out of the globe.
+   */
   public getFeatureById(id: string): GeoFeature | undefined {
-    return this.featureIndex.get(id);
+    const drawn = this.featureIndex.get(id);
+    if (drawn) return drawn;
+    const hidden = this.hiddenByTopN.get(id);
+    if (!hidden) return undefined;
+    return {
+      ...hidden.feature,
+      id,
+      properties: { ...hidden.feature.properties, layerId: hidden.def.id },
+    };
   }
 
   private areFeaturesIdentical(a: GeoFeature[], b: GeoFeature[]): boolean {
@@ -562,6 +582,7 @@ export class LayerCompositor {
     this.pathItemCache.clear();
     this.invisibleCapMaterial.dispose();
     this.featureIndex.clear();
+    this.hiddenByTopN.clear();
     this.onComposed = null;
     this.capitalsSink = null;
     this.lastPolygons = [];

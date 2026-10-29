@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { AppState, LayerState } from './types';
 import type { LayerId } from '@/layers';
+import { RANKING_CATEGORIES } from '@/rankings/types';
 
 export const STORAGE_KEY = 'terralearn_state_v1';
 
@@ -23,6 +24,8 @@ export const PersistedStateSchema = z.object({
   locale: z.enum(['pl', 'en']).optional(),
   hiddenLabels: z.boolean().optional(),
   knowledgeMap: z.boolean().optional(),
+  // An unknown category falls back to the default instead of discarding the whole state
+  rankingsCategory: z.enum(RANKING_CATEGORIES).optional().catch(undefined),
   // An out-of-range value falls back to the default instead of discarding the whole state
   moonScale: z.number().min(MOON_SCALE_MIN).max(MOON_SCALE_MAX).optional().catch(undefined),
 });
@@ -67,6 +70,7 @@ export function pickPersistedState(state: AppState): PersistedState {
     hiddenLabels: state.hiddenLabels,
     knowledgeMap: state.knowledgeMap,
     moonScale: state.moonScale,
+    rankingsCategory: state.rankingsCategory,
   };
 }
 
@@ -108,6 +112,7 @@ export function applyPersistedState(
     hiddenLabels: persisted.hiddenLabels ?? baseState.hiddenLabels,
     knowledgeMap: persisted.knowledgeMap ?? baseState.knowledgeMap,
     moonScale: persisted.moonScale ?? baseState.moonScale,
+    rankingsCategory: persisted.rankingsCategory ?? baseState.rankingsCategory,
   };
 }
 

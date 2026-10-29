@@ -22,6 +22,7 @@ export interface Dictionary {
     layers: string;
     quiz: string;
     settings: string;
+    rankings: string;
   };
   sidebarTabs: {
     aria: string;
@@ -353,6 +354,37 @@ export interface Dictionary {
   pwa: {
     offlineMessage: string;
     onlineMessage: string;
+  };
+  rankings: {
+    title: string;
+    showTable: string;
+    close: string;
+    tabsAria: string;
+    categories: {
+      countriesTopN: string;
+      lakes: string;
+      rivers: string;
+      mountains: string;
+      peaks: string;
+      deserts: string;
+      landforms: string;
+      marine: string;
+    };
+    filterPlaceholder: string;
+    filterAria: string;
+    colRank: string;
+    colName: string;
+    colCountries: string;
+    colLocate: string;
+    sortBy: string;
+    locate: string;
+    onGlobe: string;
+    showMore: string;
+    count: string;
+    empty: string;
+    loading: string;
+    loadError: string;
+    retry: string;
   };
   moon: {
     name: string;

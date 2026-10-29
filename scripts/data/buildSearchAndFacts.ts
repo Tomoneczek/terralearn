@@ -113,7 +113,7 @@ export interface ObjectFacts {
   relations?: GeographicRelations;
 }
 
-function getFeatureCoords(f: RawGeoFeature): { lat: number; lng: number } {
+export function getFeatureCoords(f: RawGeoFeature): { lat: number; lng: number } {
   if (typeof f.properties.labelLat === 'number' && typeof f.properties.labelLng === 'number') {
     return { lat: f.properties.labelLat, lng: f.properties.labelLng };
   }

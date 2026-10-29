@@ -23,6 +23,8 @@ export function createInitialState(): AppState {
     antipodes: null,
     moonScale: 1,
     moonPanelOpen: false,
+    rankingsPanelOpen: false,
+    rankingsCategory: 'lakes',
   };
 }
 
