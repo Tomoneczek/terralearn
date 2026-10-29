@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { stampServiceWorker } from './stampServiceWorker.js';
+import { buildExtras } from './wikidataExtras.js';
 import { getFeatureCoords, type ObjectFacts } from './buildSearchAndFacts.js';
 import {
   CATEGORY_METRIC,
@@ -68,6 +69,13 @@ export function buildRankings(dir = DATA_DIR): RankingsData {
   const countryNames: RankingsData['countries'] = {};
   const usedCountryIds = new Set<string>();
 
+  const countryCodes = new Set(
+    readJson<{ features: SourceFeature[] }>('countries.json', dir).features.map(
+      f => f.properties.id,
+    ),
+  );
+  const riverExtras = buildExtras(dir).river;
+
   const categories = {} as RankingsData['categories'];
   for (const category of RANKING_CATEGORIES) {
     const { file, kind } = SOURCES[category];
@@ -85,7 +93,8 @@ export function buildRankings(dir = DATA_DIR): RankingsData {
       });
       const row: Omit<RankingRow, 'order'> & { order?: number } = {
         id: p.id,
-        order: p.rank.order,
+        order: category === 'rivers' ? riverExtras.orderById.get(p.id) : p.rank.order,
+        layerOrder: p.rank.order ?? 1,
         value: p.rank[metric] ?? null,
         name_pl: p.name_pl,
         name_en: p.name_en,
@@ -97,6 +106,24 @@ export function buildRankings(dir = DATA_DIR): RankingsData {
       };
       return row;
     });
+
+    if (category === 'rivers') {
+      for (const extra of riverExtras.extras) {
+        const codes = extra.countries.filter(code => countryCodes.has(code));
+        codes.forEach(code => usedCountryIds.add(code));
+        rows.push({
+          id: extra.id,
+          order: riverExtras.orderById.get(extra.id),
+          value: extra.value,
+          name_pl: extra.name_pl,
+          name_en: extra.name_en,
+          lat: extra.lat,
+          lng: extra.lng,
+          extentKm: extra.value,
+          ...(codes.length ? { countries: codes } : {}),
+        });
+      }
+    }
 
     rows.sort(
       (a, b) =>

@@ -1,0 +1,11 @@
+# Rivers >= 500 km (length normalised to km) with coordinates. Rows repeat per value / country; the
+# build script folds them. (GROUP BY with the optional chains times out on the public endpoint.)
+SELECT ?item ?itemLabel ?plLabel ?km ?coord ?iso WHERE {
+  ?item wdt:P31/wdt:P279* wd:Q4022; wdt:P625 ?coord.
+  ?item p:P2043/psn:P2043/wikibase:quantityAmount ?m.
+  BIND(?m / 1000 AS ?km)
+  FILTER(?km >= 500)
+  OPTIONAL { ?item rdfs:label ?plLabel FILTER(lang(?plLabel) = "pl") }
+  OPTIONAL { ?item wdt:P17/wdt:P297 ?iso }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}

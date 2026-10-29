@@ -1,0 +1,12 @@
+# Lakes >= 500 km² (area normalised to km²) that still exist (no end date) and have coordinates.
+# Rows repeat per value / country; the build script folds them.
+SELECT ?item ?itemLabel ?plLabel ?km2 ?coord ?iso WHERE {
+  ?item wdt:P31/wdt:P279* wd:Q23397; wdt:P625 ?coord.
+  ?item p:P2046/psn:P2046/wikibase:quantityAmount ?m2.
+  BIND(?m2 / 1000000 AS ?km2)
+  FILTER(?km2 >= 500)
+  FILTER NOT EXISTS { ?item wdt:P576 ?end }
+  OPTIONAL { ?item rdfs:label ?plLabel FILTER(lang(?plLabel) = "pl") }
+  OPTIONAL { ?item wdt:P17/wdt:P297 ?iso }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}

@@ -144,4 +144,13 @@ describe('State Persistence', () => {
     expect(loaded?.dayNight).toBe(false);
     expect(applyPersistedState(createInitialState(), loaded).rankingsCategory).toBe('lakes');
   });
+
+  it('keeps the default Top N of a layer that was saved before it had a slider (peaks)', () => {
+    localStorage.setItem(
+      'terralearn_state_v1',
+      JSON.stringify({ layers: { peaks: { enabled: true } } }),
+    );
+    const merged = applyPersistedState(createInitialState(), loadPersistedState());
+    expect(merged.layers.peaks).toEqual({ enabled: true, topN: 100 });
+  });
 });

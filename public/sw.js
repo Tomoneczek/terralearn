@@ -1,5 +1,5 @@
 // TerraLearn Service Worker (PWA & Offline Support)
-const CACHE_VERSION = 'data-a0af28b340';
+const CACHE_VERSION = 'data-b7135a80ea';
 const STATIC_CACHE = `terralearn-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `terralearn-runtime-${CACHE_VERSION}`;
 

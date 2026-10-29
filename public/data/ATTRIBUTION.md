@@ -28,6 +28,9 @@ All geographical datasets and planetary textures in **TerraLearn** are derived s
 - **Assets used:**
   - *Blue Marble: Next Generation* – Daytime equirectangular planetary albedo map (`earth-day.jpg`).
   - *Black Marble: Night Lights* – Global nighttime city lights emission map (`earth-night.jpg`).
+- **Moon texture:** [NASA Scientific Visualization Studio – CGI Moon Kit](https://svs.gsfc.nasa.gov/4720)
+  (Ernie Wright, NASA GSFC; colour mosaic from the Lunar Reconnaissance Orbiter Camera), **Public Domain**.
+  - 1024×512 equirectangular lunar colour map (`moon.jpg`).
 
 ---
 
@@ -44,6 +47,20 @@ All geographical datasets and planetary textures in **TerraLearn** are derived s
 - **Authors:** Kontur Inc. – fusion of GHSL, Facebook HRSL, Microsoft Buildings, Copernicus Global Land Service Land Cover, Land Information New Zealand and OpenStreetMap data.
 - **License:** **Creative Commons Attribution 4.0 International (CC BY 4.0)**.
 - **Use:** population counts aggregated to H3 resolution 3 and converted to people per km² for the population density layer (`population.json`).
+
+---
+
+## 5. Wikidata
+- **Source:** [Wikidata](https://www.wikidata.org/) – structured data queried once at build time through the Wikidata Query Service (see `scripts/data/wikidata/*.rq`); nothing is requested from Wikidata at runtime.
+- **License:** **Creative Commons CC0 1.0 (public domain dedication)** for the structured data.
+- **Use:** additional peaks (height, prominence, location), rivers (length, location, countries) and Polish names (`name_pl`) for objects that Natural Earth does not name in Polish.
+
+---
+
+## 5. Wikidata
+- **Source:** [Wikidata](https://www.wikidata.org/) – structured data queried once at build time through the Wikidata Query Service (see `scripts/data/wikidata/*.rq`); nothing is requested from Wikidata at runtime.
+- **License:** **Creative Commons CC0 1.0 (public domain dedication)** for the structured data.
+- **Use:** additional peaks (height, prominence, location), rivers (length, location, countries) and Polish names (`name_pl`) for objects that Natural Earth does not name in Polish.
 
 ---
 

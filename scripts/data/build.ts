@@ -16,6 +16,8 @@ import { mergeNearbyNamesakes } from './dedupe.js';
 import { buildPopulationGrid } from './population.js';
 import { stampServiceWorker } from './stampServiceWorker.js';
 import { writeAttribution } from './attribution.js';
+import { loadWikidata } from './wikidata.js';
+import { mergePeaks } from './wikidataPeaks.js';
 import {
   type GeoFeature,
   type GeoFeatureCollection,
@@ -613,6 +615,55 @@ export async function buildData(): Promise<void> {
       },
     });
   }
+
+  // Wikidata (CC0) peaks: Polish names for the ones already present, plus the missing summits
+  const peakFeatures = placeFeatures.filter(f => f.properties.kind === 'peak');
+  const peakMerge = mergePeaks(
+    peakFeatures.map(f => ({
+      name_en: f.properties.name_en,
+      lat: f.properties.labelLat ?? 0,
+      lng: f.properties.labelLng ?? 0,
+      elevation: f.properties.rank.elevation ?? 0,
+    })),
+    loadWikidata('peaks'),
+  );
+  peakFeatures.forEach((f, index) => {
+    const pl = peakMerge.polishNames.get(index);
+    if (pl && f.properties.name_pl === f.properties.name_en) f.properties.name_pl = pl;
+  });
+  for (const peak of peakMerge.additions) {
+    const id = makeUniqueId(`peak-${slugify(peak.name_en)}`, usedPlaceIds);
+    const lat = roundCoord(peak.lat);
+    const lng = roundCoord(peak.lng);
+    placeFeatures.push({
+      type: 'Feature',
+      id,
+      properties: {
+        id,
+        kind: 'peak',
+        layerId: 'physical-peaks',
+        name_pl: overrides.peaks[peak.name_en] || peak.name_pl || peak.name_en,
+        name_en: peak.name_en,
+        aliases: [],
+        rank: { elevation: Math.round(peak.value) },
+        labelLng: lng,
+        labelLat: lat,
+      },
+      geometry: { type: 'Point', coordinates: [lng, lat] },
+    });
+  }
+  // The peaks layer has a Top N slider: world rank by height
+  placeFeatures
+    .filter(f => f.properties.kind === 'peak')
+    .sort(
+      (a, b) =>
+        (b.properties.rank.elevation ?? 0) - (a.properties.rank.elevation ?? 0) ||
+        a.properties.id.localeCompare(b.properties.id),
+    )
+    .forEach((f, index) => {
+      f.properties.rank.order = index + 1;
+    });
+  console.log(`    ✓ ${peakMerge.additions.length} peaks added from Wikidata`);
 
   const placesCol: GeoFeatureCollection = {
     type: 'FeatureCollection',

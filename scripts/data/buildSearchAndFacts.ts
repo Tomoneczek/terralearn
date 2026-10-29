@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { stampServiceWorker } from './stampServiceWorker.js';
 import { geoContains, type GeoGeometryObjects } from 'd3-geo';
+import { buildExtras } from './wikidataExtras.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -592,6 +593,46 @@ export function buildSearchIndexAndFacts(): {
         countries: lakeCountries,
       };
     }
+  }
+
+  // Rivers from Wikidata that have no geometry on the globe: still searchable, with a card, and
+  // the world rank of every river counts them (so the card agrees with the rankings table)
+  const { extras, orderById } = buildExtras(DATA_DIR).river;
+  for (const [id, order] of orderById) {
+    const rankStat = facts[id]?.stats.find(stat => stat.key === 'rank');
+    if (rankStat) rankStat.value = order;
+  }
+  for (const extra of extras) {
+    const countries = extra.countries
+      .map(code => countryByCode.get(code))
+      .filter((c): c is RawGeoFeature => c !== undefined)
+      .map(c => toRelationItem(c, 'countriesTopN'));
+    const order = orderById.get(extra.id) ?? 999;
+    searchIndex.push({
+      id: extra.id,
+      name_pl: extra.name_pl,
+      name_en: extra.name_en,
+      normalized_name: normalizeText(`${extra.name_pl} ${extra.name_en}`),
+      kind: extra.kind,
+      layerId: 'rivers',
+      lat: extra.lat,
+      lng: extra.lng,
+      rank: order,
+    });
+    facts[extra.id] = {
+      id: extra.id,
+      name_pl: extra.name_pl,
+      name_en: extra.name_en,
+      kind: extra.kind,
+      stats: [
+        { key: 'length', value: extra.value },
+        { key: 'rank', value: order },
+      ],
+      ...(extra.id === REFERENCE_FEATURE_IDS.vistula
+        ? {}
+        : { comparison: compare(extra.id, 'length', 'vistula', extra.value) }),
+      ...(countries.length > 0 ? { relations: { countries } } : {}),
+    };
   }
 
   // Sort search index by rank

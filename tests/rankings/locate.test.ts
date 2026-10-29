@@ -7,6 +7,7 @@ import type { RankingRow } from '@/rankings/types';
 const NILE: RankingRow = {
   id: 'river-nile',
   order: 1,
+  layerOrder: 1,
   value: 6650,
   name_pl: 'Nil',
   name_en: 'Nile',
@@ -14,7 +15,21 @@ const NILE: RankingRow = {
   lng: 33.94,
   extentKm: 6650,
 };
-const MINOR: RankingRow = { ...NILE, id: 'river-minor', order: 40, extentKm: 300 };
+const MINOR: RankingRow = {
+  ...NILE,
+  id: 'river-minor',
+  order: 40,
+  layerOrder: 40,
+  extentKm: 300,
+};
+/** A river taken from Wikidata: in the table and on the card, but with no geometry on the globe. */
+const TABLE_ONLY: RankingRow = {
+  ...NILE,
+  id: 'river-wd-q1',
+  order: 50,
+  layerOrder: undefined,
+  extentKm: 900,
+};
 
 describe('altitudeForExtent', () => {
   it('moves the camera further out for bigger objects, within fixed bounds', () => {
@@ -43,10 +58,15 @@ describe('isRowDrawn', () => {
     expect(isRowDrawn(MINOR, 'rivers', on)).toBe(false);
   });
 
-  it('draws every peak when the layer is on (peaks have no Top N)', () => {
-    expect(isRowDrawn({ ...NILE, order: 900 }, 'peaks', layers({ peaks: { enabled: true } }))).toBe(
-      true,
-    );
+  it('applies the Top N of the peaks layer too', () => {
+    const peak = { ...NILE, order: 300, layerOrder: 300 };
+    expect(isRowDrawn(peak, 'peaks', layers({ peaks: { enabled: true, topN: 500 } }))).toBe(true);
+    expect(isRowDrawn(peak, 'peaks', layers({ peaks: { enabled: true, topN: 100 } }))).toBe(false);
+  });
+
+  it('never counts a table-only object as drawn', () => {
+    const on = layers({ rivers: { enabled: true, topN: 50 } });
+    expect(isRowDrawn(TABLE_ONLY, 'rivers', on)).toBe(false);
   });
 });
 
@@ -82,5 +102,17 @@ describe('locateRow', () => {
     });
     locateRow(MINOR, 'rivers', { store, flyTo: vi.fn() });
     expect(store.get().layers.rivers.topN).toBe(5);
+  });
+
+  it('selects and flies to a table-only object without switching its layer on', () => {
+    const store = createStore<AppState>({
+      ...createInitialState(),
+      layers: { ...createInitialState().layers, rivers: { enabled: false, topN: 5 } },
+    });
+    const flyTo = vi.fn();
+    locateRow(TABLE_ONLY, 'rivers', { store, flyTo });
+    expect(store.get().layers.rivers.enabled).toBe(false);
+    expect(flyTo).toHaveBeenCalledWith(18.1, 33.94, altitudeForExtent(900));
+    expect(store.get().selection?.id).toBe('river-wd-q1');
   });
 });

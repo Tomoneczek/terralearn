@@ -1,0 +1,11 @@
+# Mountains with a known height, prominence >= 1500 m and coordinates (values normalised to metres).
+SELECT ?item ?itemLabel ?plLabel ?ele ?prom ?coord (GROUP_CONCAT(DISTINCT ?iso; separator=",") AS ?countries) WHERE {
+  ?item wdt:P31/wdt:P279* wd:Q8502; wdt:P625 ?coord.
+  ?item p:P2044/psn:P2044/wikibase:quantityAmount ?ele.
+  ?item p:P2660/psn:P2660/wikibase:quantityAmount ?prom.
+  FILTER(?prom >= 1500)
+  OPTIONAL { ?item rdfs:label ?plLabel FILTER(lang(?plLabel) = "pl") }
+  OPTIONAL { ?item wdt:P17/wdt:P297 ?iso }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
+GROUP BY ?item ?itemLabel ?plLabel ?ele ?prom ?coord

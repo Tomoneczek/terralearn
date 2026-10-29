@@ -53,6 +53,22 @@ All geographical datasets and planetary textures in **TerraLearn** are derived s
 
 ---
 
+## 5. Wikidata
+
+- **Source:** [Wikidata](https://www.wikidata.org/) – structured data queried once at build time through the Wikidata Query Service (see `scripts/data/wikidata/*.rq`); nothing is requested from Wikidata at runtime.
+- **License:** **Creative Commons CC0 1.0 (public domain dedication)** for the structured data.
+- **Use:** additional peaks (height, prominence, location), rivers (length, location, countries) and Polish names (`name_pl`) for objects that Natural Earth does not name in Polish.
+
+---
+
+## 5. Wikidata
+
+- **Source:** [Wikidata](https://www.wikidata.org/) – structured data queried once at build time through the Wikidata Query Service (see `scripts/data/wikidata/*.rq`); nothing is requested from Wikidata at runtime.
+- **License:** **Creative Commons CC0 1.0 (public domain dedication)** for the structured data.
+- **Use:** additional peaks (height, prominence, location), rivers (length, location, countries) and Polish names (`name_pl`) for objects that Natural Earth does not name in Polish.
+
+---
+
 ## Processing pipeline
 
 All vector datasets are processed, topology-preserved, and coordinate-optimized via `scripts/data/build.ts` to ensure low network payload (< 150-250 KB gzip per layer). The ocean water mask (`water-mask.png`) is rasterized directly from Natural Earth land polygons using pure scanline rasterization in Node.js.

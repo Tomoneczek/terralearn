@@ -25,6 +25,11 @@ export const RankingRowSchema = z.object({
   id: z.string().min(1),
   /** World rank within the category (1 = the biggest). */
   order: z.number().int().positive(),
+  /**
+   * Rank used by the layer's Top N slider. Absent for objects that exist only in the table
+   * (rivers taken from Wikidata): they have no geometry to draw on the globe.
+   */
+  layerOrder: z.number().int().positive().optional(),
   /** Value of the category metric; null when it is unknown (e.g. a range without a height). */
   value: z.number().nonnegative().nullable(),
   name_pl: z.string().min(1),

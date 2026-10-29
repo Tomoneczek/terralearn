@@ -95,7 +95,8 @@ export function applyPersistedState(
   if (persisted.layers) {
     for (const [key, val] of Object.entries(persisted.layers)) {
       if (key in mergedLayers) {
-        mergedLayers[key as LayerId] = val as LayerState;
+        // Keep the default Top N of a layer that gained a slider after the state was saved
+        mergedLayers[key as LayerId] = { ...mergedLayers[key as LayerId], ...(val as LayerState) };
       }
     }
   }

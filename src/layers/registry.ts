@@ -93,6 +93,13 @@ export const LAYER_DEFINITIONS: readonly LayerDef[] = [
     kind: 'point',
     source: '/data/places.json',
     defaultEnabled: false,
+    topN: {
+      min: 10,
+      max: 500,
+      default: 100,
+      presets: [25, 100, 250, 500],
+      rankBy: 'elevation',
+    },
     style: {
       color: 'hsl(0, 100%, 67%)',
       radius: 0.3,

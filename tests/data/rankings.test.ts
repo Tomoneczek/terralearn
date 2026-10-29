@@ -15,7 +15,7 @@ describe('rankings.json', () => {
   it('stays within the gzip budget (lazy-loaded, no geometry)', () => {
     const gzipKb =
       zlib.gzipSync(fs.readFileSync(path.join(DATA_DIR, 'rankings.json'))).length / 1024;
-    expect(gzipKb).toBeLessThanOrEqual(70);
+    expect(gzipKb).toBeLessThanOrEqual(110);
   });
 
   it('has the world top 3 of every well-known category', () => {
@@ -34,7 +34,7 @@ describe('rankings.json', () => {
     }
   });
 
-  it('keeps every object of the layer files, with a matching id and rank', () => {
+  it('keeps every object of the layer files, with a matching id and layer rank', () => {
     const sources = {
       lakes: ['lakes.json', 'lake'],
       rivers: ['rivers.json', 'river'],
@@ -51,14 +51,76 @@ describe('rankings.json', () => {
           (f: { properties: { kind: string } }) => f.properties.kind === kind,
         );
       const rows = rankings.categories[category as keyof typeof sources];
-      expect(rows.length, category).toBe(features.length);
       const byId = new Map(rows.map(r => [r.id, r]));
       for (const f of features) {
         const row = byId.get(f.properties.id);
         expect(row, `${category}: ${f.properties.id}`).toBeDefined();
-        if (f.properties.rank.order) expect(row?.order).toBe(f.properties.rank.order);
+        expect(row?.layerOrder).toBe(f.properties.rank.order ?? 1);
       }
+      // Rows beyond the layer's own objects are the table-only rivers from Wikidata
+      const extra = rows.filter(r => r.layerOrder === undefined);
+      expect(rows.length - extra.length, category).toBe(features.length);
+      if (category !== 'rivers') expect(extra, category).toHaveLength(0);
     }
+  });
+
+  describe('rivers from Wikidata (table only)', () => {
+    const rivers = rankings.categories.rivers;
+    const extras = rivers.filter(r => r.layerOrder === undefined);
+
+    it('adds notable rivers that have no geometry, with country names', () => {
+      expect(extras.length).toBeGreaterThan(100);
+      expect(extras.every(r => r.id.startsWith('river-wd-'))).toBe(true);
+      expect(extras.every(r => r.value !== null && r.value >= 800)).toBe(true);
+      const paraguay = extras.find(r => r.name_en === 'Paraguay River');
+      expect(paraguay?.countries).toContain('BR');
+    });
+
+    it('ranks them together with the layer rivers by length, with the world top unchanged', () => {
+      const values = rivers.map(r => r.value ?? 0);
+      expect(values).toEqual([...values].sort((a, b) => b - a));
+      expect(rivers.map(r => r.order)).toEqual(rivers.map((_, i) => i + 1));
+      expect(names('rivers', 3)).toEqual(['Nile', 'Amazon', 'Yangtze']);
+    });
+
+    it('does not repeat a river the layer already has under another name', () => {
+      const all = new Set(rivers.map(r => r.name_en));
+      for (const duplicate of [
+        'Yenisei',
+        'Pearl River',
+        'Irrawaddy River',
+        'Solimões',
+        'Olenyok',
+      ]) {
+        expect(all.has(duplicate), duplicate).toBe(false);
+      }
+      expect(new Set(rivers.map(r => r.name_en)).size).toBe(rivers.length);
+    });
+
+    it('leaves out wrong Wikidata values that would top the list', () => {
+      expect(rivers.some(r => ['Bian River', 'Eridanos'].includes(r.name_en))).toBe(false);
+    });
+
+    it('has a card and a search entry for every one of them, with the same rank as the table', () => {
+      const facts = read('facts.json');
+      const search: { id: string }[] = read('search-index.json');
+      const searchIds = new Set(search.map(s => s.id));
+      for (const row of rivers) {
+        const rank = facts[row.id]?.stats.find((s: { key: string }) => s.key === 'rank');
+        expect(rank?.value, row.id).toBe(row.order);
+      }
+      for (const row of extras) expect(searchIds.has(row.id), row.id).toBe(true);
+    });
+  });
+
+  it('has the peaks of Natural Earth and the missing summits from Wikidata', () => {
+    const peaks = rankings.categories.peaks;
+    expect(peaks.length).toBeGreaterThan(700);
+    expect(peaks.map(r => r.name_en)).toEqual(
+      expect.arrayContaining(['Makalu', 'Cho Oyu', 'Annapurna I']),
+    );
+    expect(new Set(peaks.map(r => r.id)).size).toBe(peaks.length);
+    expect(peaks.every(r => r.layerOrder === r.order)).toBe(true);
   });
 
   it('orders peaks by height and keeps heights known for peaks', () => {

@@ -7,6 +7,7 @@ import { resetRankingsCache } from '@/rankings/load';
 import { setLocale } from '@/i18n';
 
 const row = (over: Partial<RankingRow> & Pick<RankingRow, 'id' | 'order'>): RankingRow => ({
+  layerOrder: over.order,
   value: 1000,
   name_pl: over.id,
   name_en: over.id,
@@ -244,5 +245,27 @@ describe('RankingsPanel', () => {
     const { panel, store } = await setup();
     store.set({ mode: 'quiz' });
     expect(panel.isOpen()).toBe(false);
+  });
+
+  it('never marks an object without geometry as drawn, but still lets you locate it', async () => {
+    const tableOnly = row({
+      id: 'river-wd-q1',
+      order: 2,
+      layerOrder: undefined,
+      name_en: 'Paraguay River',
+      name_pl: 'Paragwaj',
+    });
+    const { panel, onLocate } = await setup(
+      { layers: { ...createInitialState().layers, lakes: { enabled: true, topN: 50 } } },
+      makeData([LAKES[0]!, tableOnly]),
+    );
+    const dots = [...panel.element.querySelectorAll('.tl-rankings-dot')].map(d =>
+      d.classList.contains('is-on'),
+    );
+    expect(dots).toEqual([true, false]);
+    panel.element
+      .querySelector<HTMLButtonElement>('tr[data-id="river-wd-q1"] .tl-rankings-locate')!
+      .click();
+    expect(onLocate).toHaveBeenCalledWith(tableOnly, 'lakes');
   });
 });

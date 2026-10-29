@@ -3,7 +3,29 @@ import path from 'node:path';
 
 const CACHE_DIR = path.resolve(process.cwd(), '.cache/data/raw');
 
-export const DATASETS = [
+interface Dataset {
+  id: string;
+  filename: string;
+  url: string;
+  /** Extra request headers (Wikidata asks API clients for a descriptive User-Agent). */
+  headers?: Record<string, string>;
+}
+
+const WIKIDATA_HEADERS = {
+  'User-Agent': 'TerraLearn/0.1 (non-commercial learning project; data build script)',
+  Accept: 'application/sparql-results+json',
+};
+
+/** SPARQL query of `scripts/data/wikidata/<name>.rq` as a Wikidata Query Service URL. */
+function wikidataUrl(name: string): string {
+  const query = fs.readFileSync(
+    path.resolve(process.cwd(), `scripts/data/wikidata/${name}.rq`),
+    'utf-8',
+  );
+  return `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(query)}`;
+}
+
+export const DATASETS: readonly Dataset[] = [
   {
     id: 'countries',
     filename: 'ne_110m_admin_0_countries.geojson',
@@ -45,7 +67,14 @@ export const DATASETS = [
     filename: 'kontur_population_20231101_r4.gpkg.gz',
     url: 'https://geodata-eu-central-1-kontur-public.s3.eu-central-1.amazonaws.com/kontur_datasets/kontur_population_20231101_r4.gpkg.gz',
   },
-] as const;
+  // Wikidata (CC0): extra peaks, rivers and lakes with PL/EN names and normalised measurements.
+  ...(['peaks', 'rivers', 'lakes'] as const).map(name => ({
+    id: `wikidata-${name}`,
+    filename: `wikidata-${name}.json`,
+    url: wikidataUrl(name),
+    headers: WIKIDATA_HEADERS,
+  })),
+];
 
 export async function fetchDatasets(force = false): Promise<void> {
   if (!fs.existsSync(CACHE_DIR)) {
@@ -63,10 +92,10 @@ export async function fetchDatasets(force = false): Promise<void> {
       continue;
     }
 
-    console.log(`  ↓ Downloading ${ds.id} from ${ds.url}...`);
-    const res = await fetch(ds.url);
+    console.log(`  ↓ Downloading ${ds.id} from ${ds.url.slice(0, 80)}...`);
+    const res = await fetch(ds.url, { headers: ds.headers });
     if (!res.ok) {
-      throw new Error(`Failed to download ${ds.url}: ${res.status} ${res.statusText}`);
+      throw new Error(`Failed to download ${ds.id}: ${res.status} ${res.statusText}`);
     }
 
     // Binary-safe: the population dataset is a gzipped GeoPackage.

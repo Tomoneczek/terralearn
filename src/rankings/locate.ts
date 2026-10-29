@@ -24,16 +24,16 @@ export function featureRefForRow(row: RankingRow, category: RankingCategory): Fe
   };
 }
 
-/** Whether the object is currently drawn on the globe (its layer is on and it is within Top N). */
+/** Whether the object is currently drawn on the globe (its layer is on, it has geometry and is within Top N). */
 export function isRowDrawn(
   row: RankingRow,
   category: RankingCategory,
   layers: AppState['layers'],
 ): boolean {
   const layer = layers[category];
-  if (!layer?.enabled) return false;
+  if (!layer?.enabled || row.layerOrder === undefined) return false;
   const limit = getLayer(category)?.topN ? layer.topN : undefined;
-  return limit === undefined || row.order <= limit;
+  return limit === undefined || row.layerOrder <= limit;
 }
 
 export interface LocateOptions {
@@ -51,7 +51,8 @@ export function locateRow(
   { store, flyTo }: LocateOptions,
 ): void {
   const layer = store.get().layers[category];
-  if (layer && !layer.enabled) {
+  // Only objects with geometry need their layer; the others get the selection halo alone
+  if (layer && !layer.enabled && row.layerOrder !== undefined) {
     store.set(s => ({
       layers: { ...s.layers, [category]: { ...s.layers[category], enabled: true } },
     }));
