@@ -365,6 +365,7 @@ export interface Dictionary {
       countriesPopulation: string;
       capitals: string;
       cities: string;
+      countryCities: string;
       lakes: string;
       rivers: string;
       mountains: string;
@@ -379,12 +380,14 @@ export interface Dictionary {
     colName: string;
     colCountries: string;
     colLocate: string;
+    colCountryRank: string;
     notCounted: string;
     partOf: string;
     notes: {
       countriesTopN: string;
       countriesPopulation: string;
       cities: string;
+      countryCities: string;
       deserts: string;
     };
     sortBy: string;

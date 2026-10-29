@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { stampServiceWorker } from './stampServiceWorker.js';
 import { buildExtras } from './wikidataExtras.js';
 import { MIN_CITY_POPULATION } from './rankingRules.js';
+import { buildCountryCities } from './countryCities.js';
 import { getFeatureCoords, type ObjectFacts } from './buildSearchAndFacts.js';
 import {
   CATEGORY_METRIC,
@@ -55,6 +56,8 @@ const SOURCES: Readonly<Record<RankingCategory, Source>> = {
   countriesPopulation: { file: 'countries.json', kinds: ['country'] },
   capitals: { file: 'places.json', kinds: ['capital'] },
   cities: { file: 'places.json', kinds: ['capital', 'megacity'], minValue: MIN_CITY_POPULATION },
+  // Filled from the GeoNames top three of every country, not from layer features
+  countryCities: { file: 'places.json', kinds: [] },
   lakes: { file: 'lakes.json', kinds: ['lake'] },
   rivers: { file: 'rivers.json', kinds: ['river'] },
   mountains: { file: 'regions.json', kinds: ['mountain'] },
@@ -150,6 +153,26 @@ export function buildRankings(dir = DATA_DIR): RankingsData {
         ...(countries?.length ? { countries } : {}),
         ...(p.landformType || p.marineType ? { subtype: p.landformType ?? p.marineType } : {}),
       });
+    }
+
+    if (category === 'countryCities') {
+      for (const city of buildCountryCities(dir)) {
+        usedCountryIds.add(city.countryId);
+        rows.push({
+          id: city.id,
+          ...(city.onGlobe ? { layerOrder: 1 } : {}),
+          unranked: false,
+          value: city.population,
+          name_pl: city.name_pl,
+          name_en: city.name_en,
+          lat: city.lat,
+          lng: city.lng,
+          extentKm: 0,
+          kind: city.kind,
+          countries: [city.countryId],
+          countryRank: city.countryRank,
+        });
+      }
     }
 
     if (category === 'rivers') {

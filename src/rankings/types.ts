@@ -7,6 +7,7 @@ export const RANKING_CATEGORIES = [
   'countriesPopulation',
   'capitals',
   'cities',
+  'countryCities',
   'lakes',
   'rivers',
   'mountains',
@@ -51,6 +52,8 @@ export const RankingRowSchema = z.object({
   subtype: z.string().optional(),
   /** Feature kind, only where one category mixes kinds (cities: capital or megacity). */
   kind: z.string().optional(),
+  /** 1–3: place among the biggest cities of its own country (country-cities category only). */
+  countryRank: z.number().int().min(1).optional(),
   /** Id of the larger object this one lies inside (a desert within the Sahara). */
   partOf: z.string().optional(),
 });
@@ -74,6 +77,7 @@ export const CATEGORY_METRIC: Readonly<Record<RankingCategory, RankingMetric>> =
   countriesPopulation: 'population',
   capitals: 'population',
   cities: 'population',
+  countryCities: 'population',
   lakes: 'area',
   rivers: 'length',
   mountains: 'elevation',
@@ -89,6 +93,7 @@ export const CATEGORY_KIND: Readonly<Record<RankingCategory, string>> = {
   countriesPopulation: 'country',
   capitals: 'capital',
   cities: 'megacity',
+  countryCities: 'megacity',
   lakes: 'lake',
   rivers: 'river',
   mountains: 'mountain',
@@ -104,6 +109,7 @@ export const CATEGORY_LAYER: Readonly<Record<RankingCategory, LayerId>> = {
   countriesPopulation: 'countriesTopN',
   capitals: 'capitals',
   cities: 'megacities',
+  countryCities: 'megacities',
   lakes: 'lakes',
   rivers: 'rivers',
   mountains: 'mountains',

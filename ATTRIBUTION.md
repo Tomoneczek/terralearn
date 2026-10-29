@@ -69,6 +69,14 @@ All geographical datasets and planetary textures in **TerraLearn** are derived s
 
 ---
 
+## 6. GeoNames
+
+- **Source:** [GeoNames](https://www.geonames.org/) – `cities15000` (places with more than 15 000 inhabitants), downloaded once at build time; nothing is requested from GeoNames at runtime.
+- **License:** **Creative Commons Attribution 4.0 International (CC BY 4.0)**.
+- **Use:** names, locations and city populations for the three biggest cities of every country ("Cities by country" ranking).
+
+---
+
 ## Processing pipeline
 
 All vector datasets are processed, topology-preserved, and coordinate-optimized via `scripts/data/build.ts` to ensure low network payload (< 150-250 KB gzip per layer). The ocean water mask (`water-mask.png`) is rasterized directly from Natural Earth land polygons using pure scanline rasterization in Node.js.

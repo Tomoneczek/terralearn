@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { stampServiceWorker } from './stampServiceWorker.js';
 import { geoContains, type GeoGeometryObjects } from 'd3-geo';
 import { buildExtras } from './wikidataExtras.js';
+import { buildCountryCities } from './countryCities.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -633,6 +634,33 @@ export function buildSearchIndexAndFacts(): {
         ? {}
         : { comparison: compare(extra.id, 'length', 'vistula', extra.value) }),
       ...(countries.length > 0 ? { relations: { countries } } : {}),
+    };
+  }
+
+  // Top three cities of every country: those that are not capitals / large cities yet exist only
+  // in the table, the search and as a card (no geometry on the globe)
+  for (const city of buildCountryCities(DATA_DIR)) {
+    if (city.onGlobe) continue;
+    const country = countryByCode.get(city.countryId);
+    searchIndex.push({
+      id: city.id,
+      name_pl: city.name_pl,
+      name_en: city.name_en,
+      normalized_name: normalizeText(`${city.name_pl} ${city.name_en}`),
+      kind: city.kind,
+      layerId: 'megacities',
+      lat: city.lat,
+      lng: city.lng,
+      rank: 999,
+    });
+    facts[city.id] = {
+      id: city.id,
+      name_pl: city.name_pl,
+      name_en: city.name_en,
+      kind: city.kind,
+      stats: [{ key: 'population', value: city.population }],
+      comparison: compare(city.id, 'population', 'warsaw', city.population),
+      ...(country ? { relations: { countries: [toRelationItem(country, 'countriesTopN')] } } : {}),
     };
   }
 

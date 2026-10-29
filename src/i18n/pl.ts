@@ -380,6 +380,7 @@ export const pl: Dictionary = {
       countriesPopulation: 'Kraje – ludność',
       capitals: 'Stolice',
       cities: 'Duże miasta',
+      countryCities: 'Miasta krajów',
       lakes: 'Jeziora',
       rivers: 'Rzeki',
       mountains: 'Pasma górskie',
@@ -394,6 +395,7 @@ export const pl: Dictionary = {
     colName: 'Nazwa',
     colCountries: 'Kraje',
     colLocate: 'Pokaż na globie',
+    colCountryRank: 'W kraju',
     notCounted: 'Na liście, ale nie liczony w rankingu',
     partOf: 'część: {name}',
     notes: {
@@ -402,6 +404,8 @@ export const pl: Dictionary = {
         'Szacunek ludności z 2019 r. (Natural Earth). Antarktyda (tylko personel stacji badawczych) nie ma miejsca w rankingu.',
       cities:
         'Ludność aglomeracji (Natural Earth), nie samego miasta. Miasta powyżej 1 mln, razem ze stolicami.',
+      countryCities:
+        'Trzy największe miasta każdego kraju z listy, wg ludności samego miasta (GeoNames), a nie aglomeracji: Tokio to tu 23 dzielnice, a chińskie gminy miejskie obejmują też tereny wiejskie. Wpisz nazwę kraju w filtrze, aby zobaczyć jego miasta.',
       deserts:
         'Nazwane regiony pustynne z Natural Earth. Brak pustyń polarnych (Antarktycznej i Arktycznej, największych na świecie). Części większej pustyni nie mają miejsca w rankingu.',
     },

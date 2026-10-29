@@ -15,7 +15,7 @@ describe('rankings.json', () => {
   it('stays within the gzip budget (lazy-loaded, no geometry)', () => {
     const gzipKb =
       zlib.gzipSync(fs.readFileSync(path.join(DATA_DIR, 'rankings.json'))).length / 1024;
-    expect(gzipKb).toBeLessThanOrEqual(140);
+    expect(gzipKb).toBeLessThanOrEqual(170);
   });
 
   it('has the world top 3 of every well-known category', () => {
@@ -231,6 +231,68 @@ describe('rankings.json', () => {
           if (stat) expect(stat.value, `${category}: ${row.id}`).toBe(row.order);
         }
       }
+    });
+  });
+
+  describe('three biggest cities of every country', () => {
+    const rows = rankings.categories.countryCities;
+    const byCountry = (id: string) => rows.filter(r => r.countries?.[0] === id);
+
+    it('has at most three per country, ranked 1…n by population within the country', () => {
+      const countries = new Set(rows.map(r => r.countries![0]!));
+      expect(countries.size).toBeGreaterThan(165);
+      for (const country of countries) {
+        const list = byCountry(country);
+        expect(list.length, country).toBeLessThanOrEqual(3);
+        expect(
+          list.map(r => r.countryRank),
+          country,
+        ).toEqual(list.map((_, i) => i + 1));
+        const values = list.map(r => r.value!);
+        expect(values, country).toEqual([...values].sort((a, b) => b - a));
+      }
+      expect(new Set(rows.map(r => r.id)).size).toBe(rows.length);
+    });
+
+    it('gets the well-known cases right (city proper, no boroughs, no duplicates)', () => {
+      expect(byCountry('PL').map(r => r.name_en)).toEqual(['Warsaw', 'Kraków', 'Wrocław']);
+      expect(byCountry('FRA').map(r => r.name_en)).toEqual(['Paris', 'Marseille', 'Lyon']);
+      expect(byCountry('DE').map(r => r.name_en)).toEqual(['Berlin', 'Hamburg', 'Munich']);
+      expect(byCountry('US').map(r => r.name_en)).toEqual(['New York', 'Los Angeles', 'Chicago']);
+      expect(byCountry('IT')[0]!.name_en).toBe('Rome');
+      expect(byCountry('RU')[1]!.name_en).toBe('St. Petersburg');
+      for (const country of new Set(rows.map(r => r.countries![0]!))) {
+        const list = byCountry(country).map(r => r.name_en);
+        expect(new Set(list).size, country).toBe(list.length);
+      }
+    });
+
+    it('reuses the existing capital / large-city objects and adds only the missing ones', () => {
+      const places = new Map(
+        read('places.json').features.map((f: { properties: { id: string; kind: string } }) => [
+          f.properties.id,
+          f.properties.kind,
+        ]),
+      );
+      const facts = read('facts.json');
+      const search = new Set((read('search-index.json') as { id: string }[]).map(s => s.id));
+      const onGlobe = rows.filter(r => r.layerOrder !== undefined);
+      const tableOnly = rows.filter(r => r.layerOrder === undefined);
+      expect(onGlobe.length).toBeGreaterThan(150);
+      expect(tableOnly.length).toBeGreaterThan(100);
+      for (const r of onGlobe) expect(places.get(r.id), r.id).toBe(r.kind);
+      for (const r of tableOnly) {
+        expect(r.id.startsWith('city-gn-')).toBe(true);
+        expect(search.has(r.id), r.id).toBe(true);
+        expect(facts[r.id]?.stats[0], r.id).toEqual({ key: 'population', value: r.value });
+        expect(facts[r.id]?.relations?.countries?.[0]?.id, r.id).toBe(r.countries![0]);
+      }
+    });
+
+    it('is ordered by population like the other tables, without unranked rows', () => {
+      const values = rows.map(r => r.value!);
+      expect(values).toEqual([...values].sort((a, b) => b - a));
+      expect(rows.every(r => r.order !== null)).toBe(true);
     });
   });
 });

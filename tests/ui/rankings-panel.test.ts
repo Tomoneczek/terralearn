@@ -331,4 +331,38 @@ describe('RankingsPanel', () => {
     expect(panel.element.querySelector('.tl-rankings-value span')?.textContent).toBe('35,676,000');
     expect(panel.element.querySelector('.tl-rankings-note')).toBeNull();
   });
+
+  it('shows the place in the country for the cities-by-country table, with its note', async () => {
+    const data = makeData();
+    data.categories.countryCities = [
+      row({
+        id: 'capital-warsaw',
+        order: 1,
+        value: 1_700_000,
+        name_en: 'Warsaw',
+        countries: ['PL'],
+        countryRank: 1,
+      }),
+      row({
+        id: 'city-gn-1',
+        order: 2,
+        value: 800_000,
+        name_en: 'Kraków',
+        countries: ['PL'],
+        countryRank: 2,
+      }),
+    ];
+    const { panel } = await setup({ rankingsCategory: 'countryCities' }, data);
+    const headers = [...panel.element.querySelectorAll('thead th')].map(th =>
+      th.textContent?.trim(),
+    );
+    expect(headers).toContain('In country');
+    const ranks = [
+      ...panel.element.querySelectorAll('tr[data-id="city-gn-1"] .tl-rankings-rank'),
+    ].map(c => c.textContent);
+    expect(ranks).toEqual(['2', '2']);
+    expect(panel.element.querySelector('.tl-rankings-note')?.textContent).toContain(
+      'three biggest cities',
+    );
+  });
 });

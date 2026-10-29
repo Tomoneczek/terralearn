@@ -380,6 +380,7 @@ export const en: Dictionary = {
       countriesPopulation: 'Countries – population',
       capitals: 'Capitals',
       cities: 'Large cities',
+      countryCities: 'Cities by country',
       lakes: 'Lakes',
       rivers: 'Rivers',
       mountains: 'Mountain ranges',
@@ -394,6 +395,7 @@ export const en: Dictionary = {
     colName: 'Name',
     colCountries: 'Countries',
     colLocate: 'Show on globe',
+    colCountryRank: 'In country',
     notCounted: 'Listed, but not counted in the ranking',
     partOf: 'part of {name}',
     notes: {
@@ -402,6 +404,8 @@ export const en: Dictionary = {
         'Population estimate for 2019 (Natural Earth). Antarctica (research staff only) has no rank.',
       cities:
         'Population of the urban agglomeration (Natural Earth), not of the city proper. Cities over 1 million, capitals included.',
+      countryCities:
+        'The three biggest cities of each of the countries on the list, by the population of the city itself (GeoNames), not the agglomeration: Tokyo here is its 23 wards, Chinese municipalities include rural land. Filter by a country name to see its cities.',
       deserts:
         'Named desert regions from Natural Earth. Polar deserts (Antarctic and Arctic, the largest in the world) are not included. Parts of a larger desert have no rank.',
     },

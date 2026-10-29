@@ -27,6 +27,7 @@ const CATEGORY_NOTES: Partial<Record<RankingCategory, I18nKey>> = {
   countriesTopN: 'rankings.notes.countriesTopN',
   countriesPopulation: 'rankings.notes.countriesPopulation',
   cities: 'rankings.notes.cities',
+  countryCities: 'rankings.notes.countryCities',
   deserts: 'rankings.notes.deserts',
 };
 
@@ -283,6 +284,7 @@ export class RankingsPanel {
     const shown = rows.slice(0, this.visible);
     const max = maxValue(data, category);
     const hasCountries = data.categories[category].some(r => r.countries?.length);
+    const hasCountryRank = data.categories[category].some(r => r.countryRank !== undefined);
 
     this.body.replaceChildren();
     this.body.appendChild(
@@ -301,6 +303,7 @@ export class RankingsPanel {
       this.sortHeader('name', t('rankings.colName')),
       this.sortHeader('value', this.valueHeader(category)),
     );
+    if (hasCountryRank) headRow.appendChild(el('th', undefined, t('rankings.colCountryRank')));
     if (hasCountries) headRow.appendChild(el('th', undefined, t('rankings.colCountries')));
     const locateTh = el('th');
     locateTh.appendChild(el('span', 'tl-visually-hidden', t('rankings.colLocate')));
@@ -310,7 +313,9 @@ export class RankingsPanel {
 
     const tbody = el('tbody');
     for (const row of shown) {
-      tbody.appendChild(this.buildRow(row, category, data, max, hasCountries, state));
+      tbody.appendChild(
+        this.buildRow(row, category, data, max, { hasCountries, hasCountryRank }, state),
+      );
     }
     table.append(thead, tbody);
     tbody.addEventListener('keydown', this.onRowKeyDown);
@@ -359,7 +364,7 @@ export class RankingsPanel {
     category: RankingCategory,
     data: RankingsData,
     max: number,
-    hasCountries: boolean,
+    columns: { hasCountries: boolean; hasCountryRank: boolean },
     state: AppState,
   ): HTMLTableRowElement {
     const tr = el('tr', 'tl-rankings-row');
@@ -401,7 +406,10 @@ export class RankingsPanel {
     const rankCell = el('td', 'tl-rankings-rank', row.order === null ? '—' : String(row.order));
     if (row.order === null) rankCell.title = t('rankings.notCounted');
     tr.append(rankCell, nameCell, valueCell);
-    if (hasCountries) {
+    if (columns.hasCountryRank) {
+      tr.appendChild(el('td', 'tl-rankings-rank', row.countryRank?.toString() ?? '—'));
+    }
+    if (columns.hasCountries) {
       tr.appendChild(
         el('td', 'tl-rankings-countries', rowCountries(row, data, getLocale()).join(', ') || '—'),
       );

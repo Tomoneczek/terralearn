@@ -67,6 +67,12 @@ export const DATASETS: readonly Dataset[] = [
     filename: 'kontur_population_20231101_r4.gpkg.gz',
     url: 'https://geodata-eu-central-1-kontur-public.s3.eu-central-1.amazonaws.com/kontur_datasets/kontur_population_20231101_r4.gpkg.gz',
   },
+  // GeoNames (CC BY 4.0): populated places of 15 000+ people, population of the city proper.
+  {
+    id: 'geonames-cities15000',
+    filename: 'geonames-cities15000.zip',
+    url: 'https://download.geonames.org/export/dump/cities15000.zip',
+  },
   // Wikidata (CC0): extra peaks, rivers and lakes with PL/EN names and normalised measurements.
   ...(['peaks', 'rivers', 'lakes'] as const).map(name => ({
     id: `wikidata-${name}`,

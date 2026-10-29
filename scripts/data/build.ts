@@ -575,7 +575,7 @@ export async function buildData(): Promise<void> {
     // Capitals always; other cities by population only (the NE `megacity` flag is not about size)
     if (!isCapital && pop < MIN_CITY_POPULATION) continue;
 
-    const name = raw.properties.name || raw.properties.nameascii;
+    const name = (raw.properties.name || raw.properties.nameascii)?.replace(/\s+/g, ' ').trim();
     if (!name) continue;
 
     const kind = isCapital ? 'capital' : 'megacity';
