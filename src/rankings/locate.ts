@@ -1,7 +1,7 @@
 import type { AppState, FeatureRef, Store } from '@/state/types';
 import { getLayer } from '@/layers';
 import { EARTH_RADIUS_KM } from '@/geo/spherical';
-import { CATEGORY_KIND, type RankingCategory, type RankingRow } from './types';
+import { CATEGORY_KIND, rowLayer, type RankingCategory, type RankingRow } from './types';
 
 const MIN_ALTITUDE = 0.4;
 const MAX_ALTITUDE = 2;
@@ -15,8 +15,8 @@ export function altitudeForExtent(extentKm: number): number {
 export function featureRefForRow(row: RankingRow, category: RankingCategory): FeatureRef {
   return {
     id: row.id,
-    layerId: category,
-    kind: CATEGORY_KIND[category],
+    layerId: rowLayer(row, category),
+    kind: row.kind ?? CATEGORY_KIND[category],
     name_pl: row.name_pl,
     name_en: row.name_en,
     lat: row.lat,
@@ -30,9 +30,10 @@ export function isRowDrawn(
   category: RankingCategory,
   layers: AppState['layers'],
 ): boolean {
-  const layer = layers[category];
+  const layerId = rowLayer(row, category);
+  const layer = layers[layerId];
   if (!layer?.enabled || row.layerOrder === undefined) return false;
-  const limit = getLayer(category)?.topN ? layer.topN : undefined;
+  const limit = getLayer(layerId)?.topN ? layer.topN : undefined;
   return limit === undefined || row.layerOrder <= limit;
 }
 
@@ -50,11 +51,12 @@ export function locateRow(
   category: RankingCategory,
   { store, flyTo }: LocateOptions,
 ): void {
-  const layer = store.get().layers[category];
+  const layerId = rowLayer(row, category);
+  const layer = store.get().layers[layerId];
   // Only objects with geometry need their layer; the others get the selection halo alone
   if (layer && !layer.enabled && row.layerOrder !== undefined) {
     store.set(s => ({
-      layers: { ...s.layers, [category]: { ...s.layers[category], enabled: true } },
+      layers: { ...s.layers, [layerId]: { ...s.layers[layerId], enabled: true } },
     }));
   }
   flyTo(row.lat, row.lng, altitudeForExtent(row.extentKm));

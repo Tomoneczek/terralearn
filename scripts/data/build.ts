@@ -19,6 +19,12 @@ import { writeAttribution } from './attribution.js';
 import { loadWikidata } from './wikidata.js';
 import { mergePeaks } from './wikidataPeaks.js';
 import {
+  DESERT_PART_OF,
+  MIN_CITY_POPULATION,
+  NOT_DESERT_IDS,
+  UNRANKED_COUNTRY_IDS,
+} from './rankingRules.js';
+import {
   type GeoFeature,
   type GeoFeatureCollection,
   GeoFeatureCollectionSchema,
@@ -204,9 +210,16 @@ export async function buildData(): Promise<void> {
     });
   }
 
-  countryFeatures.sort((a, b) => (b.properties.rank.area || 0) - (a.properties.rank.area || 0));
+  // Counted countries first (by area); an unranked one (Antarctica) takes the numbers after them
+  countryFeatures.sort(
+    (a, b) =>
+      Number(UNRANKED_COUNTRY_IDS.has(a.properties.id)) -
+        Number(UNRANKED_COUNTRY_IDS.has(b.properties.id)) ||
+      (b.properties.rank.area || 0) - (a.properties.rank.area || 0),
+  );
   countryFeatures.forEach((f, idx) => {
     f.properties.rank.order = idx + 1;
+    if (UNRANKED_COUNTRY_IDS.has(f.properties.id)) f.properties.rank.unranked = true;
   });
 
   const countriesCol: GeoFeatureCollection = {
@@ -363,15 +376,27 @@ export async function buildData(): Promise<void> {
   }
 
   mountainFeatures = mergeNearbyNamesakes(mountainFeatures, 12);
-  desertFeatures = mergeNearbyNamesakes(desertFeatures, 4);
+  desertFeatures = mergeNearbyNamesakes(desertFeatures, 4).filter(
+    f => !NOT_DESERT_IDS.has(f.properties.id),
+  );
   mountainFeatures.sort((a, b) => compareRanges(a.properties.rank, b.properties.rank));
   mountainFeatures.forEach((f, idx) => {
     f.properties.rank.order = idx + 1;
   });
 
-  desertFeatures.sort((a, b) => (b.properties.rank.area || 0) - (a.properties.rank.area || 0));
+  // Parts of a larger desert follow the independent ones and carry no rank of their own
+  desertFeatures.sort(
+    (a, b) =>
+      Number(a.properties.id in DESERT_PART_OF) - Number(b.properties.id in DESERT_PART_OF) ||
+      (b.properties.rank.area || 0) - (a.properties.rank.area || 0),
+  );
   desertFeatures.forEach((f, idx) => {
     f.properties.rank.order = idx + 1;
+    const parent = DESERT_PART_OF[f.properties.id];
+    if (parent) {
+      f.properties.rank.unranked = true;
+      f.properties.partOf = parent;
+    }
   });
 
   regionFeatures.push(...mountainFeatures, ...desertFeatures);
@@ -545,10 +570,10 @@ export async function buildData(): Promise<void> {
   // Capitals & Megacities
   for (const raw of rawPlaces.features) {
     const isCapital = raw.properties.adm0cap === 1;
-    const isMegacity = raw.properties.megacity === 1;
     const pop = Number(raw.properties.pop_max) || 0;
 
-    if (!isCapital && !isMegacity && pop < 2_500_000) continue;
+    // Capitals always; other cities by population only (the NE `megacity` flag is not about size)
+    if (!isCapital && pop < MIN_CITY_POPULATION) continue;
 
     const name = raw.properties.name || raw.properties.nameascii;
     if (!name) continue;

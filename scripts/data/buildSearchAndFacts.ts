@@ -39,6 +39,7 @@ interface RawGeoFeature {
       elevation?: number;
       length?: number;
       order?: number;
+      unranked?: boolean;
     };
     labelLat?: number;
     labelLng?: number;
@@ -256,7 +257,7 @@ export function generateFacts(f: RawGeoFeature): ObjectFacts {
   }
 
   const ranked = ['country', 'lake', 'river', 'landform', 'marine'].includes(p.kind);
-  if (ranked && order) stats.push({ key: 'rank', value: order });
+  if (ranked && order && !p.rank?.unranked) stats.push({ key: 'rank', value: order });
 
   const subtype = p.landformType || p.marineType;
   return {

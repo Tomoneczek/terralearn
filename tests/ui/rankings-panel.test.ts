@@ -7,7 +7,7 @@ import { resetRankingsCache } from '@/rankings/load';
 import { setLocale } from '@/i18n';
 
 const row = (over: Partial<RankingRow> & Pick<RankingRow, 'id' | 'order'>): RankingRow => ({
-  layerOrder: over.order,
+  layerOrder: over.order ?? undefined,
   value: 1000,
   name_pl: over.id,
   name_en: over.id,
@@ -267,5 +267,68 @@ describe('RankingsPanel', () => {
       .querySelector<HTMLButtonElement>('tr[data-id="river-wd-q1"] .tl-rankings-locate')!
       .click();
     expect(onLocate).toHaveBeenCalledWith(tableOnly, 'lakes');
+  });
+
+  it('REGRESSION: shows the table again when reopened with the data already loaded', async () => {
+    const { panel, store } = await setup();
+    panel.element.querySelector<HTMLButtonElement>('.tl-card-close')!.click();
+    expect(panel.isOpen()).toBe(false);
+
+    store.set({ rankingsPanelOpen: true });
+    expect(panel.element.querySelectorAll('.tl-rankings-row')).toHaveLength(LAKES.length);
+    expect(panel.element.querySelector('.tl-rankings-count')).not.toBeNull();
+  });
+
+  it('REGRESSION: a category change while closed shows its rows on the next open', async () => {
+    const { panel, store } = await setup();
+    store.set({ rankingsPanelOpen: false });
+    store.set({ rankingsCategory: 'lakes' });
+    store.set({ rankingsPanelOpen: true });
+    expect(panel.element.querySelectorAll('.tl-rankings-row')).toHaveLength(LAKES.length);
+  });
+
+  it('shows no rank number for an unranked row, with a reason, and notes what the list contains', async () => {
+    const sahara = row({ id: 'desert-sahara', order: 1, value: 10_000, name_en: 'Sahara' });
+    const libyan = row({
+      id: 'desert-libyan',
+      order: null,
+      value: 3000,
+      name_en: 'Libyan Desert',
+      partOf: 'desert-sahara',
+    });
+    const gobi = row({ id: 'desert-gobi', order: 2, value: 1000, name_en: 'Gobi' });
+    const data = makeData();
+    data.categories.deserts = [sahara, libyan, gobi];
+    const { panel, store } = await setup({ rankingsCategory: 'deserts' }, data);
+
+    expect(names(panel)).toEqual(['Sahara', 'Libyan Desert', 'Gobi']);
+    const ranks = [...panel.element.querySelectorAll('.tl-rankings-rank')].map(c => c.textContent);
+    expect(ranks).toEqual(['1', '—', '2']);
+    expect(panel.element.querySelectorAll('.tl-rankings-rank')[1]!.getAttribute('title')).toContain(
+      'not counted',
+    );
+    expect(panel.element.querySelector('tr[data-id="desert-libyan"] small')?.textContent).toBe(
+      'part of Sahara',
+    );
+    expect(panel.element.querySelector('.tl-rankings-note')?.textContent).toContain(
+      'Polar deserts',
+    );
+    store.set({ locale: 'pl' });
+    expect(panel.element.querySelector('.tl-rankings-note')?.textContent).toContain(
+      'pustyń polarnych',
+    );
+  });
+
+  it('uses the population column and no note for capitals', async () => {
+    const data = makeData();
+    data.categories.capitals = [
+      row({ id: 'capital-tokyo', order: 1, value: 35_676_000, name_en: 'Tokyo' }),
+    ];
+    const { panel } = await setup({ rankingsCategory: 'capitals' }, data);
+    expect(panel.element.querySelector('th[aria-sort] [data-sort="value"]')?.textContent).toContain(
+      'Population',
+    );
+    expect(panel.element.querySelector('.tl-rankings-value span')?.textContent).toBe('35,676,000');
+    expect(panel.element.querySelector('.tl-rankings-note')).toBeNull();
   });
 });

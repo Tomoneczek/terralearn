@@ -47,7 +47,11 @@ export const GeoFeaturePropertiesSchema = z.object({
     length: z.number().nonnegative().optional(),
     elevation: z.number().optional(),
     order: z.number().int().positive().optional(),
+    /** Listed in rankings, but not counted: it has the last `order`, after every counted object. */
+    unranked: z.boolean().optional(),
   }),
+  /** Id of the larger object this one lies inside (a desert within the Sahara). */
+  partOf: z.string().optional(),
   labelLat: z.number().min(-90).max(90).optional(),
   labelLng: z.number().min(-180).max(180).optional(),
   countryCode: z.string().optional(),

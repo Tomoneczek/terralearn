@@ -115,4 +115,39 @@ describe('locateRow', () => {
     expect(flyTo).toHaveBeenCalledWith(18.1, 33.94, altitudeForExtent(900));
     expect(store.get().selection?.id).toBe('river-wd-q1');
   });
+
+  it('uses the layer of a row of a mixed category (cities: capital or other city)', () => {
+    const store = createStore<AppState>({
+      ...createInitialState(),
+      layers: {
+        ...createInitialState().layers,
+        capitals: { enabled: false },
+        megacities: { enabled: false },
+      },
+    });
+    const capital: RankingRow = { ...NILE, id: 'capital-tokyo', kind: 'capital', layerOrder: 1 };
+    const city: RankingRow = { ...NILE, id: 'megacity-osaka', kind: 'megacity', layerOrder: 1 };
+
+    locateRow(capital, 'cities', { store, flyTo: vi.fn() });
+    expect(store.get().layers.capitals.enabled).toBe(true);
+    expect(store.get().layers.megacities.enabled).toBe(false);
+    expect(store.get().selection).toMatchObject({ layerId: 'capitals', kind: 'capital' });
+
+    locateRow(city, 'cities', { store, flyTo: vi.fn() });
+    expect(store.get().layers.megacities.enabled).toBe(true);
+    expect(store.get().selection).toMatchObject({ layerId: 'megacities', kind: 'megacity' });
+  });
+
+  it('locates a country from the population table through the countries layer', () => {
+    const store = createStore<AppState>({
+      ...createInitialState(),
+      layers: { ...createInitialState().layers, countriesTopN: { enabled: false, topN: 20 } },
+    });
+    locateRow({ ...NILE, id: 'CN', layerOrder: 3 }, 'countriesPopulation', {
+      store,
+      flyTo: vi.fn(),
+    });
+    expect(store.get().layers.countriesTopN.enabled).toBe(true);
+    expect(store.get().selection).toMatchObject({ layerId: 'countriesTopN', kind: 'country' });
+  });
 });

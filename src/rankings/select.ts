@@ -44,20 +44,24 @@ export function selectRows(
     ? data.categories[category].filter(row => matchesFilter(row, data, needle))
     : [...data.categories[category]];
 
+  // The stored order is the display order (by value); it breaks every tie, and unranked rows
+  // (no number) sort by where they stand in it
+  const position = new Map(data.categories[category].map((row, index) => [row, index]));
+  const place = (row: RankingRow): number => position.get(row) ?? 0;
   const sign = query.dir === 'asc' ? 1 : -1;
   const collator = new Intl.Collator(locale);
 
   return rows.sort((a, b) => {
     if (query.sortBy === 'name') {
-      return sign * collator.compare(rowName(a, locale), rowName(b, locale)) || a.order - b.order;
+      return sign * collator.compare(rowName(a, locale), rowName(b, locale)) || place(a) - place(b);
     }
     if (query.sortBy === 'value') {
       if (a.value === null || b.value === null) {
-        return a.value === b.value ? a.order - b.order : a.value === null ? 1 : -1;
+        return a.value === b.value ? place(a) - place(b) : a.value === null ? 1 : -1;
       }
-      return sign * (a.value - b.value) || a.order - b.order;
+      return sign * (a.value - b.value) || place(a) - place(b);
     }
-    return sign * (a.order - b.order);
+    return sign * (place(a) - place(b));
   });
 }
 

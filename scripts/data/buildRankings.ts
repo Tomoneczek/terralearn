@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { stampServiceWorker } from './stampServiceWorker.js';
 import { buildExtras } from './wikidataExtras.js';
+import { MIN_CITY_POPULATION } from './rankingRules.js';
 import { getFeatureCoords, type ObjectFacts } from './buildSearchAndFacts.js';
 import {
   CATEGORY_METRIC,
@@ -25,23 +26,42 @@ interface SourceFeature {
     name_en: string;
     landformType?: string;
     marineType?: string;
-    rank: { area?: number; length?: number; elevation?: number; order?: number };
+    partOf?: string;
+    rank: {
+      area?: number;
+      length?: number;
+      elevation?: number;
+      population?: number;
+      order?: number;
+      unranked?: boolean;
+    };
     labelLat?: number;
     labelLng?: number;
   };
   geometry: { type: string; coordinates: unknown };
 }
 
-/** Where each category comes from: the data file and the `kind` of its features. */
-const SOURCES: Readonly<Record<RankingCategory, { file: string; kind: string }>> = {
-  countriesTopN: { file: 'countries.json', kind: 'country' },
-  lakes: { file: 'lakes.json', kind: 'lake' },
-  rivers: { file: 'rivers.json', kind: 'river' },
-  mountains: { file: 'regions.json', kind: 'mountain' },
-  peaks: { file: 'places.json', kind: 'peak' },
-  deserts: { file: 'regions.json', kind: 'desert' },
-  landforms: { file: 'landforms.json', kind: 'landform' },
-  marine: { file: 'marine.json', kind: 'marine' },
+interface Source {
+  file: string;
+  /** Feature kinds that make up the category. */
+  kinds: string[];
+  /** Objects below this value of the category metric are left out. */
+  minValue?: number;
+}
+
+/** Where each category comes from: the data file, the `kind`s of its features and a size floor. */
+const SOURCES: Readonly<Record<RankingCategory, Source>> = {
+  countriesTopN: { file: 'countries.json', kinds: ['country'] },
+  countriesPopulation: { file: 'countries.json', kinds: ['country'] },
+  capitals: { file: 'places.json', kinds: ['capital'] },
+  cities: { file: 'places.json', kinds: ['capital', 'megacity'], minValue: MIN_CITY_POPULATION },
+  lakes: { file: 'lakes.json', kinds: ['lake'] },
+  rivers: { file: 'rivers.json', kinds: ['river'] },
+  mountains: { file: 'regions.json', kinds: ['mountain'] },
+  peaks: { file: 'places.json', kinds: ['peak'] },
+  deserts: { file: 'regions.json', kinds: ['desert'] },
+  landforms: { file: 'landforms.json', kinds: ['landform'] },
+  marine: { file: 'marine.json', kinds: ['marine'] },
 };
 
 function readJson<T>(file: string, dir: string): T {
@@ -59,10 +79,30 @@ function extentKm(f: SourceFeature): number {
   return 0;
 }
 
+type UnorderedRow = Omit<RankingRow, 'order'> & { unranked: boolean };
+
 /**
- * Ranking tables for the UI, built from the finished layer files (no geometry). The order follows
- * the pipeline's own `rank.order` where it exists; categories without it (peaks) are ordered by
- * the metric. Rows keep every object of the layer, not only the Top N shown on the globe.
+ * Sorts rows by value, biggest first (unknown values last, then the layer's own rank, then id) and
+ * numbers them. Unranked objects keep their place in the list but take no number, so the next
+ * object is not pushed down by them. Same ordering as the world rank on the cards (`wikidataExtras`).
+ */
+export function numberRows(rows: UnorderedRow[]): RankingRow[] {
+  rows.sort(
+    (a, b) =>
+      (b.value ?? -1) - (a.value ?? -1) ||
+      (a.layerOrder ?? Infinity) - (b.layerOrder ?? Infinity) ||
+      a.id.localeCompare(b.id),
+  );
+  let counted = 0;
+  return rows.map(({ unranked, ...row }) => ({
+    ...row,
+    order: unranked ? null : ++counted,
+  }));
+}
+
+/**
+ * Ranking tables for the UI, built from the finished layer files (no geometry). Rows keep every
+ * object of the layer, not only the Top N shown on the globe.
  */
 export function buildRankings(dir = DATA_DIR): RankingsData {
   const facts = readJson<Record<string, ObjectFacts>>('facts.json', dir);
@@ -78,34 +118,39 @@ export function buildRankings(dir = DATA_DIR): RankingsData {
 
   const categories = {} as RankingsData['categories'];
   for (const category of RANKING_CATEGORIES) {
-    const { file, kind } = SOURCES[category];
+    const { file, kinds, minValue } = SOURCES[category];
     const metric = CATEGORY_METRIC[category];
-    const features = readJson<{ features: SourceFeature[] }>(file, dir).features.filter(
-      f => f.properties.kind === kind,
+    const features = readJson<{ features: SourceFeature[] }>(file, dir).features.filter(f =>
+      kinds.includes(f.properties.kind),
     );
 
-    const rows = features.map(f => {
+    const rows: UnorderedRow[] = [];
+    for (const f of features) {
       const p = f.properties;
+      const value = p.rank[metric] ?? null;
+      if (minValue !== undefined && (value ?? 0) < minValue) continue;
       const { lat, lng } = getFeatureCoords(f as Parameters<typeof getFeatureCoords>[0]);
       const countries = facts[p.id]?.relations?.countries?.map(c => {
         usedCountryIds.add(c.id);
         return c.id;
       });
-      const row: Omit<RankingRow, 'order'> & { order?: number } = {
+      rows.push({
         id: p.id,
-        order: category === 'rivers' ? riverExtras.orderById.get(p.id) : p.rank.order,
+        // A country is drawn according to its area rank, whatever the table is sorted by
         layerOrder: p.rank.order ?? 1,
-        value: p.rank[metric] ?? null,
+        unranked: p.rank.unranked === true,
+        value,
         name_pl: p.name_pl,
         name_en: p.name_en,
         lat: round2(lat),
         lng: round2(lng),
         extentKm: extentKm(f),
+        ...(category === 'cities' ? { kind: p.kind } : {}),
+        ...(p.partOf ? { partOf: p.partOf } : {}),
         ...(countries?.length ? { countries } : {}),
         ...(p.landformType || p.marineType ? { subtype: p.landformType ?? p.marineType } : {}),
-      };
-      return row;
-    });
+      });
+    }
 
     if (category === 'rivers') {
       for (const extra of riverExtras.extras) {
@@ -113,7 +158,7 @@ export function buildRankings(dir = DATA_DIR): RankingsData {
         codes.forEach(code => usedCountryIds.add(code));
         rows.push({
           id: extra.id,
-          order: riverExtras.orderById.get(extra.id),
+          unranked: false,
           value: extra.value,
           name_pl: extra.name_pl,
           name_en: extra.name_en,
@@ -125,13 +170,7 @@ export function buildRankings(dir = DATA_DIR): RankingsData {
       }
     }
 
-    rows.sort(
-      (a, b) =>
-        (a.order ?? Infinity) - (b.order ?? Infinity) ||
-        (b.value ?? -1) - (a.value ?? -1) ||
-        a.name_en.localeCompare(b.name_en),
-    );
-    categories[category] = rows.map((row, index) => ({ ...row, order: row.order ?? index + 1 }));
+    categories[category] = numberRows(rows);
   }
 
   for (const f of readJson<{ features: SourceFeature[] }>('countries.json', dir).features) {

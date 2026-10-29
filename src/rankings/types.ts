@@ -1,8 +1,12 @@
 import { z } from 'zod';
+import type { LayerId } from '@/layers/types';
 
 /** Layers that have a ranking table; the ids are layer ids so a row maps straight to a layer. */
 export const RANKING_CATEGORIES = [
   'countriesTopN',
+  'countriesPopulation',
+  'capitals',
+  'cities',
   'lakes',
   'rivers',
   'mountains',
@@ -18,13 +22,16 @@ export function isRankingCategory(value: unknown): value is RankingCategory {
   return (RANKING_CATEGORIES as readonly unknown[]).includes(value);
 }
 
-/** What a category is ranked by: km² (area), km (length) or m (elevation). */
-export type RankingMetric = 'area' | 'length' | 'elevation';
+/** What a category is ranked by: km² (area), km (length), m (elevation) or inhabitants. */
+export type RankingMetric = 'area' | 'length' | 'elevation' | 'population';
 
 export const RankingRowSchema = z.object({
   id: z.string().min(1),
-  /** World rank within the category (1 = the biggest). */
-  order: z.number().int().positive(),
+  /**
+   * World rank within the category (1 = the biggest). `null` = listed with its value, but not
+   * counted (Antarctica among countries, a part of a larger desert): no number, nobody pushed down.
+   */
+  order: z.number().int().positive().nullable(),
   /**
    * Rank used by the layer's Top N slider. Absent for objects that exist only in the table
    * (rivers taken from Wikidata): they have no geometry to draw on the globe.
@@ -42,6 +49,10 @@ export const RankingRowSchema = z.object({
   countries: z.array(z.string()).optional(),
   /** Landform or marine subtype (plateau, strait, ...). */
   subtype: z.string().optional(),
+  /** Feature kind, only where one category mixes kinds (cities: capital or megacity). */
+  kind: z.string().optional(),
+  /** Id of the larger object this one lies inside (a desert within the Sahara). */
+  partOf: z.string().optional(),
 });
 
 export type RankingRow = z.infer<typeof RankingRowSchema>;
@@ -60,6 +71,9 @@ export type RankingsData = z.infer<typeof RankingsDataSchema>;
 
 export const CATEGORY_METRIC: Readonly<Record<RankingCategory, RankingMetric>> = {
   countriesTopN: 'area',
+  countriesPopulation: 'population',
+  capitals: 'population',
+  cities: 'population',
   lakes: 'area',
   rivers: 'length',
   mountains: 'elevation',
@@ -72,6 +86,9 @@ export const CATEGORY_METRIC: Readonly<Record<RankingCategory, RankingMetric>> =
 /** Feature `kind` of the objects in each category (as in the layer data). */
 export const CATEGORY_KIND: Readonly<Record<RankingCategory, string>> = {
   countriesTopN: 'country',
+  countriesPopulation: 'country',
+  capitals: 'capital',
+  cities: 'megacity',
   lakes: 'lake',
   rivers: 'river',
   mountains: 'mountain',
@@ -80,3 +97,29 @@ export const CATEGORY_KIND: Readonly<Record<RankingCategory, string>> = {
   landforms: 'landform',
   marine: 'marine',
 };
+
+/** Layer that draws a category's objects (several categories can share one layer). */
+export const CATEGORY_LAYER: Readonly<Record<RankingCategory, LayerId>> = {
+  countriesTopN: 'countriesTopN',
+  countriesPopulation: 'countriesTopN',
+  capitals: 'capitals',
+  cities: 'megacities',
+  lakes: 'lakes',
+  rivers: 'rivers',
+  mountains: 'mountains',
+  peaks: 'peaks',
+  deserts: 'deserts',
+  landforms: 'landforms',
+  marine: 'marine',
+};
+
+/** Layer of a feature kind, for categories that mix kinds. */
+const KIND_LAYER: Readonly<Record<string, LayerId>> = {
+  capital: 'capitals',
+  megacity: 'megacities',
+};
+
+/** The layer a row belongs to: its own kind decides in mixed categories, else the category's. */
+export function rowLayer(row: Pick<RankingRow, 'kind'>, category: RankingCategory): LayerId {
+  return (row.kind && KIND_LAYER[row.kind]) || CATEGORY_LAYER[category];
+}

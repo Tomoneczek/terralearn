@@ -55,7 +55,7 @@ export const pl: Dictionary = {
     borders: 'Granice państw',
     countriesTopN: 'Państwa',
     capitals: 'Stolice',
-    megacities: 'Metropolie (>10 mln)',
+    megacities: 'Duże miasta (>1 mln)',
     lakes: 'Największe jeziora',
     rivers: 'Główne rzeki',
     mountains: 'Pasma górskie',
@@ -146,7 +146,7 @@ export const pl: Dictionary = {
       mountain: 'Pasmo górskie',
       desert: 'Pustynia',
       capital: 'Stolica państwa',
-      megacity: 'Metropolia',
+      megacity: 'Miasto',
       peak: 'Szczyt górski',
       landform: 'Forma terenu',
       plateau: 'Wyżyna / Płaskowyż',
@@ -376,7 +376,10 @@ export const pl: Dictionary = {
     close: 'Zamknij rankingi',
     tabsAria: 'Kategorie rankingów',
     categories: {
-      countriesTopN: 'Kraje',
+      countriesTopN: 'Kraje – powierzchnia',
+      countriesPopulation: 'Kraje – ludność',
+      capitals: 'Stolice',
+      cities: 'Duże miasta',
       lakes: 'Jeziora',
       rivers: 'Rzeki',
       mountains: 'Pasma górskie',
@@ -391,6 +394,17 @@ export const pl: Dictionary = {
     colName: 'Nazwa',
     colCountries: 'Kraje',
     colLocate: 'Pokaż na globie',
+    notCounted: 'Na liście, ale nie liczony w rankingu',
+    partOf: 'część: {name}',
+    notes: {
+      countriesTopN: 'Antarktyda jest na liście, ale bez miejsca w rankingu: to nie jest państwo.',
+      countriesPopulation:
+        'Szacunek ludności z 2019 r. (Natural Earth). Antarktyda (tylko personel stacji badawczych) nie ma miejsca w rankingu.',
+      cities:
+        'Ludność aglomeracji (Natural Earth), nie samego miasta. Miasta powyżej 1 mln, razem ze stolicami.',
+      deserts:
+        'Nazwane regiony pustynne z Natural Earth. Brak pustyń polarnych (Antarktycznej i Arktycznej, największych na świecie). Części większej pustyni nie mają miejsca w rankingu.',
+    },
     sortBy: 'Sortuj wg: {column}',
     locate: 'Pokaż {name} na globie',
     onGlobe: 'Narysowany na globie',

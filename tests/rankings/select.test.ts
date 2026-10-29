@@ -106,3 +106,37 @@ describe('row helpers', () => {
     expect(maxValue(d, 'lakes')).toBe(0);
   });
 });
+
+describe('selectRows with unranked rows', () => {
+  const d = data([
+    row({ id: 'big', order: 1, value: 900 }),
+    row({ id: 'part', order: null, value: 500 }),
+    row({ id: 'small', order: 2, value: 100 }),
+  ]);
+
+  it('keeps an unranked row where its value puts it, in both directions', () => {
+    expect(ids(selectRows(d, 'rivers', { sortBy: 'order', dir: 'asc' }, 'en'))).toEqual([
+      'big',
+      'part',
+      'small',
+    ]);
+    expect(ids(selectRows(d, 'rivers', { sortBy: 'order', dir: 'desc' }, 'en'))).toEqual([
+      'small',
+      'part',
+      'big',
+    ]);
+  });
+
+  it('sorts by value and name without needing a rank number', () => {
+    expect(ids(selectRows(d, 'rivers', { sortBy: 'value', dir: 'asc' }, 'en'))).toEqual([
+      'small',
+      'part',
+      'big',
+    ]);
+    expect(ids(selectRows(d, 'rivers', { sortBy: 'name', dir: 'asc' }, 'en'))).toEqual([
+      'big',
+      'part',
+      'small',
+    ]);
+  });
+});

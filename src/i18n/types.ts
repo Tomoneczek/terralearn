@@ -362,6 +362,9 @@ export interface Dictionary {
     tabsAria: string;
     categories: {
       countriesTopN: string;
+      countriesPopulation: string;
+      capitals: string;
+      cities: string;
       lakes: string;
       rivers: string;
       mountains: string;
@@ -376,6 +379,14 @@ export interface Dictionary {
     colName: string;
     colCountries: string;
     colLocate: string;
+    notCounted: string;
+    partOf: string;
+    notes: {
+      countriesTopN: string;
+      countriesPopulation: string;
+      cities: string;
+      deserts: string;
+    };
     sortBy: string;
     locate: string;
     onGlobe: string;

@@ -22,6 +22,14 @@ import { formatNumber, kindLabel } from './facts-format';
 /** Rows rendered at once; "Show more" adds another page. Enough without virtualisation. */
 export const RANKINGS_PAGE_SIZE = 100;
 
+/** Categories with a footnote about what the list contains. */
+const CATEGORY_NOTES: Partial<Record<RankingCategory, I18nKey>> = {
+  countriesTopN: 'rankings.notes.countriesTopN',
+  countriesPopulation: 'rankings.notes.countriesPopulation',
+  cities: 'rankings.notes.cities',
+  deserts: 'rankings.notes.deserts',
+};
+
 const DEFAULT_DIR: Record<SortKey, SortDir> = { order: 'asc', name: 'asc', value: 'desc' };
 
 export interface RankingsPanelOptions {
@@ -134,8 +142,9 @@ export class RankingsPanel {
       return;
     }
     if (getLocale() !== locale) setLocale(locale);
-    this.renderShell();
+    // Visible first: the rows are only drawn for an open panel
     this.element.classList.remove('hidden');
+    this.renderShell();
     if (!this.data && this.status !== 'loading') void this.load();
   }
 
@@ -217,6 +226,7 @@ export class RankingsPanel {
   private valueHeader(category: RankingCategory): string {
     const metric = CATEGORY_METRIC[category];
     if (metric === 'area') return t('card.area');
+    if (metric === 'population') return t('card.population');
     if (metric === 'length') return t('card.length');
     return category === 'mountains' ? t('card.maxElevation') : t('card.elevation');
   }
@@ -306,6 +316,10 @@ export class RankingsPanel {
     tbody.addEventListener('keydown', this.onRowKeyDown);
     this.body.appendChild(table);
 
+    if (category in CATEGORY_NOTES) {
+      this.body.appendChild(el('p', 'tl-rankings-note', t(CATEGORY_NOTES[category]!)));
+    }
+
     if (rows.length > shown.length) {
       const more = el(
         'button',
@@ -361,6 +375,18 @@ export class RankingsPanel {
     if (drawn) dot.title = t('rankings.onGlobe');
     dot.setAttribute('aria-hidden', 'true');
     nameCell.append(dot, el('span', 'tl-rankings-name-text', name));
+    const parent = row.partOf
+      ? data.categories[category].find(r => r.id === row.partOf)
+      : undefined;
+    if (parent) {
+      nameCell.appendChild(
+        el(
+          'small',
+          'tl-rankings-subtype',
+          t('rankings.partOf', { name: rowName(parent, getLocale()) }),
+        ),
+      );
+    }
     if (row.subtype)
       nameCell.appendChild(el('small', 'tl-rankings-subtype', kindLabel(undefined, row.subtype)));
 
@@ -372,7 +398,9 @@ export class RankingsPanel {
       valueCell.appendChild(bar);
     }
 
-    tr.append(el('td', 'tl-rankings-rank', String(row.order)), nameCell, valueCell);
+    const rankCell = el('td', 'tl-rankings-rank', row.order === null ? '—' : String(row.order));
+    if (row.order === null) rankCell.title = t('rankings.notCounted');
+    tr.append(rankCell, nameCell, valueCell);
     if (hasCountries) {
       tr.appendChild(
         el('td', 'tl-rankings-countries', rowCountries(row, data, getLocale()).join(', ') || '—'),
