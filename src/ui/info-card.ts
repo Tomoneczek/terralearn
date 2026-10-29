@@ -1,4 +1,5 @@
 import type { Store, AppState } from '@/state/types';
+import { shallowEqual } from '@/state/store';
 import { makeDraggable, type DraggableController } from './draggable';
 import type { LayerId } from '@/layers';
 import { resolveAssetUrl } from '@/utils/assets';
@@ -81,6 +82,8 @@ export class InfoCard {
           this.element.classList.remove('hidden');
         }
       },
+      // Only when one of these changes: a hover or any other update must not rebuild the card
+      shallowEqual,
     );
   }
 

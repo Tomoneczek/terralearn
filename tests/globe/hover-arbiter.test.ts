@@ -123,4 +123,29 @@ describe('HoverArbiter', () => {
     arbiter.setPointerInside(true);
     expect(store.get().hovered?.id).toBe('SA');
   });
+
+  it('lets the Moon win over everything behind it and claim clicks', () => {
+    arbiter.setGlobeHover(ref('PL'));
+    arbiter.setCapitalHover(ref('capital-warsaw', 'capital'));
+    arbiter.setMoonHover(true);
+
+    expect(store.get().hovered).toBeNull();
+    expect(container.style.cursor).toBe('pointer');
+    expect(arbiter.isMoonClaimed()).toBe(true);
+    expect(arbiter.isClaimed()).toBe(true);
+
+    arbiter.setMoonHover(false);
+    expect(store.get().hovered?.id).toBe('capital-warsaw');
+    expect(arbiter.isClaimed()).toBe(true);
+    arbiter.setCapitalHover(null);
+    expect(arbiter.isClaimed()).toBe(false);
+    expect(store.get().hovered?.id).toBe('PL');
+  });
+
+  it('drops the Moon claim while the pointer is outside the globe', () => {
+    arbiter.setMoonHover(true);
+    arbiter.setPointerInside(false);
+    expect(arbiter.isMoonClaimed()).toBe(false);
+    expect(container.style.cursor).toBe('default');
+  });
 });

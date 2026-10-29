@@ -21,6 +21,8 @@ export function createInitialState(): AppState {
     routeComparison: null,
     sizeComparison: null,
     antipodes: null,
+    moonScale: 1,
+    moonPanelOpen: false,
   };
 }
 
@@ -29,6 +31,20 @@ interface Subscription<T, V> {
   listener: Listener<V>;
   equalityFn: EqualityFn<V>;
   lastValue: V;
+}
+
+/**
+ * Field-by-field `Object.is` comparison of two plain objects. Pass it as `equalityFn` when a
+ * selector builds a new object (`s => ({ a: s.a, b: s.b })`): with the default `Object.is` such
+ * a selector differs on every update, so the listener would run on every `store.set`.
+ */
+export function shallowEqual<T extends object>(a: T, b: T): boolean {
+  if (Object.is(a, b)) return true;
+  const keysA = Object.keys(a) as (keyof T)[];
+  if (keysA.length !== Object.keys(b).length) return false;
+  return keysA.every(
+    key => Object.prototype.hasOwnProperty.call(b, key) && Object.is(a[key], b[key]),
+  );
 }
 
 export function createStore<T extends object>(initialState: T): Store<T> {

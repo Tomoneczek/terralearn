@@ -1,6 +1,7 @@
 import { parseSvg } from './dom';
 import { makeDraggable, type DraggableController } from './draggable';
 import type { Store, AppState } from '@/state/types';
+import { shallowEqual } from '@/state/store';
 import { antipode } from '@/geo/spherical';
 import { detectLocationAtCoords, type OceanId } from '@/geo/antipodes-detector';
 import { loadGeoData, type GeoFeatureCollection } from '@/globe/data-loader';
@@ -338,6 +339,7 @@ export class AntipodesHud {
         antipodes: s.antipodes,
         globeClick: s.globeClick,
         selection: s.selection,
+        locale: s.locale,
       }),
       ({ antipodes, globeClick, selection }) => {
         // 1. Globe click updates Point A
@@ -360,6 +362,8 @@ export class AntipodesHud {
 
         this.render();
       },
+      // Only when one of these changes (render also uses the UI language)
+      shallowEqual,
     );
   }
 

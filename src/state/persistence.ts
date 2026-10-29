@@ -4,6 +4,10 @@ import type { LayerId } from '@/layers';
 
 export const STORAGE_KEY = 'terralearn_state_v1';
 
+/** Range of the Moon size multiplier (1 = real scale). */
+export const MOON_SCALE_MIN = 1;
+export const MOON_SCALE_MAX = 20;
+
 export const LayerStateSchema = z.object({
   enabled: z.boolean(),
   topN: z.number().int().positive().optional(),
@@ -19,6 +23,8 @@ export const PersistedStateSchema = z.object({
   locale: z.enum(['pl', 'en']).optional(),
   hiddenLabels: z.boolean().optional(),
   knowledgeMap: z.boolean().optional(),
+  // An out-of-range value falls back to the default instead of discarding the whole state
+  moonScale: z.number().min(MOON_SCALE_MIN).max(MOON_SCALE_MAX).optional().catch(undefined),
 });
 
 export type PersistedState = z.infer<typeof PersistedStateSchema>;
@@ -63,6 +69,7 @@ export function savePersistedState(state: AppState): void {
       locale: state.locale,
       hiddenLabels: state.hiddenLabels,
       knowledgeMap: state.knowledgeMap,
+      moonScale: state.moonScale,
     };
 
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
@@ -98,6 +105,7 @@ export function applyPersistedState(
     locale: persisted.locale ?? baseState.locale,
     hiddenLabels: persisted.hiddenLabels ?? baseState.hiddenLabels,
     knowledgeMap: persisted.knowledgeMap ?? baseState.knowledgeMap,
+    moonScale: persisted.moonScale ?? baseState.moonScale,
   };
 }
 

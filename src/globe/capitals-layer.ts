@@ -34,7 +34,7 @@ const BASE_COLOR = 'hsl(350, 85%, 62%)';
 const HOVER_COLOR = 'hsl(180, 100%, 80%)';
 const SELECTED_COLOR = 'hsl(50, 100%, 65%)';
 const UPDATE_INTERVAL_MS = 150;
-const CLICK_DRAG_TOLERANCE_PX = 6;
+export const CLICK_DRAG_TOLERANCE_PX = 6;
 
 export const CAPITALS_VERTEX_SHADER = /* glsl */ `
   uniform vec2 uViewport;
@@ -434,7 +434,8 @@ export class CapitalsLayer {
   };
 
   private readonly onClick = (event: MouseEvent): void => {
-    if (this.claimedId === null) return;
+    // The Moon is in front of anything behind it on screen
+    if (this.claimedId === null || this.arbiter.isMoonClaimed()) return;
     const moved = Math.hypot(
       event.clientX - this.pointerDown.x,
       event.clientY - this.pointerDown.y,

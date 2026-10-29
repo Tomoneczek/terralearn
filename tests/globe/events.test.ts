@@ -297,5 +297,18 @@ describe('Globe Events & Picking', () => {
       triggerPolygonClick(country);
       expect(store.get().selection?.id).toBe('pl');
     });
+
+    it('ignores globe.gl clicks while the Moon is under the pointer', () => {
+      const store = createStore<AppState>(createInitialState());
+      const arbiter = new HoverArbiter(store);
+      const { globe, triggerPolygonClick, triggerGlobeClick } = createMockGlobe();
+      attachGlobeEvents(globe, store, undefined, arbiter);
+
+      arbiter.setMoonHover(true);
+      triggerPolygonClick(country);
+      triggerGlobeClick({ lat: 1, lng: 2 });
+      expect(store.get().selection).toBeNull();
+      expect(store.get().globeClick).toBeNull();
+    });
   });
 });

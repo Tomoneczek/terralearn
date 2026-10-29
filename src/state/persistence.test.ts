@@ -99,4 +99,29 @@ describe('State Persistence', () => {
     expect(merged.layers.mountains.enabled).toBe(false);
     expect(merged.layers.capitals.enabled).toBe(true);
   });
+
+  it('persists the Moon size and falls back to real scale for out-of-range values', () => {
+    const state = createInitialState();
+    expect(state.moonScale).toBe(1);
+    state.moonScale = 8;
+    state.dayNight = false;
+    savePersistedState(state);
+    expect(applyPersistedState(createInitialState(), loadPersistedState()).moonScale).toBe(8);
+
+    // A bad Moon size must not discard the rest of the saved settings
+    localStorage.setItem(
+      'terralearn_state_v1',
+      JSON.stringify({ dayNight: false, moonScale: 500 }),
+    );
+    const loaded = loadPersistedState();
+    expect(loaded?.dayNight).toBe(false);
+    expect(applyPersistedState(createInitialState(), loaded).moonScale).toBe(1);
+  });
+
+  it('never persists whether the Moon panel is open', () => {
+    const state = createInitialState();
+    state.moonPanelOpen = true;
+    savePersistedState(state);
+    expect(localStorage.getItem('terralearn_state_v1')).not.toContain('moonPanelOpen');
+  });
 });

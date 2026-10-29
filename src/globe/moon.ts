@@ -16,8 +16,6 @@ import { MOON_RADIUS_SCENE, sunAngularRadiusRad } from './day-night';
 import { ECLIPSE_GLSL } from './shaders/eclipse-chunk';
 
 export interface MoonParams {
-  /** Size multiplier; 1 = real size (comparison aid only, eclipses always use the real radius). */
-  scale: number;
   /** Strength of earthshine (sunlight reflected by Earth onto the Moon's night side). */
   earthshine: number;
   /** Widening of Earth's shadow by its atmosphere (Danjon/Chauvenet ~2%). */
@@ -27,7 +25,6 @@ export interface MoonParams {
 }
 
 export const DEFAULT_MOON_PARAMS: MoonParams = {
-  scale: 1,
   earthshine: 0.12,
   shadowWidening: 1.02,
   umbraGlow: 0.35,
@@ -158,6 +155,7 @@ export class MoonController {
     this.scene?.add(this.mesh);
     this.setDate(date);
     this.syncVisibility();
+    this.mesh.scale.setScalar(store.get().moonScale);
     this.bindStore();
   }
 
@@ -186,7 +184,6 @@ export class MoonController {
 
     const u = this.material.uniforms;
     if (u.uSunAngularRadius) u.uSunAngularRadius.value = sunAngularRadiusRad(date);
-    this.mesh.scale.setScalar(this.params.scale);
   }
 
   /** Pushes `params` changes (e.g. from the dev panel) into the mesh and shader. */
@@ -195,7 +192,14 @@ export class MoonController {
     if (u.uEarthshine) u.uEarthshine.value = this.params.earthshine;
     if (u.uShadowWidening) u.uShadowWidening.value = this.params.shadowWidening;
     if (u.uUmbraGlow) u.uUmbraGlow.value = this.params.umbraGlow;
-    this.mesh.scale.setScalar(this.params.scale);
+  }
+
+  /**
+   * Size multiplier from `AppState.moonScale` (comparison aid only: eclipses always use the
+   * real radius).
+   */
+  public getScale(): number {
+    return this.mesh.scale.x;
   }
 
   /** Turns the Earth's shadow on the Moon on or off (dev panel). */
@@ -217,6 +221,10 @@ export class MoonController {
       this.store.subscribe(
         s => s.theme,
         () => this.syncVisibility(),
+      ),
+      this.store.subscribe(
+        s => s.moonScale,
+        scale => this.mesh.scale.setScalar(scale),
       ),
     );
   }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createStore } from './store';
+import { createStore, shallowEqual } from './store';
 
 describe('createStore', () => {
   interface TestState {
@@ -85,5 +85,31 @@ describe('createStore', () => {
     expect(stateModule.createInitialState).toBeDefined();
     expect(stateModule.serializeStateToUrl).toBeDefined();
     expect(stateModule.parseStateFromUrl).toBeDefined();
+  });
+});
+
+describe('shallowEqual', () => {
+  it('compares plain objects field by field', () => {
+    const sel = { id: 'pl' };
+    expect(shallowEqual({ a: 1, sel }, { a: 1, sel })).toBe(true);
+    expect(shallowEqual({ a: 1, sel }, { a: 1, sel: { id: 'pl' } })).toBe(false);
+    expect(shallowEqual({ a: 1 }, { a: 2 })).toBe(false);
+    expect(shallowEqual({ a: 1 } as object, { a: 1, b: 2 } as object)).toBe(false);
+    expect(shallowEqual({ a: 1, b: undefined } as object, { a: 1, c: 2 } as object)).toBe(false);
+    expect(shallowEqual({ n: NaN }, { n: NaN })).toBe(true);
+  });
+
+  it('keeps object selectors from firing on unrelated updates', () => {
+    const store = createStore({ a: 1, b: 1, c: 1 });
+    let calls = 0;
+    store.subscribe(
+      s => ({ a: s.a, b: s.b }),
+      () => calls++,
+      shallowEqual,
+    );
+    store.set({ c: 2 });
+    expect(calls).toBe(0);
+    store.set({ a: 2 });
+    expect(calls).toBe(1);
   });
 });

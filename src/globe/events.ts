@@ -78,8 +78,8 @@ export function attachGlobeEvents(
   arbiter?: HoverArbiter,
 ): () => void {
   const handleFeatureClick = (obj: object, coords?: { lat: number; lng: number }) => {
-    // The capitals layer handles clicks on its own markers
-    if (arbiter?.isCapitalClaimed()) return;
+    // The capitals layer and the Moon handle their own clicks
+    if (arbiter?.isClaimed()) return;
     const feat = resolveFeature(obj);
     if (feat) {
       store.set({ selection: toFeatureRef(feat, coords) });
@@ -109,7 +109,7 @@ export function attachGlobeEvents(
   globe.onPointHover?.(obj => handleFeatureHover(obj));
 
   globe.onGlobeClick?.(coords => {
-    if (arbiter?.isCapitalClaimed()) return;
+    if (arbiter?.isClaimed()) return;
     store.set({
       globeClick: { lat: coords.lat, lng: coords.lng },
       selection: null,

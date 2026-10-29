@@ -14,6 +14,7 @@ import { CloudsController } from './clouds';
 import { AtmosphereController } from './atmosphere';
 import { SunController } from './sun';
 import { MoonController } from './moon';
+import { MoonLabel } from './moon-label';
 import { SkyClock } from './sky-clock';
 import { FPSMonitor, QualityController } from './performance';
 
@@ -35,6 +36,7 @@ export interface GlobeContext {
   atmosphere: AtmosphereController;
   sun: SunController;
   moon: MoonController;
+  moonLabel: MoonLabel;
   skyClock: SkyClock;
   highlight: HighlightOverlay;
   capitals: CapitalsLayer;
@@ -204,6 +206,21 @@ export function createGlobe(
 
   // Capitals: one shader point cloud with a screen-center spotlight instead of a mesh per city
   const hoverArbiter = new HoverArbiter(store, container);
+
+  // "MOON" reticle at real scale + the Moon's own hit test (click opens the Moon panel)
+  const moonLabel = new MoonLabel({
+    container,
+    store,
+    moon,
+    arbiter: hoverArbiter,
+    getCamera: () => {
+      try {
+        return globe.camera();
+      } catch {
+        return null;
+      }
+    },
+  });
   const capitals = new CapitalsLayer({
     scene: globeScene,
     store,
@@ -299,6 +316,7 @@ export function createGlobe(
     atmosphere,
     sun,
     moon,
+    moonLabel,
     skyClock,
     highlight,
     capitals,
@@ -328,6 +346,7 @@ export function createGlobe(
       unsubscribeSunUpdate();
       skyClock.destroy();
       sun.destroy();
+      moonLabel.destroy();
       moon.destroy();
       dayNight.destroy();
       atmosphere.destroy();

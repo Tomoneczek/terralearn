@@ -6,11 +6,13 @@ import type { Store, AppState, FeatureRef } from '@/state/types';
  * over whatever globe.gl reports underneath, and the globe.gl hover is restored as soon as the
  * pointer leaves the capital. The population grid has the lowest priority: it only shows when
  * nothing else is under the pointer, and it is informational (no pointer cursor, not clickable).
+ * The Moon (own screen-space hit test) beats everything: it is in front of whatever lies behind it.
  */
 export class HoverArbiter {
   private globeHover: FeatureRef | null = null;
   private capitalHover: FeatureRef | null = null;
   private populationHover: FeatureRef | null = null;
+  private moonHover = false;
   /** False while the pointer is outside the globe (e.g. over the sidebar). */
   private pointerInside = true;
 
@@ -35,6 +37,12 @@ export class HoverArbiter {
     this.apply();
   }
 
+  public setMoonHover(hovered: boolean): void {
+    if (hovered === this.moonHover) return;
+    this.moonHover = hovered;
+    this.apply();
+  }
+
   /**
    * globe.gl keeps its last hovered object when the pointer leaves the canvas, so the tooltip
    * stayed on top of the sidebar. Hovers are suppressed while outside but remembered: globe.gl
@@ -51,11 +59,22 @@ export class HoverArbiter {
     return this.capitalHover !== null;
   }
 
+  /** True while the pointer is over the Moon: nothing behind it may be clicked. */
+  public isMoonClaimed(): boolean {
+    return this.moonHover && this.pointerInside;
+  }
+
+  /** True while a capital or the Moon owns the pointer: globe.gl clicks must be ignored. */
+  public isClaimed(): boolean {
+    return this.isCapitalClaimed() || this.isMoonClaimed();
+  }
+
   private apply(): void {
-    const feature = this.pointerInside ? (this.capitalHover ?? this.globeHover) : null;
-    const winner = feature ?? (this.pointerInside ? this.populationHover : null);
+    const moon = this.isMoonClaimed();
+    const feature = this.pointerInside && !moon ? (this.capitalHover ?? this.globeHover) : null;
+    const winner = feature ?? (this.pointerInside && !moon ? this.populationHover : null);
     if (this.container) {
-      this.container.style.cursor = feature ? 'pointer' : 'default';
+      this.container.style.cursor = feature || moon ? 'pointer' : 'default';
     }
     if (this.store.get().hovered?.id !== winner?.id) {
       this.store.set({ hovered: winner });

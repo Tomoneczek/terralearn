@@ -1,4 +1,5 @@
 import type { Store, AppState } from '@/state/types';
+import { shallowEqual } from '@/state/store';
 import { t, setLocale, getLocale } from '@/i18n';
 import type { I18nKey } from '@/i18n';
 import { getLayerColor } from './sidebar';
@@ -103,6 +104,7 @@ export class HoverTooltip {
           this.element.classList.remove('hidden');
         }
       },
+      shallowEqual,
     );
   }
 

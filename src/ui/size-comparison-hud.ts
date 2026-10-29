@@ -1,6 +1,7 @@
 import { parseSvg } from './dom';
 import { makeDraggable, type DraggableController } from './draggable';
 import type { Store, AppState } from '@/state/types';
+import { shallowEqual } from '@/state/store';
 import { loadGeoData, type GeoFeature } from '@/globe/data-loader';
 import { t, getLocale, localize, localizedName, type I18nKey } from '@/i18n';
 
@@ -379,6 +380,7 @@ export class SizeComparisonHud {
         comparison: s.sizeComparison,
         globeClick: s.globeClick,
         selection: s.selection,
+        locale: s.locale,
       }),
       ({ comparison, globeClick, selection }) => {
         // 1. Move ghost on raw globe click
@@ -398,6 +400,8 @@ export class SizeComparisonHud {
 
         this.render();
       },
+      // Only when one of these changes (render also uses the UI language)
+      shallowEqual,
     );
   }
 

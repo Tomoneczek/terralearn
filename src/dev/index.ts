@@ -7,6 +7,7 @@ import { SpotlightDebugOverlay } from './spotlight-debug';
 import type { SpotlightParams } from '@/globe/capitals-spotlight';
 import type { SunParams } from '@/globe/sun';
 import type { MoonParams } from '@/globe/moon';
+import type { MoonLabelParams } from '@/globe/moon-label';
 
 function readDrawCalls(context: GlobeContext): number | null {
   try {
@@ -107,7 +108,6 @@ const MOON_SPECS: readonly {
   max: number;
   step: number;
 }[] = [
-  { key: 'scale', label: 'Size × (1 = real)', group: 'Moon', min: 1, max: 20, step: 0.5 },
   { key: 'earthshine', label: 'Earthshine', group: 'Moon', min: 0, max: 1, step: 0.01 },
   {
     key: 'shadowWidening',
@@ -144,6 +144,36 @@ export function registerSkyDevParams(context: GlobeContext): () => void {
       },
     }),
   );
+
+  const label = context.moonLabel;
+  const LABEL_SPECS: readonly {
+    key: keyof MoonLabelParams;
+    label: string;
+    min: number;
+    max: number;
+    step: number;
+  }[] = [
+    { key: 'nearPx', label: 'Fully visible within (px)', min: 0, max: 200, step: 5 },
+    { key: 'farPx', label: 'Faded beyond (px)', min: 50, max: 800, step: 10 },
+    { key: 'minOpacity', label: 'Resting opacity', min: 0, max: 1, step: 0.05 },
+    { key: 'maxRadiusPx', label: 'Hide when Moon radius ≥ (px)', min: 4, max: 60, step: 1 },
+  ];
+  for (const spec of LABEL_SPECS) {
+    unregister.push(
+      registerDevParam({
+        id: `moonLabel.${spec.key}`,
+        label: spec.label,
+        group: 'Moon label',
+        min: spec.min,
+        max: spec.max,
+        step: spec.step,
+        get: () => label.params[spec.key],
+        set: value => {
+          label.params[spec.key] = value;
+        },
+      }),
+    );
+  }
 
   let eclipsesOn = true;
   unregister.push(

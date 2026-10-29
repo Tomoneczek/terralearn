@@ -354,6 +354,35 @@ export interface Dictionary {
     offlineMessage: string;
     onlineMessage: string;
   };
+  moon: {
+    name: string;
+    openPanel: string;
+    kind: string;
+    diameter: string;
+    diameterValue: string;
+    distance: string;
+    distanceValue: string;
+    lightTime: string;
+    lightTimeValue: string;
+    apparentSize: string;
+    apparentSizeValue: string;
+    phase: string;
+    phaseValue: string;
+    sizeOnGlobe: string;
+    realScale: string;
+    enlarged: string;
+    eclipseNote: string;
+    phases: {
+      new: string;
+      waxingCrescent: string;
+      firstQuarter: string;
+      waxingGibbous: string;
+      full: string;
+      waningGibbous: string;
+      lastQuarter: string;
+      waningCrescent: string;
+    };
+  };
 }
 
 // Flat key path type e.g. "layers.lakes" | "sections.physical"

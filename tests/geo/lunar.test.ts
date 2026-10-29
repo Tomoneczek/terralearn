@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  calculateMoonPhase,
   calculateEclipticPoleDirection,
   calculateMoonEcliptic,
   calculateMoonPosition,
@@ -74,5 +75,29 @@ describe('Moon position (Meeus, chapter 47)', () => {
   it('points the ecliptic pole 23.44° from the north pole', () => {
     const [, y] = calculateEclipticPoleDirection(new Date(Date.UTC(2026, 9, 28)));
     expect(Math.acos(y) * (180 / Math.PI)).toBeCloseTo(23.436, 2);
+  });
+
+  it('names the phase and its lit fraction (2026 calendar)', () => {
+    const at = (iso: string): ReturnType<typeof calculateMoonPhase> =>
+      calculateMoonPhase(new Date(iso));
+    const newMoon = at('2026-01-18T19:52:00Z');
+    expect(newMoon.phase).toBe('new');
+    expect(newMoon.illuminatedFraction).toBeLessThan(0.01);
+
+    const firstQuarter = at('2026-01-26T04:47:00Z');
+    expect(firstQuarter.phase).toBe('firstQuarter');
+    expect(firstQuarter.waxing).toBe(true);
+    expect(Math.abs(firstQuarter.illuminatedFraction - 0.5)).toBeLessThan(0.01);
+
+    const full = at('2026-03-03T11:38:00Z');
+    expect(full.phase).toBe('full');
+    expect(full.illuminatedFraction).toBeGreaterThan(0.99);
+
+    const waning = at('2026-10-28T12:00:00Z');
+    expect(waning.phase).toBe('waningGibbous');
+    expect(waning.waxing).toBe(false);
+
+    expect(at('2026-01-21T12:00:00Z').phase).toBe('waxingCrescent');
+    expect(at('2026-02-09T12:43:00Z').phase).toBe('lastQuarter');
   });
 });

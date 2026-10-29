@@ -80,6 +80,10 @@ export interface AppState {
   routeComparison: RouteComparisonState | null;
   sizeComparison: SizeComparisonState | null;
   antipodes: AntipodesState | null;
+  /** Moon size multiplier on the globe; 1 = real scale. */
+  moonScale: number;
+  /** Whether the Moon panel is open (not persisted). */
+  moonPanelOpen: boolean;
 }
 
 export type Selector<T, V> = (state: T) => V;

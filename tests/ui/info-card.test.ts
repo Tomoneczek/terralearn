@@ -135,6 +135,40 @@ describe('InfoCard', () => {
     card.destroy();
   });
 
+  // Regression: the store subscription selected a fresh object with the default Object.is
+  // equality, so every store update (each hover while moving the mouse over the globe) wiped and
+  // rebuilt the open card, losing focus, scroll position and text selection.
+  it('keeps the open card intact on unrelated store updates', async () => {
+    const store = createStore<AppState>(plState());
+    const card = new InfoCard({ container, store });
+    await new Promise(r => setTimeout(r, 20));
+    store.set({ selection: { id: 'PL', layerId: 'countriesTopN', kind: 'country' } });
+
+    const cardEl = container.querySelector('.tl-info-card')!;
+    const header = cardEl.querySelector('.tl-card-header');
+    const closeBtn = cardEl.querySelector<HTMLButtonElement>('.tl-card-close')!;
+    closeBtn.focus();
+
+    store.set({ hovered: { id: 'DE', layerId: 'countriesTopN', kind: 'country' } });
+    store.set({ hovered: null, moonScale: 4, globeClick: { lat: 1, lng: 2 } });
+
+    expect(cardEl.querySelector('.tl-card-header')).toBe(header);
+    expect(document.activeElement).toBe(closeBtn);
+
+    // Fields the card does read still re-render it
+    store.set({ selection: { id: 'megacity-lodz', layerId: 'megacities', kind: 'megacity' } });
+    expect(cardEl.querySelector('.tl-card-header')).not.toBe(header);
+    expect(cardEl.querySelector('.tl-card-title')?.textContent).toBe('Łódź');
+    const lodzHeader = cardEl.querySelector('.tl-card-header');
+    store.set({ locale: 'en' });
+    setLocale('pl');
+    expect(cardEl.querySelector('.tl-card-header')).not.toBe(lodzHeader);
+    store.set({ mode: 'quiz' });
+    expect(cardEl.classList.contains('hidden')).toBe(true);
+
+    card.destroy();
+  });
+
   it('clears selection when close button is clicked or Escape key pressed', async () => {
     const store = createStore<AppState>({
       ...plState(),

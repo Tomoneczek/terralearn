@@ -12,9 +12,31 @@ import {
   type GeoPoint,
 } from './astro';
 import { LUNAR_LAT_TERMS, LUNAR_LON_DIST_TERMS } from './lunar-terms';
+import { calculateSunEclipticLongitude } from './solar';
 
 /** Mean lunar radius, km. */
 export const MOON_RADIUS_KM = 1737.4;
+/** Speed of light, km/s (light travel time Earth–Moon). */
+export const SPEED_OF_LIGHT_KM_S = 299_792.458;
+
+export type MoonPhaseName =
+  | 'new'
+  | 'waxingCrescent'
+  | 'firstQuarter'
+  | 'waxingGibbous'
+  | 'full'
+  | 'waningGibbous'
+  | 'lastQuarter'
+  | 'waningCrescent';
+
+export interface MoonPhase {
+  /** Moon − Sun ecliptic longitude, degrees in [0, 360): 0 new, 90 first quarter, 180 full. */
+  elongationDeg: number;
+  /** Illuminated fraction of the disc, 0…1. */
+  illuminatedFraction: number;
+  waxing: boolean;
+  phase: MoonPhaseName;
+}
 
 export interface LunarEcliptic {
   /** Geocentric ecliptic longitude, degrees in [0, 360). */
@@ -131,4 +153,34 @@ export function calculateEclipticPoleDirection(date: Date = new Date()): [number
     date,
   );
   return geographicToSceneDirection(pole);
+}
+
+const PHASE_NAMES: readonly MoonPhaseName[] = [
+  'new',
+  'waxingCrescent',
+  'firstQuarter',
+  'waxingGibbous',
+  'full',
+  'waningGibbous',
+  'lastQuarter',
+  'waningCrescent',
+];
+
+/**
+ * Phase of the Moon from the difference of the Moon's and Sun's ecliptic longitudes. The
+ * illuminated fraction uses that elongation as the phase angle supplement (error < 1%, the
+ * Moon's ecliptic latitude is ignored). Named phases split the cycle into eight 45° sectors
+ * centred on new, quarters and full.
+ */
+export function calculateMoonPhase(date: Date = new Date()): MoonPhase {
+  const moonLon = calculateMoonEcliptic(getJulianEphemerisDate(date)).lon;
+  const elongationDeg = normalizeDeg(moonLon - calculateSunEclipticLongitude(date));
+  const illuminatedFraction = (1 - Math.cos(elongationDeg * DEG2RAD)) / 2;
+  const sector = Math.floor(normalizeDeg(elongationDeg + 22.5) / 45) % 8;
+  return {
+    elongationDeg,
+    illuminatedFraction,
+    waxing: elongationDeg < 180,
+    phase: PHASE_NAMES[sector] ?? 'new',
+  };
 }

@@ -1,4 +1,5 @@
 import type { Store, AppState } from '@/state/types';
+import { shallowEqual } from '@/state/store';
 import { LAYER_DEFINITIONS, type LayerDef } from '@/layers';
 import { DENSITY_COLORS, densityClassLabel } from '@/globe/population-scale';
 import { SRS_STATUS_COLORS } from '@/layers/styles';
@@ -101,6 +102,7 @@ export class LegendOverlay {
       () => {
         this.refresh();
       },
+      shallowEqual,
     );
     this.unsubs.push(unsubStore);
 

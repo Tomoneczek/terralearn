@@ -1,6 +1,7 @@
 import { parseSvg } from './dom';
 import { makeDraggable, type DraggableController } from './draggable';
 import type { Store, AppState, RoutePoint } from '@/state/types';
+import { shallowEqual } from '@/state/store';
 import { haversineDistanceKm, rhumbLine } from '@/geo/spherical';
 import { t, localize, localizedName, type I18nKey, type LocalizedText } from '@/i18n';
 
@@ -372,6 +373,7 @@ export class RouteHud {
         comparison: s.routeComparison,
         globeClick: s.globeClick,
         selection: s.selection,
+        locale: s.locale,
       }),
       ({ comparison, globeClick, selection }) => {
         // 1. Handle feature selection click
@@ -394,6 +396,8 @@ export class RouteHud {
 
         this.render();
       },
+      // Only when one of these changes (render also uses the UI language)
+      shallowEqual,
     );
   }
 

@@ -1,0 +1,150 @@
+/* "MOON" reticle label anchored to the Moon's screen position (see src/globe/moon-label.ts).
+   The wrapper is a zero-size point moved with transform; only the reticle and the text take
+   pointer events (and only while shown: hidden elements are not hit-tested), so dragging the
+   globe elsewhere is unaffected. */
+.tl-moon-label {
+  --moon-label-color: hsl(198 95% 64%);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 5;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 160ms ease-out;
+  will-change: transform, opacity;
+}
+
+.tl-moon-label.is-shown {
+  visibility: visible;
+}
+
+.tl-moon-reticle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  cursor: pointer;
+  pointer-events: auto;
+  animation:
+    tl-moon-breathe 2.4s ease-in-out infinite,
+    tl-moon-spin 20s linear infinite;
+}
+
+.tl-moon-corner {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border: 0 solid var(--moon-label-color);
+  filter: drop-shadow(0 0 3px hsl(198 95% 60% / 0.7));
+  transition: transform 220ms ease-out;
+}
+
+.tl-moon-corner--tl {
+  left: 0;
+  top: 0;
+  border-left-width: 2px;
+  border-top-width: 2px;
+}
+
+.tl-moon-corner--tr {
+  right: 0;
+  top: 0;
+  border-right-width: 2px;
+  border-top-width: 2px;
+}
+
+.tl-moon-corner--bl {
+  left: 0;
+  bottom: 0;
+  border-left-width: 2px;
+  border-bottom-width: 2px;
+}
+
+.tl-moon-corner--br {
+  right: 0;
+  bottom: 0;
+  border-right-width: 2px;
+  border-bottom-width: 2px;
+}
+
+/* Cursor close by: corners close in on the Moon */
+.tl-moon-label.is-near .tl-moon-corner--tl {
+  transform: translate(4px, 4px);
+}
+
+.tl-moon-label.is-near .tl-moon-corner--tr {
+  transform: translate(-4px, 4px);
+}
+
+.tl-moon-label.is-near .tl-moon-corner--bl {
+  transform: translate(4px, -4px);
+}
+
+.tl-moon-label.is-near .tl-moon-corner--br {
+  transform: translate(-4px, -4px);
+}
+
+.tl-moon-label-text {
+  position: absolute;
+  left: 0;
+  top: -22px;
+  transform: translate(-50%, -100%);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--moon-label-color);
+  text-shadow: 0 0 6px hsl(198 95% 50% / 0.8);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: letter-spacing 220ms ease-out;
+}
+
+.tl-moon-label.is-near .tl-moon-label-text {
+  letter-spacing: 0.2em;
+}
+
+.tl-moon-label:focus-visible {
+  outline: none;
+}
+
+.tl-moon-label:focus-visible .tl-moon-reticle {
+  outline: 2px solid var(--moon-label-color);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+@keyframes tl-moon-breathe {
+  0%,
+  100% {
+    scale: 1;
+  }
+  50% {
+    scale: 1.06;
+  }
+}
+
+@keyframes tl-moon-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-moon-label,
+  .tl-moon-corner,
+  .tl-moon-label-text {
+    transition: none;
+  }
+
+  .tl-moon-reticle {
+    animation: none;
+  }
+}

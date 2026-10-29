@@ -111,7 +111,10 @@ describe('G11-02 UI Locale Switch Components', () => {
 
   describe('LegendOverlay', () => {
     it('updates title and layer names on refresh', () => {
-      const store = createStore<AppState>(createInitialState());
+      // The store must start in Polish too: the legend reacts to a change of `locale` in the
+      // store, not to the global i18n locale alone (it used to pass only because the legend
+      // re-rendered on every store update, see shallowEqual in src/state/store.ts).
+      const store = createStore<AppState>({ ...createInitialState(), locale: 'pl' });
       const legend = new LegendOverlay({ container, store });
 
       const title = container.querySelector('.tl-legend-title');

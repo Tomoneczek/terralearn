@@ -3,6 +3,7 @@ import { Scene, Vector3 } from 'three';
 import { AtmosphereController } from '@/globe/atmosphere';
 import { SunController, DEFAULT_SUN_PARAMS } from '@/globe/sun';
 import { MoonController, DEFAULT_MOON_PARAMS } from '@/globe/moon';
+import { MoonLabel, DEFAULT_MOON_LABEL_PARAMS } from '@/globe/moon-label';
 import { DayNightController } from '@/globe/day-night';
 import { SkyClock } from '@/globe/sky-clock';
 import { CapitalsLayer } from '@/globe/capitals-layer';
@@ -27,6 +28,7 @@ function fakeContext(): {
   capitals: CapitalsLayer;
   sun: SunController;
   moon: MoonController;
+  moonLabel: MoonLabel;
   dayNight: DayNightController;
   skyClock: SkyClock;
   container: HTMLElement;
@@ -40,6 +42,15 @@ function fakeContext(): {
   const moon = new MoonController(null, store, {
     moonPosition: dayNight.getMoonPosition(),
     sunDirection: dayNight.getSunDirection(),
+  });
+  const moonLabel = new MoonLabel({
+    container: document.createElement('div'),
+    store,
+    moon,
+    arbiter: new HoverArbiter(store),
+    getCamera: () => null,
+    requestFrame: () => 0,
+    cancelFrame: () => undefined,
   });
   const container = document.createElement('div');
   container.getBoundingClientRect = () => ({ width: 1000, height: 600 }) as DOMRect;
@@ -55,6 +66,7 @@ function fakeContext(): {
     capitals,
     sun,
     moon,
+    moonLabel,
     dayNight,
     skyClock,
     fpsMonitor: { getFps: () => 60 },
@@ -66,7 +78,7 @@ function fakeContext(): {
       },
     },
   } as unknown as GlobeContext;
-  return { context, atmosphere, capitals, sun, moon, dayNight, skyClock, container };
+  return { context, atmosphere, capitals, sun, moon, moonLabel, dayNight, skyClock, container };
 }
 
 describe('initDevPanel', () => {
@@ -127,14 +139,19 @@ describe('sky params', () => {
   beforeEach(() => clearDevParams());
 
   it('tunes the Moon, toggles eclipse shadows and shifts the sky clock', () => {
-    const { context, moon, dayNight, skyClock } = fakeContext();
+    const { context, moon, moonLabel, dayNight, skyClock } = fakeContext();
     const unregister = registerSkyDevParams(context);
 
     for (const key of Object.keys(DEFAULT_MOON_PARAMS)) {
       expect(listDevParams().some(p => p.id === `moon.${key}`)).toBe(true);
     }
-    setDevParam('moon.scale', 4);
-    expect(moon.getMesh().scale.x).toBe(4);
+    // The size multiplier moved to the user-facing Moon panel (AppState.moonScale)
+    expect(listDevParams().some(p => p.id === 'moon.scale')).toBe(false);
+    for (const key of Object.keys(DEFAULT_MOON_LABEL_PARAMS)) {
+      expect(listDevParams().some(p => p.id === `moonLabel.${key}`)).toBe(true);
+    }
+    setDevParam('moonLabel.minOpacity', 0);
+    expect(moonLabel.params.minOpacity).toBe(0);
     setDevParam('moon.umbraGlow', 0.8);
     expect(moon.getMaterial().uniforms.uUmbraGlow?.value).toBe(0.8);
 
@@ -151,10 +168,11 @@ describe('sky params', () => {
 
     resetAllDevParams();
     expect(skyClock.getOffsetMs()).toBe(0);
-    expect(moon.params.scale).toBe(1);
+    expect(moonLabel.params.minOpacity).toBe(DEFAULT_MOON_LABEL_PARAMS.minOpacity);
 
     unregister();
     expect(listDevParams()).toHaveLength(0);
+    moonLabel.destroy();
     moon.destroy();
     dayNight.destroy();
     skyClock.destroy();

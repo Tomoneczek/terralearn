@@ -8,6 +8,7 @@ import { SearchOverlay } from './ui/search';
 import { Toolbar } from './ui/toolbar';
 import { LegendOverlay } from './ui/legend';
 import { InfoCard } from './ui/info-card';
+import { MoonCard } from './ui/moon-card';
 import { HoverTooltip } from './ui/hover-tooltip';
 
 import { QuizEngine } from './quiz/engine';
@@ -38,6 +39,7 @@ export let quizConfigModal: QuizConfigModal | null = null;
 export let routeHud: RouteHud | null = null;
 export let sizeComparisonHud: SizeComparisonHud | null = null;
 export let antipodesHud: AntipodesHud | null = null;
+export let moonCard: MoonCard | null = null;
 
 export function bootstrap(): void {
   const root = document.getElementById('app');
@@ -223,6 +225,15 @@ export function bootstrap(): void {
         globeContext = createGlobe(slots.globeContainer, store);
         if (toolbar && globeContext.camera) {
           toolbar.setCamera(globeContext.camera);
+        }
+        if (slots.cardContainer) {
+          const skyClock = globeContext.skyClock;
+          moonCard = new MoonCard({
+            container: slots.cardContainer,
+            store,
+            getDate: () => skyClock.now(),
+            onTick: listener => skyClock.onTick(listener),
+          });
         }
         void loadDevPanel(window.location.search, root, globeContext);
       } catch (err) {
